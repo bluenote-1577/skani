@@ -1,29 +1,64 @@
 use debruijn::kmer::*;
-use debruijn::Kmer;
-use fxhash::{FxHashSet, FxHashMap};
+use std::str;
+use fxhash::{FxHashMap, FxHashSet};
+use partitions::*;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher,BuildHasherDefault};
+use std::hash::{BuildHasherDefault, Hash, Hasher};
 
-pub type KSize = K30;
+pub const BYTE_TO_SEQ: [KmerBits; 256] = [
+        0, 1, 2, 3,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 1,  0, 0, 0, 2,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  3, 3, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 1,  0, 0, 0, 2,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  3, 3, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0
+];
+
+pub type KSize = K20;
 pub type GnPosition = u32;
 pub type ContigIndex = u32;
-pub type KmerToSketch = FxHashMap<CanonicalKmer, Vec<Sketch>>;
-pub type KmerSeeds = FxHashMap<CanonicalKmer, FxHashSet<(GnPosition, bool, ContigIndex)>>;
+//pub type KmerBits = u128;
+pub type KmerBits = u64;
+pub type KmerToSketch= MMHashMap<KmerEnc, Vec<Sketch>>;
+pub type KmerSeeds= MMHashMap<KmerEnc, FxHashSet<(GnPosition, bool, ContigIndex)>>;
 
-//Implement minimap2 hashing, will test later. 
+//Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
-pub type MMHashMap<K, V>  = HashMap<K, V, MMBuildHasher>;
+pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
 
+#[inline]
+pub fn mm_hash64(kmer: u64) -> u64{
+    let mut key = kmer;
+    key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
+    key = key ^ key >> 24;
+    key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
+    key = key ^ key >> 14;
+    key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
+    key = key ^ key >> 28;
+    key = key.wrapping_add(key << 31);
+    return key;
+
+}
 
 pub fn mm_hash(bytes: &[u8]) -> usize {
-    let mut key = usize::from_be_bytes(bytes.try_into().unwrap());
-    key = !key + (key << 21); // key = (key << 21) - key - 1;
+    let mut key = usize::from_be_bytes(bytes.try_into().unwrap()) as usize;
+    key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
-    key = (key + (key << 3)) + (key << 8); // key * 265
+    key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
     key = key ^ key >> 14;
-    key = (key + (key << 2)) + (key << 4); // key * 21
+    key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
     key = key ^ key >> 28;
-    key = key + (key << 31);
+    key = key.wrapping_add(key << 31);
     return key;
 }
 
@@ -33,7 +68,8 @@ pub struct Sketch{
     pub kmer_seeds: KmerSeeds,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
-    pub c_adj: usize
+    pub c_adj: f64,
+    pub k: usize,
 }
 
 pub struct MMHasher {
@@ -58,38 +94,110 @@ impl Default for MMHasher {
     }
 }
 
-
-#[derive(Debug)]
-pub struct CanonicalKmer {
-    pub kmer: VarIntKmer<u64, KSize>,
-    pub canonical: bool,
+#[derive(Debug, Eq, Hash)]
+pub struct KmerEnc{
+    pub kmer: KmerBits 
 }
 
+//impl Hash for KmerEnc{
+//    fn hash<H: Hasher>(&self, state: &mut H) {
+//        self.kmer.hash(state);
+//    }
+//}
 
-impl Hash for CanonicalKmer {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.kmer.hash(state);
-    }
-}
-
-impl PartialEq for CanonicalKmer {
+impl PartialEq for KmerEnc{
     fn eq(&self, other: &Self) -> bool {
         self.kmer == other.kmer
     }
 }
-impl Eq for CanonicalKmer {}
 
-#[derive(Eq, PartialEq, PartialOrd, Ord)]
-pub struct Anchor{
-    pub ref_contig: ContigIndex,
-    pub query_contig: ContigIndex,
-    pub ref_pos: GnPosition,
-    pub query_pos: GnPosition,
-    pub reverse_match: bool
+impl KmerEnc{
+    #[inline]
+    pub fn decode(byte: KmerBits) -> u8 {
+        if byte == 0 {
+            return b'A';
+        } else if byte == 1 {
+            return b'C';
+        } else if byte == 2 {
+            return b'G';
+        }
+        else if byte == 3 {
+            return b'T'
+        }
+        else{
+            panic!("decoding failed")
+        }
+    }
+
+    pub fn print_string(kmer: KmerBits, k: usize) {
+        let mut bytes = vec![];
+        let mask = 3;
+        for i in 0..k {
+            let val = kmer >> 2 * i;
+            let val = val & mask;
+            bytes.push(KmerEnc::decode(val));
+        }
+        dbg!(str::from_utf8(&bytes.into_iter().rev().collect::<Vec<u8>>()).unwrap());
+    }
 }
 
-impl Anchor{
-    pub fn new(rpos: &(GnPosition,ContigIndex), qpos: &(GnPosition,ContigIndex), reverse: bool) -> Anchor{
-        Anchor{ ref_pos: rpos.0, ref_contig: rpos.1, query_pos: qpos.0, query_contig: qpos.1, reverse_match: reverse}
+pub struct ChainingResult {
+    pub pointer_vec: Vec<usize>,
+    pub chain_part: PartitionVec<usize>,
+    pub score_vec: Vec<f64>,
+    pub num_chunks: usize,
+}
+
+pub struct ChainingResultANI{
+    pub pointer_vec: Vec<usize>,
+}
+
+#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Default)]
+pub struct Anchor {
+    pub query_contig: ContigIndex,
+    pub query_pos: GnPosition,
+    pub ref_contig: ContigIndex,
+    pub ref_pos: GnPosition,
+    pub reverse_match: bool,
+}
+
+#[derive(PartialEq, PartialOrd, Debug, Clone)]
+pub struct ChainInterval {
+    pub num_anchors: usize,
+    pub interval_on_query: (GnPosition, GnPosition),
+    pub interval_on_ref: (GnPosition, GnPosition),
+    pub ref_contig: usize,
+    pub query_contig: usize,
+    pub score: f64,
+}
+impl ChainInterval {
+    pub fn query_range_len(&self) -> GnPosition {
+        return self.interval_on_query.1 - self.interval_on_query.0;
     }
+    pub fn ref_range_len(&self) -> GnPosition {
+        return self.interval_on_ref.1 - self.interval_on_ref.0;
+    }
+}
+
+impl Anchor {
+    pub fn new(
+        rpos: &(GnPosition, ContigIndex),
+        qpos: &(GnPosition, ContigIndex),
+        reverse: bool,
+    ) -> Anchor {
+        Anchor {
+            ref_pos: rpos.0,
+            ref_contig: rpos.1,
+            query_pos: qpos.0,
+            query_contig: qpos.1,
+            reverse_match: reverse,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct AnchorChunks {
+    pub chunks : Vec<Vec<Anchor>>,
+    pub lengths : Vec<u32>,
+    pub seeds_in_chunk : Vec<usize>
 }
