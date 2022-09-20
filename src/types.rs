@@ -1,43 +1,38 @@
 use debruijn::kmer::*;
-use std::str;
 use fxhash::{FxHashMap, FxHashSet};
+use nohash_hasher::NoHashHasher;
 use partitions::*;
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
+use std::str;
 
 pub const BYTE_TO_SEQ: [KmerBits; 256] = [
-        0, 1, 2, 3,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 1,  0, 0, 0, 2,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  3, 3, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 1,  0, 0, 0, 2,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  3, 3, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0
+    0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
+pub type KmerLength = usize;
 pub type KSize = K20;
 pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
-pub type KmerToSketch= MMHashMap<KmerEnc, Vec<Sketch>>;
-pub type KmerSeeds= MMHashMap<KmerEnc, FxHashSet<(GnPosition, bool, ContigIndex)>>;
+pub type KmerToSketch = NoHashMap<KmerEnc, Vec<Sketch>>;
+pub type KmerSeeds = MMHashMap<KmerEnc, FxHashSet<(GnPosition, bool, ContigIndex)>>;
 
 //Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
+pub type NoHashMap<K, V> = HashMap<K, V, BuildHasherDefault<NoHashHasher<KmerBits>>>;
 
 #[inline]
-pub fn mm_hash64(kmer: u64) -> u64{
+pub fn mm_hash64(kmer: u64) -> u64 {
     let mut key = kmer;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
@@ -47,7 +42,6 @@ pub fn mm_hash64(kmer: u64) -> u64{
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
     return key;
-
 }
 
 pub fn mm_hash(bytes: &[u8]) -> usize {
@@ -62,14 +56,21 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     return key;
 }
 
-#[derive(Default)]
-pub struct Sketch{
+pub struct Sketch {
     pub file_name: String,
-    pub kmer_seeds: KmerSeeds,
+    pub kmer_seeds_k: Vec<KmerSeeds>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
-    pub c_adj: f64,
-    pub k: usize,
+}
+impl Default for Sketch {
+    fn default() -> Self {
+        return Sketch {
+            file_name: String::new(),
+            kmer_seeds_k: vec![KmerSeeds::default(); std::mem::size_of::<KmerBits>() * 4],
+            contigs: vec![],
+            total_sequence_length: 0,
+        };
+    }
 }
 
 pub struct MMHasher {
@@ -94,9 +95,9 @@ impl Default for MMHasher {
     }
 }
 
-#[derive(Debug, Eq, Hash)]
-pub struct KmerEnc{
-    pub kmer: KmerBits 
+#[derive(Debug, Eq, Hash, Clone)]
+pub struct KmerEnc {
+    pub kmer: KmerBits,
 }
 
 //impl Hash for KmerEnc{
@@ -105,13 +106,13 @@ pub struct KmerEnc{
 //    }
 //}
 
-impl PartialEq for KmerEnc{
+impl PartialEq for KmerEnc {
     fn eq(&self, other: &Self) -> bool {
         self.kmer == other.kmer
     }
 }
 
-impl KmerEnc{
+impl KmerEnc {
     #[inline]
     pub fn decode(byte: KmerBits) -> u8 {
         if byte == 0 {
@@ -120,11 +121,9 @@ impl KmerEnc{
             return b'C';
         } else if byte == 2 {
             return b'G';
-        }
-        else if byte == 3 {
-            return b'T'
-        }
-        else{
+        } else if byte == 3 {
+            return b'T';
+        } else {
             panic!("decoding failed")
         }
     }
@@ -148,7 +147,7 @@ pub struct ChainingResult {
     pub num_chunks: usize,
 }
 
-pub struct ChainingResultANI{
+pub struct ChainingResultANI {
     pub pointer_vec: Vec<usize>,
 }
 
@@ -197,7 +196,7 @@ impl Anchor {
 
 #[derive(Default)]
 pub struct AnchorChunks {
-    pub chunks : Vec<Vec<Anchor>>,
-    pub lengths : Vec<u32>,
-    pub seeds_in_chunk : Vec<usize>
+    pub chunks: Vec<Vec<Anchor>>,
+    pub lengths: Vec<u32>,
+    pub seeds_in_chunk: Vec<usize>,
 }

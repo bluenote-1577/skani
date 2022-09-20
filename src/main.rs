@@ -1,5 +1,6 @@
 use clap::{AppSettings, Arg, Command, SubCommand};
 use skani::chain;
+use skani::params;
 use skani::file_io;
 use skani::types::*;
 use std::time::Instant;
@@ -107,6 +108,7 @@ fn main() {
         .unwrap()
         .parse::<usize>()
         .unwrap();
+    let k = vec![k];
     let c;
     let use_syncs;
     if !matches_subc.value_of("d").is_none() {
@@ -120,18 +122,19 @@ fn main() {
             .parse::<usize>()
             .unwrap();
     }
-    dbg!(use_syncs, c);
+    let c = vec![c];
 
     let now = Instant::now();
     let mut ref_sketches = vec![];
     for ref_file in ref_files {
-        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
+//        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
+        let ref_sketch = file_io::fastx_to_sketch_rewrite(ref_file, &k, &c, use_syncs);
         ref_sketches.push(ref_sketch);
     }
     let mut query_sketches = vec![];
     if mode == classify {
         let query_file = matches_subc.value_of("query").unwrap();
-        query_sketches = file_io::fastq_to_multiple_sketch(query_file, k, c, use_syncs);
+        query_sketches = file_io::fastx_to_multiple_sketch_rewrite(query_file, &k, &c, use_syncs);
     } else {
     }
     println!("Generating sketch time: {}", now.elapsed().as_secs_f32());
@@ -139,9 +142,9 @@ fn main() {
     if mode == classify {
         for query_sketch in query_sketches.iter() {
             let now = Instant::now();
-
             for ref_sketch in ref_sketches.iter() {
-                chain::chain_seeds(ref_sketch, query_sketch, k, mode);
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode);
+                chain::chain_seeds(ref_sketch, query_sketch, map_params);
             }
             println!("Alignment time: {}", now.elapsed().as_secs_f32());
         }
@@ -149,8 +152,9 @@ fn main() {
         for i in 0..ref_sketches.len() - 1 {
             for j in i + 1..ref_sketches.len() {
                 let ref_sketch_i = &ref_sketches[i];
+                let map_params = chain::map_params_from_sketch(ref_sketch_i, mode);
                 let ref_sketch_j = &ref_sketches[j];
-                chain::chain_seeds(ref_sketch_i, ref_sketch_j, k, mode);
+                chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
             }
         }
     }
