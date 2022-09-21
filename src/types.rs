@@ -1,4 +1,5 @@
 use debruijn::kmer::*;
+use crate::params::*;
 use fxhash::{FxHashMap, FxHashSet};
 use nohash_hasher::NoHashHasher;
 use partitions::*;
@@ -149,6 +150,18 @@ impl KmerEnc {
         }
         dbg!(str::from_utf8(&bytes.into_iter().rev().collect::<Vec<u8>>()).unwrap());
     }
+
+    pub fn print_string_aa(kmer: KmerBits, k: usize, sketch_params: &SketchParams) {
+        let mut bytes = vec![];
+        let mask = 63;
+        for i in 0..k {
+            let val = kmer >> 6 * i;
+            let val = val & mask;
+//            bytes.push(KmerEnc::decode(val));
+            bytes.push(sketch_params.acgt_to_aa_letters[val as usize] as u8);
+        }
+        dbg!(str::from_utf8(&bytes.into_iter().rev().collect::<Vec<u8>>()).unwrap());
+    }
 }
 
 pub struct ChainingResult {
@@ -168,6 +181,8 @@ pub struct Anchor {
     pub query_pos: GnPosition,
     pub ref_contig: ContigIndex,
     pub ref_pos: GnPosition,
+    pub ref_phase: u8,
+    pub query_phase: u8,
     pub reverse_match: bool,
 }
 
@@ -193,6 +208,8 @@ impl Anchor {
     pub fn new(
         rpos: &(GnPosition, ContigIndex),
         qpos: &(GnPosition, ContigIndex),
+        ref_phase: u8,
+        query_phase: u8,
         reverse: bool,
     ) -> Anchor {
         Anchor {
@@ -200,6 +217,8 @@ impl Anchor {
             ref_contig: rpos.1,
             query_pos: qpos.0,
             query_contig: qpos.1,
+            ref_phase,
+            query_phase,
             reverse_match: reverse,
         }
     }

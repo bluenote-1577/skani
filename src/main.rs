@@ -1,7 +1,7 @@
 use clap::{AppSettings, Arg, Command, SubCommand};
 use skani::chain;
-use skani::params;
 use skani::file_io;
+use skani::params;
 use std::time::Instant;
 
 fn main() {
@@ -76,6 +76,11 @@ fn main() {
                         .short('d')
                         .help("dowsample factor for open syncmers. ")
                         .takes_value(true),
+                )
+                .arg(
+                    Arg::new("a")
+                        .short('a')
+                        .help("use amino acid alphabet.")
                 ),
         )
         .get_matches();
@@ -122,13 +127,19 @@ fn main() {
             .unwrap();
     }
     let cs = vec![c];
-    let use_aa = true;
+    let amino_acid;
+    if matches_subc.is_present("a"){
+        amino_acid = true;
+    }
+    else{
+        amino_acid = false;
+    }
 
-    let sketch_params = params::SketchParams::new(cs,ks,use_syncs, use_aa);
+    let sketch_params = params::SketchParams::new(cs, ks, use_syncs, amino_acid);
     let now = Instant::now();
     let mut ref_sketches = vec![];
     for ref_file in ref_files {
-//        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
+        //        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
         let ref_sketch = file_io::fastx_to_sketch_rewrite(ref_file, &sketch_params);
         ref_sketches.push(ref_sketch);
     }
@@ -144,7 +155,7 @@ fn main() {
         for query_sketch in query_sketches.iter() {
             let now = Instant::now();
             for ref_sketch in ref_sketches.iter() {
-                let map_params = chain::map_params_from_sketch(ref_sketch, mode);
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid);
                 chain::chain_seeds(ref_sketch, query_sketch, map_params);
             }
             println!("Alignment time: {}", now.elapsed().as_secs_f32());
@@ -153,7 +164,7 @@ fn main() {
         for i in 0..ref_sketches.len() - 1 {
             for j in i + 1..ref_sketches.len() {
                 let ref_sketch_i = &ref_sketches[i];
-                let map_params = chain::map_params_from_sketch(ref_sketch_i, mode);
+                let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid);
                 let ref_sketch_j = &ref_sketches[j];
                 chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
             }

@@ -8,6 +8,7 @@ pub fn fastx_to_sketch_rewrite(ref_file: &str, sketch_params: &SketchParams) -> 
     new_sketch.file_name = ref_file.split('/').last().unwrap().to_string();
     let mut i = 0;
     let mut reader = parse_fastx_file(&ref_file).expect("valid path/file");
+    println!("Sketching {}", new_sketch.file_name);
     while let Some(record) = reader.next() {
         let record = record.expect("invalid record");
 
@@ -20,8 +21,7 @@ pub fn fastx_to_sketch_rewrite(ref_file: &str, sketch_params: &SketchParams) -> 
         if sketch_params.use_aa {
             seeding::fmh_seeds_aa(
                 &seq,
-                &sketch_params.ks,
-                &sketch_params.cs,
+                sketch_params,
                 i as u32,
                 &mut new_sketch.kmer_seeds_k,
             );
@@ -47,6 +47,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
     let mut new_sketches = vec![];
     let file_name = ref_file.split('/').last().unwrap().to_string();
     let mut reader = parse_fastx_file(&ref_file).expect("valid path/file");
+    println!("Sketching {}", file_name);
     while let Some(record) = reader.next() {
         let mut new_sketch = Sketch::default();
         new_sketch.file_name = file_name.clone();

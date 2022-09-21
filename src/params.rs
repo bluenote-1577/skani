@@ -19,10 +19,12 @@ pub struct MapParams {
     pub frac_cover_cutoff: f64,
     pub chain_band: usize,
     pub k: usize,
+    pub amino_acid: bool,
+    pub min_score: f64
 }
 
 pub fn fragment_length_formula(n: usize) -> usize {
-    return (n as f64).sqrt() as usize * 500;
+    return (n as f64).sqrt() as usize * 3;
 }
 
 #[derive(Default)]
@@ -32,35 +34,37 @@ pub struct SketchParams {
     pub use_syncs: bool,
     pub use_aa: bool,
     pub acgt_to_aa_encoding: Vec<KmerBits>,
+    pub acgt_to_aa_letters: Vec<u8>,
 }
 
 impl SketchParams {
     pub fn new(cs: Vec<usize>, ks: Vec<usize>, use_syncs: bool, use_aa: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
-        const DNA_TO_AA: [u8; 64] =
+        let DNA_TO_AA: [u8; 64] =
             *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
         let letter_to_int_aa: FxHashMap<u8, KmerBits> = [
             (b'A', 0),
             (b'R', 1),
-            (b'D', 2),
-            (b'C', 3),
-            (b'E', 4),
-            (b'F', 5),
-            (b'G', 6),
-            (b'H', 7),
-            (b'I', 8),
-            (b'K', 9),
-            (b'L', 10),
-            (b'M', 11),
-            (b'P', 12),
-            (b'Q', 13),
-            (b'R', 14),
-            (b'S', 15),
-            (b'T', 16),
-            (b'V', 17),
-            (b'W', 18),
-            (b'Y', 19),
-            (b'*', 20),
+            (b'N', 2),
+            (b'D', 3),
+            (b'C', 4),
+            (b'E', 5),
+            (b'F', 6),
+            (b'G', 7),
+            (b'H', 8),
+            (b'I', 9),
+            (b'K', 10),
+            (b'L', 11),
+            (b'M', 12),
+            (b'P', 13),
+            (b'Q', 14),
+            (b'R', 15),
+            (b'S', 16),
+            (b'T', 17),
+            (b'V', 18),
+            (b'W', 19),
+            (b'Y', 20),
+            (b'*', 21),
         ]
         .iter()
         .cloned()
@@ -74,6 +78,7 @@ impl SketchParams {
             use_syncs,
             use_aa,
             acgt_to_aa_encoding,
+            acgt_to_aa_letters: DNA_TO_AA.to_vec()
         };
     }
 }
