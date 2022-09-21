@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
 
+
+
 pub const BYTE_TO_SEQ: [KmerBits; 256] = [
     0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -24,7 +26,7 @@ pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
 pub type KmerToSketch = NoHashMap<KmerEnc, Vec<Sketch>>;
-pub type KmerSeeds = MMHashMap<KmerEnc, FxHashSet<(GnPosition, bool, ContigIndex)>>;
+pub type KmerSeeds = MMHashMap<KmerEnc, FxHashSet<SeedPosition>>;
 
 //Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
@@ -44,6 +46,7 @@ pub fn mm_hash64(kmer: u64) -> u64 {
     return key;
 }
 
+#[inline]
 pub fn mm_hash(bytes: &[u8]) -> usize {
     let mut key = usize::from_be_bytes(bytes.try_into().unwrap()) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
@@ -54,6 +57,14 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
     return key;
+}
+
+#[derive(Hash, Eq, PartialEq, Ord, PartialOrd, Default, Clone)]
+pub struct SeedPosition{
+    pub pos: GnPosition,
+    pub canonical: bool,
+    pub contig_index: ContigIndex,
+    pub phase: u8
 }
 
 pub struct Sketch {

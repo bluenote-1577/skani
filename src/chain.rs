@@ -194,7 +194,7 @@ fn get_anchors(ref_sketch: &Sketch, query_sketch: &Sketch, map_params: &MapParam
         }
 
         for qpos in query_pos.iter() {
-            query_positions_all[qpos.2 as usize].push(qpos.0);
+            query_positions_all[qpos.contig_index as usize].push(qpos.pos);
         }
         if kmer_seeds_ref.contains_key(canon_kmer) {
             let ref_pos = &kmer_seeds_ref[canon_kmer];
@@ -206,9 +206,9 @@ fn get_anchors(ref_sketch: &Sketch, query_sketch: &Sketch, map_params: &MapParam
             for qpos in query_pos {
                 for rpos in ref_pos {
                     anchors.push(Anchor::new(
-                        &(rpos.0, rpos.2),
-                        &(qpos.0, qpos.2),
-                        rpos.1 != qpos.1,
+                        &(rpos.pos, rpos.contig_index),
+                        &(qpos.pos, qpos.contig_index),
+                        rpos.canonical != qpos.canonical,
                     ));
                 }
             }

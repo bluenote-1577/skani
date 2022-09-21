@@ -2,7 +2,6 @@ use clap::{AppSettings, Arg, Command, SubCommand};
 use skani::chain;
 use skani::params;
 use skani::file_io;
-use skani::types::*;
 use std::time::Instant;
 
 fn main() {
@@ -108,7 +107,7 @@ fn main() {
         .unwrap()
         .parse::<usize>()
         .unwrap();
-    let k = vec![k];
+    let ks = vec![k];
     let c;
     let use_syncs;
     if !matches_subc.value_of("d").is_none() {
@@ -122,19 +121,21 @@ fn main() {
             .parse::<usize>()
             .unwrap();
     }
-    let c = vec![c];
+    let cs = vec![c];
+    let use_aa = true;
 
+    let sketch_params = params::SketchParams::new(cs,ks,use_syncs, use_aa);
     let now = Instant::now();
     let mut ref_sketches = vec![];
     for ref_file in ref_files {
 //        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
-        let ref_sketch = file_io::fastx_to_sketch_rewrite(ref_file, &k, &c, use_syncs);
+        let ref_sketch = file_io::fastx_to_sketch_rewrite(ref_file, &sketch_params);
         ref_sketches.push(ref_sketch);
     }
     let mut query_sketches = vec![];
     if mode == classify {
         let query_file = matches_subc.value_of("query").unwrap();
-        query_sketches = file_io::fastx_to_multiple_sketch_rewrite(query_file, &k, &c, use_syncs);
+        query_sketches = file_io::fastx_to_multiple_sketch_rewrite(query_file, &sketch_params);
     } else {
     }
     println!("Generating sketch time: {}", now.elapsed().as_secs_f32());
