@@ -1,6 +1,7 @@
 use crate::types::*;
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
+pub const STOP_CODON: KmerBits = 21;
 pub const D_MAX_GAP_LENGTH: f64 = 50.;
 pub const D_ANCHOR_SCORE: f64 = 50.;
 pub const D_MIN_ANCHORS: usize = 5;
@@ -64,7 +65,7 @@ impl SketchParams {
             (b'V', 18),
             (b'W', 19),
             (b'Y', 20),
-            (b'*', 21),
+            (b'*', STOP_CODON),
         ]
         .iter()
         .cloned()

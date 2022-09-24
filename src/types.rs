@@ -1,11 +1,12 @@
 use debruijn::kmer::*;
 use crate::params::*;
 use fxhash::{FxHashMap, FxHashSet};
-use nohash_hasher::NoHashHasher;
 use partitions::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
+use nohash_hasher::NoHashHasher;
+
 
 
 
@@ -26,13 +27,15 @@ pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
-pub type KmerToSketch = NoHashMap<KmerEnc, Vec<Sketch>>;
-pub type KmerSeeds = MMHashMap<KmerEnc, FxHashSet<SeedPosition>>;
+pub type KmerToSketch = MMHashMap<KmerBits, Vec<Sketch>>;
+pub type KmerSeeds = MMHashMap<KmerBits, FxHashSet<SeedPosition>>;
+
 
 //Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
 pub type NoHashMap<K, V> = HashMap<K, V, BuildHasherDefault<NoHashHasher<KmerBits>>>;
+pub type NoHashSet<K> = HashSet<K, BuildHasherDefault<NoHashHasher<KmerBits>>>;
 
 #[inline]
 pub fn mm_hash64(kmer: u64) -> u64 {
@@ -60,7 +63,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     return key;
 }
 
-#[derive(Hash, Eq, PartialEq, Ord, PartialOrd, Default, Clone)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone)]
 pub struct SeedPosition{
     pub pos: GnPosition,
     pub canonical: bool,
@@ -68,11 +71,18 @@ pub struct SeedPosition{
     pub phase: u8
 }
 
+impl Hash for SeedPosition{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos.hash(state);
+    }
+}
+
 pub struct Sketch {
     pub file_name: String,
     pub kmer_seeds_k: Vec<KmerSeeds>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
+    pub repetitive_kmers: Vec<usize>
 }
 impl Default for Sketch {
     fn default() -> Self {
@@ -81,6 +91,7 @@ impl Default for Sketch {
             kmer_seeds_k: vec![KmerSeeds::default(); std::mem::size_of::<KmerBits>() * 4],
             contigs: vec![],
             total_sequence_length: 0,
+            repetitive_kmers: vec![0; std::mem::size_of::<KmerBits>() * 4]
         };
     }
 }
@@ -229,4 +240,20 @@ pub struct AnchorChunks {
     pub chunks: Vec<Vec<Anchor>>,
     pub lengths: Vec<u32>,
     pub seeds_in_chunk: Vec<usize>,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct Orf{
+    pub start: usize,
+    pub end: usize,
+    pub phase: u8
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct AniEstResult{
+    pub ani: f64,
+    pub align_fraction: f64,
+    pub ref_file: String,
+    pub query_file: String,
+    pub query_contig: String,
 }

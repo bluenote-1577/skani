@@ -1,11 +1,12 @@
 use clap::{AppSettings, Arg, Command, SubCommand};
+use log::LevelFilter;
+use simple_logging;
 use skani::chain;
 use skani::file_io;
 use skani::params;
+use skani::types;
 use std::time::Instant;
-
-fn main() {
-    let dist = "dist";
+fn main() { let dist = "dist";
     let classify = "classify";
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -30,14 +31,14 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.")
-                        .default_value("20")
+                        .default_value("21")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
                         .help("compression factor.")
-                        .default_value("100")
+                        .default_value("75")
                         .takes_value(true),
                 )
                 .arg(
@@ -45,7 +46,8 @@ fn main() {
                         .short('d')
                         .help("dowsample factor for open syncmers.")
                         .takes_value(true),
-                ),
+                )
+                .arg(Arg::new("r").short('r').help("verbose.")),
         )
         .subcommand(
             SubCommand::with_name("dist")
@@ -77,11 +79,10 @@ fn main() {
                         .help("dowsample factor for open syncmers. ")
                         .takes_value(true),
                 )
-                .arg(
-                    Arg::new("a")
-                        .short('a')
-                        .help("use amino acid alphabet.")
-                ),
+                .arg(Arg::new("a").short('a').help("use amino acid alphabet."))
+                .arg(Arg::new("r").short('r').help("verbose."))
+                .arg(Arg::new("m").short('m').help("distance matrix. "))
+                .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
         )
         .get_matches();
 
@@ -128,13 +129,21 @@ fn main() {
     }
     let cs = vec![c];
     let amino_acid;
-    if matches_subc.is_present("a"){
+    if matches_subc.is_present("a") {
         amino_acid = true;
-    }
-    else{
+    } else {
         amino_acid = false;
     }
-
+    let mat_file_name = matches_subc.value_of("o").unwrap_or("matrix");
+    if matches_subc.is_present("m"){
+        simple_logging::log_to_stderr(LevelFilter::Warn);
+    }
+    else{
+        simple_logging::log_to_stderr(LevelFilter::Info);
+    }
+    if matches_subc.is_present("r") {
+        simple_logging::log_to_stderr(LevelFilter::Trace);
+    } 
     let sketch_params = params::SketchParams::new(cs, ks, use_syncs, amino_acid);
     let now = Instant::now();
     let mut ref_sketches = vec![];
@@ -161,14 +170,19 @@ fn main() {
             println!("Alignment time: {}", now.elapsed().as_secs_f32());
         }
     } else if mode == dist {
+        let mut anis =
+            vec![vec![types::AniEstResult::default(); ref_sketches.len()]; ref_sketches.len()];
         for i in 0..ref_sketches.len() - 1 {
+            anis.push(vec![]);
             for j in i + 1..ref_sketches.len() {
                 let ref_sketch_i = &ref_sketches[i];
                 let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid);
                 let ref_sketch_j = &ref_sketches[j];
-                chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                anis[i][j] = ani_res;
             }
         }
+        file_io::write_phyllip_matrix(&anis, &ref_sketches, &mat_file_name);
     }
     println!("Alignment time: {}", now.elapsed().as_secs_f32());
 }
