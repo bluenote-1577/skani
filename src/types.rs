@@ -91,7 +91,7 @@ impl Default for Sketch {
             kmer_seeds_k: vec![KmerSeeds::default(); std::mem::size_of::<KmerBits>() * 4],
             contigs: vec![],
             total_sequence_length: 0,
-            repetitive_kmers: vec![0; std::mem::size_of::<KmerBits>() * 4]
+            repetitive_kmers: vec![usize::MAX; std::mem::size_of::<KmerBits>() * 4]
         };
     }
 }
