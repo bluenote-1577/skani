@@ -2,12 +2,15 @@ use crate::types::*;
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
 pub const STOP_CODON: KmerBits = 21;
+pub const DEFAULT_C: &str = "100";
+pub const DEFAULT_K: &str = "15";
 pub const D_MAX_GAP_LENGTH: f64 = 50.;
 pub const D_ANCHOR_SCORE: f64 = 50.;
 pub const D_MIN_ANCHORS: usize = 5;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
-pub const D_FRAC_COVER_CUTOFF: f64 = 0.02;
+pub const D_FRAC_COVER_CUTOFF: f64 = 0.10;
 pub const D_CHAIN_BAND: usize = 100;
+pub const ORF_SIZE: usize = 75;
 
 #[derive(Default)]
 pub struct MapParams {
@@ -18,14 +21,26 @@ pub struct MapParams {
     pub length_cutoff: usize,
     pub mode: String,
     pub frac_cover_cutoff: f64,
+    pub length_cover_cutoff: usize,
     pub chain_band: usize,
     pub k: usize,
     pub amino_acid: bool,
-    pub min_score: f64
+    pub min_score: f64,
+    pub euk: bool
 }
 
-pub fn fragment_length_formula(n: usize) -> usize {
-    return (n as f64).sqrt() as usize * 3;
+pub fn fragment_length_formula(n: usize, aa: bool, euk: bool) -> usize {
+//    return (n as f64).sqrt() as usize * 10;
+    if aa{
+        return 20000;
+    }
+    else if euk{
+        return 500000;
+    }
+    else{
+        return 20000;
+    }
+//    return (n as f64).sqrt() as usize * 3;
 }
 
 #[derive(Default)]

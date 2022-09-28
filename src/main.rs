@@ -1,4 +1,6 @@
 use clap::{AppSettings, Arg, Command, SubCommand};
+use rayon::prelude::*;
+use std::sync::Mutex;
 use log::LevelFilter;
 use simple_logging;
 use skani::chain;
@@ -6,7 +8,8 @@ use skani::file_io;
 use skani::params;
 use skani::types;
 use std::time::Instant;
-fn main() { let dist = "dist";
+fn main() {
+    let dist = "dist";
     let classify = "classify";
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -31,14 +34,14 @@ fn main() { let dist = "dist";
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.")
-                        .default_value("21")
+                        .default_value(params::DEFAULT_K)
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
                         .help("compression factor.")
-                        .default_value("75")
+                        .default_value(params::DEFAULT_C)
                         .takes_value(true),
                 )
                 .arg(
@@ -47,7 +50,7 @@ fn main() { let dist = "dist";
                         .help("dowsample factor for open syncmers.")
                         .takes_value(true),
                 )
-                .arg(Arg::new("r").short('r').help("verbose.")),
+                .arg(Arg::new("v").short('v').help("verbose.")),
         )
         .subcommand(
             SubCommand::with_name("dist")
@@ -63,14 +66,14 @@ fn main() { let dist = "dist";
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.")
-                        .default_value("20")
+                        .default_value(params::DEFAULT_K)
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
                         .help("compression factor.")
-                        .default_value("100")
+                        .default_value(params::DEFAULT_C)
                         .takes_value(true),
                 )
                 .arg(
@@ -79,10 +82,18 @@ fn main() { let dist = "dist";
                         .help("dowsample factor for open syncmers. ")
                         .takes_value(true),
                 )
+                .arg(
+                    Arg::new("query")
+                        .short('q')
+                        .help("query fasta.")
+                        .takes_value(true),
+                )
                 .arg(Arg::new("a").short('a').help("use amino acid alphabet."))
-                .arg(Arg::new("r").short('r').help("verbose."))
+                .arg(Arg::new("v").short('v').help("verbose."))
                 .arg(Arg::new("m").short('m').help("distance matrix. "))
+                .arg(Arg::new("e").short('e').help("eukaryotic option. Changes mapping parameters"))
                 .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
+                .arg(Arg::new("t").short('t').default_value("20").help("threads. ").takes_value(true))
         )
         .get_matches();
 
@@ -101,6 +112,14 @@ fn main() { let dist = "dist";
             panic!()
         } // Either no subcommand or one not tested for...
     }
+    let threads = matches_subc.value_of("t").unwrap();
+    let threads = threads.parse::<usize>().unwrap();
+
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build_global()
+        .unwrap();
+
 
     let ref_files: Vec<&str>;
     if let Some(values) = matches_subc.values_of("reference") {
@@ -129,34 +148,46 @@ fn main() { let dist = "dist";
     }
     let cs = vec![c];
     let amino_acid;
-    if matches_subc.is_present("a") {
+    if mode == classify {
+        amino_acid = false;
+    } else if matches_subc.is_present("a") {
         amino_acid = true;
     } else {
         amino_acid = false;
     }
-    let mat_file_name = matches_subc.value_of("o").unwrap_or("matrix");
-    if matches_subc.is_present("m"){
+    let euk = matches_subc.is_present("e");
+    let mat_file_name = matches_subc.value_of("o").unwrap_or("skani_res");
+    if mode == dist && matches_subc.is_present("m") {
         simple_logging::log_to_stderr(LevelFilter::Warn);
-    }
-    else{
+    } else {
         simple_logging::log_to_stderr(LevelFilter::Info);
     }
-    if matches_subc.is_present("r") {
+    if matches_subc.is_present("v") {
         simple_logging::log_to_stderr(LevelFilter::Trace);
-    } 
+    }
     let sketch_params = params::SketchParams::new(cs, ks, use_syncs, amino_acid);
     let now = Instant::now();
-    let mut ref_sketches = vec![];
-    for ref_file in ref_files {
-        //        let ref_sketch = file_io::fasta_to_sketch(ref_file, k, c, use_syncs);
-        let ref_sketch = file_io::fastx_to_sketch_rewrite(ref_file, &sketch_params);
-        ref_sketches.push(ref_sketch);
-    }
-    let mut query_sketches = vec![];
+    let ref_sketches = file_io::fastx_to_sketches(ref_files, &sketch_params);
+    let query_sketches;
+    let triangle;
     if mode == classify {
+        triangle = false;
         let query_file = matches_subc.value_of("query").unwrap();
         query_sketches = file_io::fastx_to_multiple_sketch_rewrite(query_file, &sketch_params);
+    } else if mode == dist {
+        let query_file = matches_subc.value_of("query");
+        if query_file.is_none() {
+            triangle = true;
+            query_sketches = vec![];
+        } else {
+            triangle = false;
+            query_sketches = file_io::fastx_to_sketches(
+                vec![query_file.unwrap()],
+                &sketch_params,
+            );
+        }
     } else {
+        panic!("MODE ERROR");
     }
     println!("Generating sketch time: {}", now.elapsed().as_secs_f32());
     let now = Instant::now();
@@ -164,25 +195,40 @@ fn main() { let dist = "dist";
         for query_sketch in query_sketches.iter() {
             let now = Instant::now();
             for ref_sketch in ref_sketches.iter() {
-                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid);
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk);
                 chain::chain_seeds(ref_sketch, query_sketch, map_params);
             }
             println!("Alignment time: {}", now.elapsed().as_secs_f32());
         }
     } else if mode == dist {
-        let mut anis =
-            vec![vec![types::AniEstResult::default(); ref_sketches.len()]; ref_sketches.len()];
-        for i in 0..ref_sketches.len() - 1 {
-            anis.push(vec![]);
-            for j in i + 1..ref_sketches.len() {
-                let ref_sketch_i = &ref_sketches[i];
-                let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid);
-                let ref_sketch_j = &ref_sketches[j];
-                let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
-                anis[i][j] = ani_res;
-            }
+        if triangle {
+            let anis :Mutex<Vec<_>> =
+                Mutex::new(vec![vec![types::AniEstResult::default(); ref_sketches.len()]; ref_sketches.len()]);
+            (0..ref_sketches.len()-1).collect::<Vec<usize>>().into_par_iter().for_each( |i| {
+                for j in i + 1..ref_sketches.len(){
+                    let ref_sketch_i = &ref_sketches[i];
+                    let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid, euk);
+                    let ref_sketch_j = &ref_sketches[j];
+                    let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                    let mut locked = anis.lock().unwrap();
+                    locked[i][j] = ani_res;
+                }
+            });
+            let anis = anis.into_inner().unwrap();
+            file_io::write_phyllip_matrix(&anis, &ref_sketches, &mat_file_name);
         }
-        file_io::write_phyllip_matrix(&anis, &ref_sketches, &mat_file_name);
+        else{
+            let anis: Mutex<Vec<_>>  = Mutex::new(vec![]);
+            (0..ref_sketches.len()).collect::<Vec<usize>>().into_par_iter().for_each( |i| {
+                let ref_sketch = &ref_sketches[i];
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk);
+                let ani_res = chain::chain_seeds(ref_sketch, &query_sketches[0], map_params);
+                let mut locked = anis.lock().unwrap();
+                locked.push(ani_res);
+            });
+            let anis = anis.into_inner().unwrap();
+            file_io::write_query_ref_list(&anis, &mat_file_name);
+        }
     }
     println!("Alignment time: {}", now.elapsed().as_secs_f32());
 }

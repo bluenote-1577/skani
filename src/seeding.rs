@@ -2,6 +2,7 @@ use crate::params::*;
 use crate::types::*;
 use fxhash::{hash, FxHashMap, FxHashSet};
 
+#[inline]
 fn position_min<T: Ord>(slice: &[T]) -> Option<usize> {
     slice
         .iter()
@@ -33,7 +34,7 @@ pub fn get_orfs(string: &[u8], sketch_params: &SketchParams) -> Vec<Orf> {
         if i >= 2 {
             let codon_f = sketch_params.acgt_to_aa_encoding[(rolling_3mer_f & 63) as usize];
             if codon_f == STOP_CODON {
-                if orf_pos_f[phase] != 0 && (i - 2) - orf_pos_f[phase] > 45 {
+                if orf_pos_f[phase] != 0 && (i - 2) - orf_pos_f[phase] > ORF_SIZE{
                     orfs.push(Orf {
                         start: orf_pos_f[phase],
                         end: (i - 2),
@@ -142,11 +143,13 @@ pub fn fmh_seeds_aa_with_orf(
                         << reverse_shift_dist_aa;
                 }
 
-                if num_ks == 1 && i >= max_k_aa * 3 - 1 {
+                if num_ks == 1 && j >= max_k_aa * 3 - 1 {
                     let hash = mm_hash64(rolling_aa_kmer as u64);
                     if hash < thresholds[0] {
                         let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
-                        let kmer_positions = kmer_seeds.entry(rolling_aa_kmer).or_insert(FxHashSet::default());
+                        let kmer_positions = kmer_seeds
+                            .entry(rolling_aa_kmer)
+                            .or_insert(FxHashSet::default());
 
                         kmer_positions.insert(SeedPosition {
                             pos: i as GnPosition,
@@ -246,7 +249,9 @@ pub fn fmh_seeds_aa(
                 let hash_r = mm_hash64(rolling_aa_kmers_r[phase] as u64);
                 if hash_f < thresholds[0] {
                     let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
-                    let kmer_positions = kmer_seeds.entry(rolling_aa_kmers_f[phase]).or_insert(FxHashSet::default());
+                    let kmer_positions = kmer_seeds
+                        .entry(rolling_aa_kmers_f[phase])
+                        .or_insert(FxHashSet::default());
 
                     kmer_positions.insert(SeedPosition {
                         pos: i as GnPosition,
@@ -258,7 +263,9 @@ pub fn fmh_seeds_aa(
 
                 if hash_r < thresholds[0] {
                     let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
-                    let kmer_positions = kmer_seeds.entry(rolling_aa_kmers_r[phase]).or_insert(FxHashSet::default());
+                    let kmer_positions = kmer_seeds
+                        .entry(rolling_aa_kmers_r[phase])
+                        .or_insert(FxHashSet::default());
 
                     kmer_positions.insert(SeedPosition {
                         pos: i as GnPosition,
@@ -328,7 +335,7 @@ pub fn fmh_seeds(
         rolling_kmer_r >>= 2;
         rolling_kmer_r &= max_rev_mask;
         rolling_kmer_r |= nuc_r << reverse_shift_dist;
-//        rolling_kmer_r &= max_mask;
+        //        rolling_kmer_r &= max_mask;
         //        KmerEnc::print_string(rolling_kmer_f, k);
         //        KmerEnc::print_string(rolling_kmer_r, k);
         //
@@ -343,7 +350,9 @@ pub fn fmh_seeds(
             let hash = mm_hash64(canonical_kmer as u64);
             if hash < thresholds[0] {
                 let kmer_seeds = &mut kmer_seeds_k[ks[0]];
-                let kmer_positions = kmer_seeds.entry(canonical_kmer).or_insert(FxHashSet::default());
+                let kmer_positions = kmer_seeds
+                    .entry(canonical_kmer)
+                    .or_insert(FxHashSet::default());
                 kmer_positions.insert(SeedPosition {
                     pos: i as GnPosition,
                     canonical,
@@ -362,7 +371,9 @@ pub fn fmh_seeds(
                 if hash < thresholds[j] {
                     //                    let kmer_seeds = kmer_seeds_k.entry(ks[j]).or_insert(MMHashMap::default());
                     let kmer_seeds = &mut kmer_seeds_k[ks[0]];
-                    let kmer_positions = kmer_seeds.entry(canonical_kmer).or_insert(FxHashSet::default());
+                    let kmer_positions = kmer_seeds
+                        .entry(canonical_kmer)
+                        .or_insert(FxHashSet::default());
                     kmer_positions.insert(SeedPosition {
                         pos: i as GnPosition,
                         canonical,
@@ -391,6 +402,126 @@ pub fn get_repetitive_kmers(kmer_seeds: &Vec<KmerSeeds>, repetitive_kmers: &mut 
                 max_repet_cutoff = usize::MAX;
             }
             repetitive_kmers[i] = max_repet_cutoff;
+        }
+    }
+}
+
+pub fn os_seeds_aa_with_orf(
+    string: &[u8],
+    sketch_params: &SketchParams,
+    contig_index: ContigIndex,
+    kmer_seeds_k: &mut Vec<KmerSeeds>,
+    orfs: Vec<Orf>,
+) {
+    let ks_aa = &sketch_params.ks;
+    let cs = &sketch_params.cs;
+    let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
+    let max_k_aa = *ks_aa.iter().max().unwrap();
+    let max_s_aa = 2;
+    if string.len() < 2 * max_k_aa {
+        return;
+    }
+    for i in 0..ks_aa.len() - 1 {
+        assert!(ks_aa[i + 1] >= ks_aa[i]);
+        assert!(cs[i + 1] >= cs[i]);
+    }
+    let num_bits = std::mem::size_of::<KmerBits>() * 8;
+    let reverse_shift_dist = 3 * 2 * max_k_aa - 2;
+    let reverse_shift_dist_aa = 5 * (max_k_aa - 1);
+    let forward_shift_rc = max_k_aa * 3 * 2 - 6;
+    let max_mask = KmerBits::MAX >> (num_bits - 3 * 2 * max_k_aa);
+    let max_mask_aa = KmerBits::MAX >> (num_bits - 5 * max_k_aa);
+    let max_mask_s_aa = KmerBits::MAX >> (num_bits - 5 * max_s_aa);
+    let max_rev_mask = !(0 | (3 << (3 * 2 * max_k_aa - 2)));
+    //    let max_rev_mask_aa = !(0 | (31 << (5 * (max_k_aa - 1))));
+    let num_ks = ks_aa.len();
+    let three_mer_mask = 63;
+    let masks: Vec<KmerBits> = ks_aa
+        .iter()
+        .map(|x| KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 3 * 2 * x))
+        .collect();
+    let mut thresholds: Vec<u64> = vec![u64::MAX / (cs[0] as u64)];
+    for i in 1..cs.len() {
+        thresholds.push(u64::MAX / (cs[i] / cs[i - 1]) as u64);
+    }
+    let rev_partial_shift: Vec<KmerBits> = ks_aa
+        .iter()
+        .map(|x| 3 * 2 * (max_k_aa - *x) as KmerBits)
+        .collect();
+
+    let window_size = max_k_aa - max_s_aa + 1;
+    let t = window_size / 2;
+    for orf in orfs {
+        //        dbg!(&orf);
+        let phase = orf.phase;
+        let rc = phase > 2;
+        let start = orf.start;
+        let end = orf.end + 3;
+        let range = start..end;
+        let mut rolling_kmer: KmerBits = 0;
+        let mut rolling_aa_kmer = 0;
+        let mut aa_smer = 0;
+        let mut circ_buffer = vec![0; window_size];
+        let mut running_circ = 0;
+
+        let mut j = 0;
+        for i in range {
+            let nuc_f = BYTE_TO_SEQ[string[i] as usize];
+            if !rc {
+                rolling_kmer <<= 2;
+                rolling_kmer |= nuc_f;
+                rolling_kmer &= max_mask;
+            } else {
+                let nuc_r = 3 - nuc_f;
+                rolling_kmer >>= 2;
+                rolling_kmer &= max_rev_mask;
+                rolling_kmer |= nuc_r << reverse_shift_dist;
+                rolling_kmer &= max_mask;
+            }
+            if j >= 2 && (j - 2) % 3 == 0 {
+                if !rc {
+                    rolling_aa_kmer <<= 5;
+                    rolling_aa_kmer |= kmer_to_aa_table[(rolling_kmer & three_mer_mask) as usize];
+                    rolling_aa_kmer &= max_mask_aa;
+                    aa_smer = rolling_aa_kmer & max_mask_s_aa;
+                } else {
+                    rolling_aa_kmer >>= 5;
+                    rolling_aa_kmer |= kmer_to_aa_table
+                        [(rolling_kmer >> forward_shift_rc) as usize]
+                        << reverse_shift_dist_aa;
+//                    aa_smer = rolling_aa_kmer & (max_mask_s_aa << (max_k_aa - max_s_aa));
+                    aa_smer = rolling_aa_kmer >> (max_k_aa - max_s_aa);
+                }
+
+                if j >= max_s_aa * 3 - 1 {
+                    circ_buffer[running_circ] = aa_smer;
+                    running_circ += 1
+                }
+
+                if num_ks == 1 && j >= max_k_aa * 3 - 1 {
+                    let min_pos = position_min(&circ_buffer).unwrap();
+                    if min_pos == (running_circ + t) % window_size{
+                        let hash = mm_hash64(rolling_aa_kmer as u64);
+                        if hash < thresholds[0] {
+                            let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
+                            let kmer_positions = kmer_seeds
+                                .entry(rolling_aa_kmer)
+                                .or_insert(FxHashSet::default());
+
+                            kmer_positions.insert(SeedPosition {
+                                pos: i as GnPosition,
+                                canonical: !rc,
+                                contig_index,
+                                phase: phase as u8,
+                            });
+                        }
+                    }
+                }
+            }
+            j += 1;
+            if running_circ == window_size {
+                running_circ = 0;
+            }
         }
     }
 }

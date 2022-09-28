@@ -28,7 +28,7 @@ pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
 pub type KmerToSketch = MMHashMap<KmerBits, Vec<Sketch>>;
-pub type KmerSeeds = MMHashMap<KmerBits, FxHashSet<SeedPosition>>;
+pub type KmerSeeds = FxHashMap<KmerBits, FxHashSet<SeedPosition>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -199,12 +199,13 @@ pub struct Anchor {
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 pub struct ChainInterval {
+    pub score: f64,
     pub num_anchors: usize,
     pub interval_on_query: (GnPosition, GnPosition),
     pub interval_on_ref: (GnPosition, GnPosition),
     pub ref_contig: usize,
     pub query_contig: usize,
-    pub score: f64,
+    pub chunk_id: usize,
 }
 impl ChainInterval {
     pub fn query_range_len(&self) -> GnPosition {
