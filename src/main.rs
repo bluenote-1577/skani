@@ -2,8 +2,10 @@ use clap::{AppSettings, Arg, Command, SubCommand};
 use rayon::prelude::*;
 use std::sync::Mutex;
 use log::LevelFilter;
+use log::{info, debug};
 use simple_logging;
 use skani::chain;
+use skani::screen;
 use skani::file_io;
 use skani::params;
 use skani::types;
@@ -34,14 +36,12 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.")
-                        .default_value(params::DEFAULT_K)
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
                         .help("compression factor.")
-                        .default_value(params::DEFAULT_C)
                         .takes_value(true),
                 )
                 .arg(
@@ -66,14 +66,12 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.")
-                        .default_value(params::DEFAULT_K)
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
                         .help("compression factor.")
-                        .default_value(params::DEFAULT_C)
                         .takes_value(true),
                 )
                 .arg(
@@ -88,12 +86,14 @@ fn main() {
                         .help("query fasta.")
                         .takes_value(true),
                 )
-                .arg(Arg::new("a").short('a').help("use amino acid alphabet."))
+                .arg(Arg::new("aai").short('a').long("aai").help("use amino acid alphabet."))
                 .arg(Arg::new("v").short('v').help("verbose."))
+                .arg(Arg::new("trace").long("trace").help("verbose."))
                 .arg(Arg::new("m").short('m').help("distance matrix. "))
                 .arg(Arg::new("e").short('e').help("eukaryotic option. Changes mapping parameters"))
                 .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
                 .arg(Arg::new("t").short('t').default_value("20").help("threads. ").takes_value(true))
+                .arg(Arg::new("s").short('s').takes_value(true).help("screen. "))
         )
         .get_matches();
 
@@ -120,6 +120,12 @@ fn main() {
         .build_global()
         .unwrap();
 
+    let amino_acid;
+    if matches_subc.is_present("aai") {
+        amino_acid = true;
+    } else {
+        amino_acid = false;
+    }
 
     let ref_files: Vec<&str>;
     if let Some(values) = matches_subc.values_of("reference") {
@@ -127,9 +133,11 @@ fn main() {
     } else {
         ref_files = vec![];
     }
+    let def_k = if amino_acid{params::DEFAULT_K_AAI} else {params::DEFAULT_K};
+    let def_c = if amino_acid{params::DEFAULT_C_AAI} else {params::DEFAULT_C};
     let k = matches_subc
         .value_of("k")
-        .unwrap()
+        .unwrap_or(def_k)
         .parse::<usize>()
         .unwrap();
     let ks = vec![k];
@@ -142,32 +150,40 @@ fn main() {
         use_syncs = false;
         c = matches_subc
             .value_of("c")
-            .unwrap()
+            .unwrap_or(def_c)
             .parse::<usize>()
             .unwrap();
     }
     let cs = vec![c];
-    let amino_acid;
-    if mode == classify {
-        amino_acid = false;
-    } else if matches_subc.is_present("a") {
-        amino_acid = true;
-    } else {
-        amino_acid = false;
-    }
+    
     let euk = matches_subc.is_present("e");
     let mat_file_name = matches_subc.value_of("o").unwrap_or("skani_res");
-    if mode == dist && matches_subc.is_present("m") {
-        simple_logging::log_to_stderr(LevelFilter::Warn);
-    } else {
-        simple_logging::log_to_stderr(LevelFilter::Info);
-    }
+    simple_logging::log_to_stderr(LevelFilter::Info);
+//    if mode == dist && matches_subc.is_present("m") {
+//        simple_logging::log_to_stderr(LevelFilter::Warn);
+//    } else {
+//        simple_logging::log_to_stderr(LevelFilter::Info);
+//    }
     if matches_subc.is_present("v") {
+        simple_logging::log_to_stderr(LevelFilter::Debug);
+    }
+    if matches_subc.is_present("trace") {
         simple_logging::log_to_stderr(LevelFilter::Trace);
     }
-    let sketch_params = params::SketchParams::new(cs, ks, use_syncs, amino_acid);
+    let screen = matches_subc.is_present("s");
+    let screen_val;
+    if screen{
+        screen_val = matches_subc.value_of("s").unwrap().parse::<f64>().unwrap();
+    }
+    else{
+        screen_val = 0.;
+    }
+
+    let sketch_params = params::SketchParams::new(cs, ks, use_syncs, amino_acid, euk);
+
     let now = Instant::now();
     let ref_sketches = file_io::fastx_to_sketches(ref_files, &sketch_params);
+    let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
     let query_sketches;
     let triangle;
     if mode == classify {
@@ -189,29 +205,45 @@ fn main() {
     } else {
         panic!("MODE ERROR");
     }
-    println!("Generating sketch time: {}", now.elapsed().as_secs_f32());
+    info!("Generating sketch time: {}", now.elapsed().as_secs_f32());
+
+    
     let now = Instant::now();
     if mode == classify {
         for query_sketch in query_sketches.iter() {
             let now = Instant::now();
             for ref_sketch in ref_sketches.iter() {
-                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk);
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk, screen);
                 chain::chain_seeds(ref_sketch, query_sketch, map_params);
             }
-            println!("Alignment time: {}", now.elapsed().as_secs_f32());
+            info!("Alignment time: {}", now.elapsed().as_secs_f32());
         }
     } else if mode == dist {
         if triangle {
             let anis :Mutex<Vec<_>> =
                 Mutex::new(vec![vec![types::AniEstResult::default(); ref_sketches.len()]; ref_sketches.len()]);
             (0..ref_sketches.len()-1).collect::<Vec<usize>>().into_par_iter().for_each( |i| {
-                for j in i + 1..ref_sketches.len(){
-                    let ref_sketch_i = &ref_sketches[i];
-                    let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid, euk);
-                    let ref_sketch_j = &ref_sketches[j];
-                    let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
-                    let mut locked = anis.lock().unwrap();
-                    locked[i][j] = ani_res;
+                let screened_refs;
+                let ref_sketch_i = &ref_sketches[i];
+                if screen{
+                    screened_refs = screen::screen_refs(screen_val, &kmer_to_sketch, &ref_sketch_i, &sketch_params);
+                    info!("{} has {} refs passing screening.", ref_sketch_i.file_name, screened_refs.len());
+                }
+                else{
+                    screened_refs = (i+1..ref_sketches.len()).collect::<Vec<usize>>();
+                }
+                for j in i+1..ref_sketches.len(){
+//                    {
+//                        let mut locked = anis.lock().unwrap();
+//                        locked[i][j].ani = 0.;
+//                    }
+                    if screened_refs.contains(&j){
+                        let map_params = chain::map_params_from_sketch(ref_sketch_i, mode, amino_acid, euk, screen);
+                        let ref_sketch_j = &ref_sketches[j];
+                        let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                        let mut locked = anis.lock().unwrap();
+                        locked[i][j] = ani_res;
+                    }
                 }
             });
             let anis = anis.into_inner().unwrap();
@@ -219,9 +251,17 @@ fn main() {
         }
         else{
             let anis: Mutex<Vec<_>>  = Mutex::new(vec![]);
-            (0..ref_sketches.len()).collect::<Vec<usize>>().into_par_iter().for_each( |i| {
+            let screened_refs;
+            if screen{
+                screened_refs = screen::screen_refs(screen_val, &kmer_to_sketch, &query_sketches[0], &sketch_params);
+                info!("{} has {} refs passing screening.", &query_sketches[0].file_name, screened_refs.len());
+            }
+            else{
+                screened_refs = (0..ref_sketches.len()).collect::<Vec<usize>>();
+            }
+            screened_refs.into_par_iter().for_each( |i| {
                 let ref_sketch = &ref_sketches[i];
-                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk);
+                let map_params = chain::map_params_from_sketch(ref_sketch, mode, amino_acid, euk, screen);
                 let ani_res = chain::chain_seeds(ref_sketch, &query_sketches[0], map_params);
                 let mut locked = anis.lock().unwrap();
                 locked.push(ani_res);
@@ -230,5 +270,5 @@ fn main() {
             file_io::write_query_ref_list(&anis, &mat_file_name);
         }
     }
-    println!("Alignment time: {}", now.elapsed().as_secs_f32());
+    info!("Alignment time: {}", now.elapsed().as_secs_f32());
 }

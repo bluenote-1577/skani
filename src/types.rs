@@ -1,4 +1,5 @@
 use debruijn::kmer::*;
+use smallvec::SmallVec;
 use crate::params::*;
 use fxhash::{FxHashMap, FxHashSet};
 use partitions::*;
@@ -27,8 +28,9 @@ pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
-pub type KmerToSketch = MMHashMap<KmerBits, Vec<Sketch>>;
-pub type KmerSeeds = FxHashMap<KmerBits, FxHashSet<SeedPosition>>;
+pub const SMALL_VEC_SIZE: usize = 1;
+pub type KmerToSketch<'a> = MMHashMap<KmerBits, FxHashSet<usize>>;
+pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -36,6 +38,8 @@ pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
 pub type NoHashMap<K, V> = HashMap<K, V, BuildHasherDefault<NoHashHasher<KmerBits>>>;
 pub type NoHashSet<K> = HashSet<K, BuildHasherDefault<NoHashHasher<KmerBits>>>;
+
+
 
 #[inline]
 pub fn mm_hash64(kmer: u64) -> u64 {
@@ -77,12 +81,21 @@ impl Hash for SeedPosition{
     }
 }
 
+#[derive(Eq, PartialEq)]
 pub struct Sketch {
     pub file_name: String,
     pub kmer_seeds_k: Vec<KmerSeeds>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
-    pub repetitive_kmers: Vec<usize>
+    pub repetitive_kmers: Vec<usize>,
+    pub marker_seeds: FxHashSet<KmerBits>,
+    pub c: usize
+}
+
+impl Hash for Sketch{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.file_name.hash(state);
+    }
 }
 impl Default for Sketch {
     fn default() -> Self {
@@ -91,7 +104,9 @@ impl Default for Sketch {
             kmer_seeds_k: vec![KmerSeeds::default(); std::mem::size_of::<KmerBits>() * 4],
             contigs: vec![],
             total_sequence_length: 0,
-            repetitive_kmers: vec![usize::MAX; std::mem::size_of::<KmerBits>() * 4]
+            repetitive_kmers: vec![usize::MAX; std::mem::size_of::<KmerBits>() * 4],
+            marker_seeds: FxHashSet::default(),
+            c: 0
         };
     }
 }
@@ -253,7 +268,8 @@ pub struct Orf{
 #[derive(Default, Clone, Debug)]
 pub struct AniEstResult{
     pub ani: f64,
-    pub align_fraction: f64,
+    pub align_fraction_query: f64,
+    pub align_fraction_ref: f64,
     pub ref_file: String,
     pub query_file: String,
     pub query_contig: String,
