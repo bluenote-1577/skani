@@ -1,4 +1,5 @@
 pub mod types;
+pub mod parse;
 pub mod params;
 pub mod chain;
 pub mod file_io;

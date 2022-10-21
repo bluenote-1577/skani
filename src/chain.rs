@@ -5,6 +5,9 @@ use fxhash::FxHashMap;
 use log::{debug, info, trace, warn};
 use partitions::*;
 use std::mem;
+extern crate interval;
+use gcollections::ops::set::*;
+use interval::interval_set::*;
 
 fn wilson_interval(n: f64, n_s: f64, k: usize) -> (f64, f64) {
     let z = 2.0;
@@ -19,15 +22,8 @@ fn wilson_interval(n: f64, n_s: f64, k: usize) -> (f64, f64) {
     return (upper - mid, mid - lower);
 }
 
-pub fn map_params_from_sketch(
-    ref_sketch: &Sketch,
-    mode: &str,
-    amino_acid: bool,
-    euk: bool,
-    screen: bool,
-) -> MapParams {
-    let fragment_length =
-        fragment_length_formula(ref_sketch.total_sequence_length, amino_acid, euk);
+pub fn map_params_from_sketch(ref_sketch: &Sketch, amino_acid: bool, robust: bool) -> MapParams {
+    let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let max_gap_length = D_MAX_GAP_LENGTH;
     let anchor_score = 50.;
     let min_anchors = 4;
@@ -40,7 +36,6 @@ pub fn map_params_from_sketch(
         frac_cover_cutoff = D_FRAC_COVER_CUTOFF;
     }
     let length_cover_cutoff = 5000000;
-    let mode = mode.to_string();
     let chain_band = D_CHAIN_BAND;
     let min_score = min_anchors as f64 * anchor_score;
     let valid_ks: Vec<(_, _)> = ref_sketch
@@ -49,6 +44,9 @@ pub fn map_params_from_sketch(
         .enumerate()
         .filter(|x| x.1.len() > 0)
         .collect();
+    if valid_ks.len() == 0 {
+        return MapParams::default();
+    }
     let k = valid_ks.iter().max_by(|x, y| x.0.cmp(&y.0)).unwrap().0;
     return MapParams {
         fragment_length,
@@ -56,15 +54,13 @@ pub fn map_params_from_sketch(
         anchor_score,
         min_anchors,
         length_cutoff,
-        mode,
         frac_cover_cutoff,
         length_cover_cutoff,
         chain_band,
         k,
         amino_acid,
         min_score,
-        euk,
-        screen,
+        robust,
     };
 }
 
@@ -105,11 +101,12 @@ fn calculate_ani(
     let mut ani_ests = vec![];
     let mut num_good_chunks = 0;
     let mut all_anchors_total = 0;
-    let mut total_query_range = 0;
+    let mut total_query_bases = 0;
     let mut total_ref_range = 0;
     let mut num_seeds_total = 0;
     for (i, intervals) in int_chunks.iter().enumerate() {
         let mut max_anchors = 0;
+        let mut all_intervals = vec![].to_interval_set();
         let mut total_anchors = 0;
         let mut total_bases_contained_query = 0;
         let mut total_bases_contained_ref = 0;
@@ -145,20 +142,62 @@ fn calculate_ani(
                     + map_params.k as GnPosition
                     + 2 * ref_sketch.c as GnPosition;
             }
+
+            let start =
+                (i32::max(int.interval_on_query.0 as i32 - 1 * ref_sketch.c as i32, 0)) as u32;
+            let stop = int.interval_on_query.1 + 1 * ref_sketch.c as u32;
+            all_intervals = all_intervals.union(&vec![(start, stop)].to_interval_set());
+            //interval_vec.insert(int_insert, i);
         }
 
         if total_anchors == 0 {
             continue;
         }
+
+        let mut num_seeds_in_intervals = 0;
+        let mut upper_lower_seeds = 0;
+        for pos in anchor_chunks.seeds_in_chunk[i].iter() {
+            if all_intervals.contains(pos) {
+                num_seeds_in_intervals += 1;
+            }
+        }
+        let spacing_est = (total_range_query.1 - total_range_query.0
+            + 2 * ref_sketch.c as GnPosition)
+            / num_seeds_in_intervals as GnPosition;
+        for pos in anchor_chunks.seeds_in_chunk[i].iter() {
+            if *pos + spacing_est >= total_range_query.0
+                && *pos <= total_range_query.1 + spacing_est
+            {
+                upper_lower_seeds += 1;
+            }
+        }
+        let mut anchors_in_chunk_considered = anchor_chunks.seeds_in_chunk[i].len();
+        //        dbg!(num_seeds_in_intervals, anchors_in_chunk_considered, total_anchors);
+        let putative_ani = f64::powf(
+            //            total_anchors as f64 / (num_seeds_in_intervals) as f64,
+            total_anchors as f64 / (upper_lower_seeds) as f64,
+            1. / k as f64,
+        );
+        if total_bases_contained_query < ref_sketch.c as GnPosition * 20{
+            continue;
+        }
+        if putative_ani > 0.940 && total_bases_contained_query > ref_sketch.c as GnPosition * 20 {
+            //            anchors_in_chunk_considered = num_seeds_in_intervals;
+            anchors_in_chunk_considered = upper_lower_seeds;
+        }
+        //        else if putative_ani > 0.950{
+        //            anchors_in_chunk_considered = upper_lower_seeds;
+        //        }
+
         let ml_hits = if map_params.amino_acid {
             f64::min(
                 1.,
-                total_anchors as f64 / anchor_chunks.seeds_in_chunk[i] as f64 * 6.,
+                total_anchors as f64 / anchors_in_chunk_considered as f64 * 6.,
             )
         } else {
             f64::min(
                 1.,
-                total_anchors as f64 / anchor_chunks.seeds_in_chunk[i] as f64,
+                total_anchors as f64 / anchors_in_chunk_considered as f64,
             )
         };
         let ani_est = if map_params.amino_acid {
@@ -166,8 +205,8 @@ fn calculate_ani(
         } else {
             f64::powf(ml_hits, 1. / k as f64)
         };
-        total_query_range += total_bases_contained_query + 2 * ref_sketch.c as GnPosition;
-        total_ref_range += total_bases_contained_ref + 2 * ref_sketch.c as GnPosition;
+        total_query_bases += total_bases_contained_query;
+        total_ref_range += total_bases_contained_ref;
 
         //        total_bases_contained_query =
         //            total_range_query.1 - total_range_query.0 + map_params.k as GnPosition;
@@ -178,8 +217,8 @@ fn calculate_ani(
         //        total_ref_range += total_bases_contained_ref;
 
         //        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i]));
-        //        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i]));
-        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i]));
+        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i].len()));
+        //                ani_ests.push((ani_est, upper_lower_seeds));
         trace!(
             "Ani est fragment {}, total range {:?}, total anchors {}, seeds in fragment {:?}",
             ani_est,
@@ -193,40 +232,63 @@ fn calculate_ani(
             intervals[0].num_anchors
         );
         all_anchors_total += total_anchors;
-        num_seeds_total += anchor_chunks.seeds_in_chunk[i];
+        num_seeds_total += anchor_chunks.seeds_in_chunk[i].len();
         num_good_chunks += 1;
     }
     ani_ests.sort_by(|x, y| x.partial_cmp(&y).unwrap());
 
-//    for ani in ani_ests.iter(){
-//        println!("{},{}", ani.0, ani.1);
-//    }
+    let mut ani_est_multiplicity = vec![];
+    for ani in ani_ests.iter() {
+        //        println!("{},{}", ani.0, ani.1);
+        for _ in 0..ani.1 {
+            ani_est_multiplicity.push(ani.0);
+        }
+    }
 
     if ani_ests.len() == 0 {
         let mut ret = AniEstResult::default();
         ret.ani = f64::NAN;
         return ret;
     }
-    let lower = 10 * ani_ests.len() / 100;
-    let upper = 90 * ani_ests.len() / 100;
+    let lower;
+    let upper;
+    let robust;
+    if ref_sketch.total_sequence_length / ref_sketch.contigs.len() < 30000
+        && query_sketch.total_sequence_length / query_sketch.contigs.len() < 30000
+    {
+        robust = true
+    } else {
+        robust = false;
+    }
+    if robust {
+        lower = 10 * ani_est_multiplicity.len() / 100;
+        upper = 90 * ani_est_multiplicity.len() / 100;
+    } else {
+        lower = 0;
+        upper = ani_est_multiplicity.len() - 1;
+    }
+
     let mut weighted_avg = 0.;
     let mut total_weight_interval = 0;
     for i in lower..upper + 1 {
-        weighted_avg += ani_ests[i].0 * (ani_ests[i].1 as f64);
-        total_weight_interval += ani_ests[i].1;
+        weighted_avg += ani_est_multiplicity[i];
+        //        weighted_avg += ani_ests[i].0 * (ani_ests[i].1 as f64);
+        //        total_weight_interval += ani_ests[i].1;
     }
-    let mut final_ani = weighted_avg / total_weight_interval as f64;
-    //    let final_ani = quantile_slice.iter().sum::<f64>() / quantile_slice.len() as f64;
+    //    let mut final_ani = weighted_avg / total_weight_interval as f64;
+    let mut final_ani = weighted_avg / (upper - lower + 1) as f64;
 
     let (upper, lower) = wilson_interval(num_seeds_total as f64, all_anchors_total as f64, k);
-    let covered_query = f64::min(1., total_query_range as f64 / query_sketch.total_sequence_length as f64);
-    let covered_ref = f64::min(1.,total_ref_range as f64 / ref_sketch.total_sequence_length as f64);
+    let covered_query = f64::min(
+        1.,
+        total_query_bases as f64 / query_sketch.total_sequence_length as f64,
+    );
+    let covered_ref = f64::min(
+        1.,
+        total_ref_range as f64 / ref_sketch.total_sequence_length as f64,
+    );
     let q_string;
-    if map_params.mode == "classify" {
-        q_string = &query_sketch.contigs[0];
-    } else {
-        q_string = &query_sketch.file_name;
-    }
+    q_string = &query_sketch.file_name;
     let id_string = if map_params.amino_acid { "AAI" } else { "ANI" };
     debug!(
         "Query {} Ref {} - {} {}, +/- = {}/{}. Covered {}",
@@ -240,7 +302,7 @@ fn calculate_ani(
     );
 
     if covered_query < map_params.frac_cover_cutoff
-        && total_query_range < map_params.length_cover_cutoff as GnPosition
+        && total_query_bases < map_params.length_cover_cutoff as GnPosition
     {
         final_ani = -1.;
     }
@@ -284,6 +346,10 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
         d_r = acrpf64 - aprpf64;
     }
 
+    if d_q > D_MAX_LIN_LENGTH || d_r > D_MAX_LIN_LENGTH {
+        return f64::MIN;
+    }
+
     if d_r <= 0. {
         return f64::MIN;
     }
@@ -292,11 +358,11 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
     if gap > map_params.max_gap_length {
         return f64::MIN;
     }
-//    let ol_q = f64::max(0., map_params.k as f64 - d_q);
-//    let ol_r = f64::max(0., map_params.k as f64 - d_r);
-//    let ol = f64::max(ol_q, ol_r);
-//    return map_params.anchor_score * (1. - ol / map_params.k as f64) - gap;
-    return  map_params.anchor_score - gap
+    //    let ol_q = f64::max(0., map_params.k as f64 - d_q);
+    //    let ol_r = f64::max(0., map_params.k as f64 - d_r);
+    //    let ol = f64::max(ol_q, ol_r);
+    //    return map_params.anchor_score * (1. - ol / map_params.k as f64) - gap;
+    return map_params.anchor_score - gap;
 }
 
 fn get_anchors(
@@ -309,8 +375,14 @@ fn get_anchors(
     let kmer_seeds_query;
     let mut query_positions_all;
     let switched;
-    //    if query_sketch.contigs.len() < ref_sketch.contigs.len(){
-    if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
+    let score_query = query_sketch.total_sequence_length as f64
+        * (query_sketch.total_sequence_length as f64 / query_sketch.contigs.len() as f64).ln();
+    let score_ref = ref_sketch.total_sequence_length as f64
+        * (ref_sketch.total_sequence_length as f64 / ref_sketch.contigs.len() as f64).ln();
+
+    //        if query_sketch.contigs.len() < ref_sketch.contigs.len(){
+    //    if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
+    if score_query > score_ref {
         switched = true;
         kmer_seeds_ref = &query_sketch.kmer_seeds_k[k];
         kmer_seeds_query = &ref_sketch.kmer_seeds_k[k];
@@ -332,13 +404,11 @@ fn get_anchors(
         }
         let contains = kmer_seeds_ref.contains_key(canon_kmer);
 
-        if !contains{
+        if !contains {
             for qpos in query_pos.iter() {
                 query_positions_all[qpos.contig_index as usize].push(qpos.pos);
             }
-        }
-
-        else {
+        } else {
             let ref_pos = &kmer_seeds_ref[canon_kmer];
 
             if ref_pos.len() > ref_sketch.repetitive_kmers[k] {
@@ -361,7 +431,7 @@ fn get_anchors(
                     ));
                 }
             }
-        } 
+        }
     }
     if anchors.is_empty() {
         info!(
@@ -401,6 +471,7 @@ fn get_anchors(
                 continue;
             }
             let mut num_seeds_in_block = 0;
+            let mut seed_pos_in_block = vec![];
             let mut first_iter = true;
             loop {
                 if running_counter >= query_positions_all[last_query_contig as usize].len() {
@@ -411,16 +482,24 @@ fn get_anchors(
                 {
                     if first_iter {
                         first_iter = false;
-                        trace!("start {}", query_positions_all[last_query_contig as usize][running_counter]);
+                        trace!(
+                            "start {}",
+                            query_positions_all[last_query_contig as usize][running_counter]
+                        );
                     }
+                    seed_pos_in_block
+                        .push(query_positions_all[last_query_contig as usize][running_counter]);
                     running_counter += 1;
-                    num_seeds_in_block += 1
+                    num_seeds_in_block += 1;
                 } else {
-                    trace!("end {}", query_positions_all[last_query_contig as usize][running_counter-1]);
+                    trace!(
+                        "end {}",
+                        query_positions_all[last_query_contig as usize][running_counter - 1]
+                    );
                     break;
                 }
             }
-            block_seeds.push(num_seeds_in_block);
+            block_seeds.push(seed_pos_in_block);
             curr_end_point += map_params.fragment_length as u32;
             chunks.push(mem::take(&mut curr_anchor_chunk));
             curr_anchor_chunk = vec![];
@@ -435,6 +514,7 @@ fn get_anchors(
     }
     if curr_anchor_chunk.len() > 0 {
         let mut num_seeds_in_block = 0;
+        let mut seed_pos_in_block = vec![];
         loop {
             if query_positions_all[last_query_contig as usize].is_empty() {
                 warn!("{}", &query_sketch.contigs[last_query_contig as usize]);
@@ -448,6 +528,8 @@ fn get_anchors(
                 || (last_query_contig
                     != curr_anchor_chunk[curr_anchor_chunk.len() - 1].query_contig)
             {
+                seed_pos_in_block
+                    .push(query_positions_all[last_query_contig as usize][running_counter]);
                 running_counter += 1;
                 num_seeds_in_block += 1;
             } else {
@@ -459,7 +541,7 @@ fn get_anchors(
                 - curr_anchor_chunk[0].query_pos,
         );
         chunks.push(mem::take(&mut curr_anchor_chunk));
-        block_seeds.push(num_seeds_in_block);
+        block_seeds.push(seed_pos_in_block);
     }
 
     assert!(block_seeds.len() == chunks.len());

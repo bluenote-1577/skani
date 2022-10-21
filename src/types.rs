@@ -1,4 +1,6 @@
 use debruijn::kmer::*;
+use serde::{Deserialize, Serialize};
+// bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
 use crate::params::*;
 use fxhash::{FxHashMap, FxHashSet};
@@ -7,9 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
 use nohash_hasher::NoHashHasher;
-
-
-
 
 pub const BYTE_TO_SEQ: [KmerBits; 256] = [
     0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -28,9 +27,10 @@ pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
-pub const SMALL_VEC_SIZE: usize = 1;
 pub type KmerToSketch<'a> = MMHashMap<KmerBits, FxHashSet<usize>>;
+pub const USE_SMALLVEC: bool = false;
 pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
+//pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -67,7 +67,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     return key;
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize)]
 pub struct SeedPosition{
     pub pos: GnPosition,
     pub canonical: bool,
@@ -81,7 +81,7 @@ impl Hash for SeedPosition{
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct Sketch {
     pub file_name: String,
     pub kmer_seeds_k: Vec<KmerSeeds>,
@@ -255,7 +255,7 @@ impl Anchor {
 pub struct AnchorChunks {
     pub chunks: Vec<Vec<Anchor>>,
     pub lengths: Vec<u32>,
-    pub seeds_in_chunk: Vec<usize>,
+    pub seeds_in_chunk: Vec<Vec<GnPosition>>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Hash, Debug)]

@@ -14,8 +14,10 @@ pub fn screen_refs(identity: f64, kmer_to_sketch: &KmerToSketch, query_sketch: &
             }
         }
     }
-    let cutoff = identity.powi(sketch_params.ks[0] as i32) * query_sketch.marker_seeds.len() as f64;
-    dbg!(cutoff);
+    //Use fixed K value for AA markers, but flexible ones for DNA because saturation less of an
+    //issue.
+    let k = if sketch_params.use_aa {K_MARKER_AA} else {sketch_params.ks[0]};
+    let cutoff = identity.powi(k as i32) * query_sketch.marker_seeds.len() as f64;
     let ret = count_hash_map.iter().filter(|x| *x.1 > (cutoff as usize)).map(|x| **x.0).collect();
     return ret;
 }

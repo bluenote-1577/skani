@@ -9,7 +9,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::sync::Mutex;
 
-pub fn fastx_to_sketches(ref_files: Vec<&str>, sketch_params: &SketchParams) -> Vec<Sketch> {
+pub fn fastx_to_sketches(ref_files: Vec<String>, sketch_params: &SketchParams) -> Vec<Sketch> {
     let ref_sketches: Mutex<Vec<_>> = Mutex::new(vec![]);
     (0..ref_files.len())
         .collect::<Vec<usize>>()
@@ -21,7 +21,7 @@ pub fn fastx_to_sketches(ref_files: Vec<&str>, sketch_params: &SketchParams) -> 
             new_sketch.file_name = ref_file.to_string();
             new_sketch.c = sketch_params.cs[0];
             let mut i = 0;
-//            let mut reader = parse_fastx_file(&ref_file).expect(ref_file);
+            //            let mut reader = parse_fastx_file(&ref_file).expect(ref_file);
             let reader = parse_fastx_file(&ref_file);
             if !reader.is_ok() {
                 warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
@@ -31,47 +31,54 @@ pub fn fastx_to_sketches(ref_files: Vec<&str>, sketch_params: &SketchParams) -> 
                 while let Some(record) = reader.next() {
                     let record = record.expect(&format!("Invalid record for file {}", ref_file));
                     let contig = record.id();
-                    new_sketch
-                        .contigs
-                        .push(String::from_utf8(contig.to_vec()).unwrap());
                     let seq = record.seq();
-                    new_sketch.total_sequence_length += seq.len();
-                    if sketch_params.use_aa {
-                        let orfs = seeding::get_orfs(&seq, sketch_params);
-                        if sketch_params.use_syncs {
-                            seeding::os_seeds_aa_with_orf(
-                                //            seeding::fmh_seeds_aa(
-                                &seq,
-                                sketch_params,
-                                i as u32,
-                                &mut new_sketch.kmer_seeds_k,
-                                orfs,
-                            );
+                    if seq.len() >= MIN_LENGTH_CONTIG {
+                        new_sketch
+                            .contigs
+                            .push(String::from_utf8(contig.to_vec()).unwrap());
+
+                        new_sketch.total_sequence_length += seq.len();
+                        if sketch_params.use_aa {
+                            let orfs = seeding::get_orfs(&seq, sketch_params);
+                            if sketch_params.use_syncs {
+                                seeding::os_seeds_aa_with_orf(
+                                    //            seeding::fmh_seeds_aa(
+                                    &seq,
+                                    sketch_params,
+                                    i as u32,
+                                    &mut new_sketch.kmer_seeds_k,
+                                    orfs,
+                                );
+                            } else {
+                                seeding::fmh_seeds_aa_with_orf(
+                                    //            seeding::fmh_seeds_aa(
+                                    &seq,
+                                    sketch_params,
+                                    i as u32,
+                                    &mut new_sketch,
+                                    orfs,
+                                )
+                            }
                         } else {
-                            seeding::fmh_seeds_aa_with_orf(
-                                //            seeding::fmh_seeds_aa(
-                                &seq,
-                                sketch_params,
-                                i as u32,
-                                &mut new_sketch,
-                                orfs,
-                            )
+                            seeding::fmh_seeds(&seq, &sketch_params, i as u32, &mut new_sketch);
                         }
-                    } else {
-                        seeding::fmh_seeds(&seq, &sketch_params, i as u32, &mut new_sketch);
+                        i += 1;
                     }
-                    i += 1;
                 }
                 seeding::get_repetitive_kmers(
                     &new_sketch.kmer_seeds_k,
                     &mut new_sketch.repetitive_kmers,
                 );
 
-                let mut locked = ref_sketches.lock().unwrap();
-                locked.push(new_sketch);
+                {
+                    let mut locked = ref_sketches.lock().unwrap();
+                    locked.push(new_sketch);
+                }
             }
         });
-    return ref_sketches.into_inner().unwrap();
+    let mut ref_sketches = ref_sketches.into_inner().unwrap();
+    ref_sketches.sort_by(|x, y| x.file_name.cmp(&y.file_name));
+    return ref_sketches;
 }
 
 pub fn fastx_to_multiple_sketch_rewrite(
@@ -133,6 +140,9 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str) {
     let out_file = format!("{}", file_name);
     let mut out_file = File::create(out_file).expect(file_name);
     for i in 0..anis.len() {
+        if anis[i].ani < 0. || anis[i].ani.is_nan() {
+            continue;
+        }
         let ani = if anis[i].ani < 0. {
             "NA".to_string()
         } else {

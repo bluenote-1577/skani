@@ -1,12 +1,15 @@
 use crate::types::*;
+pub const SMALL_VEC_SIZE: usize = 1;
+use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
 pub const STOP_CODON: KmerBits = 21;
 pub const DEFAULT_C: &str = "100";
-pub const DEFAULT_C_AAI: &str = "20";
+pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
-pub const D_MAX_GAP_LENGTH: f64 = 500.;
+pub const D_MAX_GAP_LENGTH: f64 = 300.;
+pub const D_MAX_LIN_LENGTH: f64 = 5000.;
 pub const D_ANCHOR_SCORE: f64 = 50.;
 pub const D_MIN_ANCHORS: usize = 5;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
@@ -15,40 +18,61 @@ pub const D_FRAC_COVER_CUTOFF_AA: f64 = 0.02;
 pub const D_CHAIN_BAND: usize = 100;
 pub const ORF_SIZE: usize = 100;
 pub const MARKER_C: usize = 1000;
+pub const K_MARKER_AA: usize = 10;
+pub const K_MARKER_DNA: usize = 21;
+pub const DIST_STRING: &str = "dist";
+pub const SKETCH_STRING: &str = "sketch";
+pub const TRIANGLE_STRING: &str = "triangle";
+pub const CHUNK_SIZE_DNA: usize = 20000;
+pub const MIN_LENGTH_CONTIG: usize = 500;
 
-#[derive(Default)]
+#[derive(PartialEq)]
+pub enum Mode {
+    Sketch,
+    Dist,
+    Triangle,
+}
+
+#[derive(Default, PartialEq)]
 pub struct MapParams {
     pub fragment_length: usize,
     pub max_gap_length: f64,
     pub anchor_score: f64,
     pub min_anchors: usize,
     pub length_cutoff: usize,
-    pub mode: String,
     pub frac_cover_cutoff: f64,
     pub length_cover_cutoff: usize,
     pub chain_band: usize,
     pub k: usize,
     pub amino_acid: bool,
     pub min_score: f64,
-    pub euk: bool,
-    pub screen: bool
+    pub robust: bool
 }
 
-pub fn fragment_length_formula(n: usize, aa: bool, euk: bool) -> usize {
+pub struct CommandParams{
+    pub screen: bool,
+    pub screen_val: f64,
+    pub mode: Mode,
+    pub out_file_name: String,
+    pub ref_files: Vec<String>,
+    pub query_files: Vec<String>,
+    pub ref_is_sketch: bool,
+    pub query_is_sketch: bool,
+    pub robust: bool
+}
+
+pub fn fragment_length_formula(n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 10;
     if aa{
         return 20000;
     }
-    else if euk{
-        return 20000;
-    }
     else{
-        return 20000;
+        return CHUNK_SIZE_DNA;
     }
 //    return (n as f64).sqrt() as usize * 3;
 }
 
-#[derive(Default)]
+#[derive(Default,  PartialEq, Serialize, Deserialize)]
 pub struct SketchParams {
     pub cs: Vec<usize>,
     pub ks: Vec<usize>,
@@ -61,7 +85,7 @@ pub struct SketchParams {
 }
 
 impl SketchParams {
-    pub fn new(cs: Vec<usize>, ks: Vec<usize>, use_syncs: bool, use_aa: bool, euk: bool) -> SketchParams {
+    pub fn new(cs: Vec<usize>, ks: Vec<usize>, use_syncs: bool, use_aa: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
         let DNA_TO_AA: [u8; 64] =
             *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
@@ -95,7 +119,7 @@ impl SketchParams {
         for i in 0..64{
             acgt_to_aa_encoding[i] = letter_to_int_aa[&DNA_TO_AA[i]];
         }
-        let orf_size = if euk { 1000} else {75};
+        let orf_size = ORF_SIZE;
         let marker_c = MARKER_C;
         return SketchParams {
             cs,
