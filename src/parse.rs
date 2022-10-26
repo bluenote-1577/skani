@@ -1,10 +1,10 @@
 use crate::params::*;
 use clap::parser::ArgMatches;
-use std::fs::File;
-use std::io::{self, prelude::*, BufReader};
 use log::LevelFilter;
 use log::{debug, info};
 use rayon::prelude::*;
+use std::fs::File;
+use std::io::{self, prelude::*, BufReader};
 
 pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mode;
@@ -36,7 +36,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap();
 
     let amino_acid;
-    let robust = matches_subc.is_present("robust");
     if matches_subc.is_present("aai") {
         amino_acid = true;
     } else {
@@ -45,7 +44,11 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let mut ref_files: Vec<String>;
     let mut ref_file_list = None;
+    let mut sparse = false;
     if mode == Mode::Triangle {
+        sparse = matches_subc.is_present("sparse");
+    }
+    if mode == Mode::Triangle || mode == Mode::Sketch {
         if let Some(values) = matches_subc.values_of("fasta_files") {
             ref_files = values.map(|x| x.to_string()).collect();
         } else if let Some(values) = matches_subc.value_of("fasta_list") {
@@ -57,12 +60,15 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     } else {
         if let Some(values) = matches_subc.values_of("reference") {
             ref_files = values.map(|x| x.to_string()).collect();
+        } else if let Some(values) = matches_subc.value_of("ref_fasta_list") {
+            ref_files = vec![];
+            ref_file_list = Some(values);
         } else {
             panic!("No reference inputs found.");
         }
     }
 
-    if !ref_file_list.is_none(){
+    if !ref_file_list.is_none() {
         let ref_file_list = ref_file_list.unwrap();
         let file = File::open(ref_file_list).unwrap();
         let reader = BufReader::new(file);
@@ -75,13 +81,27 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let mut query_files = vec![];
+    let mut query_file_list = None;
     if mode == Mode::Dist {
         if let Some(values) = matches_subc.values_of("query") {
             query_files = values.map(|x| x.to_string()).collect();
-        } else {
-            query_files = vec![];
+        } else if let Some(values) = matches_subc.value_of("query_fasta_list") {
+            query_file_list = Some(values)
         }
     }
+
+    if !query_file_list.is_none() {
+        let query_file_list = query_file_list.unwrap();
+        let file = File::open(query_file_list).unwrap();
+        let reader = BufReader::new(file);
+        let mut temp_vec = vec![];
+
+        for line in reader.lines() {
+            temp_vec.push(line.unwrap().trim().to_string());
+        }
+        query_files = temp_vec;
+    }
+
     let def_k = if amino_acid { DEFAULT_K_AAI } else { DEFAULT_K };
     let def_c = if amino_acid { DEFAULT_C_AAI } else { DEFAULT_C };
     let k = matches_subc
@@ -89,7 +109,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap_or(def_k)
         .parse::<usize>()
         .unwrap();
-    let ks = vec![k];
     let c;
     let use_syncs = false;
     c = matches_subc
@@ -97,7 +116,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap_or(def_c)
         .parse::<usize>()
         .unwrap();
-    let cs = vec![c];
 
     let mut out_file_name = matches_subc
         .value_of("o")
@@ -118,29 +136,37 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         simple_logging::log_to_stderr(LevelFilter::Trace);
     }
 
-    let mut screen = false;
     let mut screen_val = 0.;
+    let mut robust = false;
+    let mut median = false;
+    let screen = matches_subc.is_present("s");
     if mode != Mode::Sketch {
-        screen = matches_subc.is_present("s");
         if screen {
             screen_val = matches_subc.value_of("s").unwrap().parse::<f64>().unwrap();
         } else {
             screen_val = 0.;
         }
+        robust = matches_subc.is_present("robust");
+        median = matches_subc.is_present("median");
     }
 
-    let sketch_params = SketchParams::new(cs, ks, use_syncs, amino_acid);
+    let sketch_params = SketchParams::new(c, k, use_syncs, amino_acid, !screen && mode == Mode::Triangle);
 
-    let ref_is_sketch = if ref_files.len() == 1 && ref_files[0].contains(".sketch") {
-        true
-    } else {
-        false
-    };
-    let query_is_sketch = if query_files.len() == 1 && query_files[0].contains(".sketch") {
-        true
-    } else {
-        false
-    };
+    let mut refs_are_sketch = ref_files.len() > 0;
+    for ref_file in ref_files.iter() {
+        if !ref_file.contains(".sketch") {
+            refs_are_sketch = false;
+            break;
+        }
+    }
+
+    let mut queries_are_sketch = query_files.len() > 0;
+    for query_file in query_files.iter() {
+        if !query_file.contains(".sketch") {
+            queries_are_sketch = false;
+            break;
+        }
+    }
 
     let command_params = CommandParams {
         screen,
@@ -149,9 +175,11 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         out_file_name,
         ref_files,
         query_files,
-        ref_is_sketch,
-        query_is_sketch,
-        robust
+        refs_are_sketch,
+        queries_are_sketch,
+        robust,
+        median,
+        sparse,
     };
 
     return (sketch_params, command_params);

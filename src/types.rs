@@ -27,7 +27,7 @@ pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type KmerBits = u64;
-pub type KmerToSketch<'a> = MMHashMap<KmerBits, FxHashSet<usize>>;
+pub type KmerToSketch = MMHashMap<KmerBits, SmallVec<[usize; 1]>>;
 pub const USE_SMALLVEC: bool = false;
 pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 //pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
@@ -81,15 +81,16 @@ impl Hash for SeedPosition{
     }
 }
 
-#[derive(Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Sketch {
     pub file_name: String,
-    pub kmer_seeds_k: Vec<KmerSeeds>,
+    pub kmer_seeds_k: Option<KmerSeeds>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
-    pub repetitive_kmers: Vec<usize>,
+    pub repetitive_kmers: usize,
     pub marker_seeds: FxHashSet<KmerBits>,
-    pub c: usize
+    pub c: usize,
+    pub k: usize
 }
 
 impl Hash for Sketch{
@@ -101,12 +102,14 @@ impl Default for Sketch {
     fn default() -> Self {
         return Sketch {
             file_name: String::new(),
-            kmer_seeds_k: vec![KmerSeeds::default(); std::mem::size_of::<KmerBits>() * 4],
+            kmer_seeds_k: None,
             contigs: vec![],
             total_sequence_length: 0,
-            repetitive_kmers: vec![usize::MAX; std::mem::size_of::<KmerBits>() * 4],
+            repetitive_kmers: usize::MAX,
             marker_seeds: FxHashSet::default(),
-            c: 0
+            c: 0,
+            k: 0
+                
         };
     }
 }

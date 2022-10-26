@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
 pub const STOP_CODON: KmerBits = 21;
-pub const DEFAULT_C: &str = "100";
+pub const DEFAULT_C: &str = "80";
 pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
@@ -13,10 +13,10 @@ pub const D_MAX_LIN_LENGTH: f64 = 5000.;
 pub const D_ANCHOR_SCORE: f64 = 50.;
 pub const D_MIN_ANCHORS: usize = 5;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
-pub const D_FRAC_COVER_CUTOFF: f64 = 0.10;
-pub const D_FRAC_COVER_CUTOFF_AA: f64 = 0.02;
-pub const D_CHAIN_BAND: usize = 100;
-pub const ORF_SIZE: usize = 100;
+pub const D_FRAC_COVER_CUTOFF: f64 = 0.15;
+pub const D_FRAC_COVER_CUTOFF_AA: f64 = 0.05;
+pub const D_CHAIN_BAND: usize = 25;
+pub const ORF_SIZE: usize = 35;
 pub const MARKER_C: usize = 1000;
 pub const K_MARKER_AA: usize = 10;
 pub const K_MARKER_DNA: usize = 21;
@@ -46,7 +46,8 @@ pub struct MapParams {
     pub k: usize,
     pub amino_acid: bool,
     pub min_score: f64,
-    pub robust: bool
+    pub robust: bool,
+    pub median: bool
 }
 
 pub struct CommandParams{
@@ -56,9 +57,11 @@ pub struct CommandParams{
     pub out_file_name: String,
     pub ref_files: Vec<String>,
     pub query_files: Vec<String>,
-    pub ref_is_sketch: bool,
-    pub query_is_sketch: bool,
-    pub robust: bool
+    pub refs_are_sketch: bool,
+    pub queries_are_sketch: bool,
+    pub robust: bool,
+    pub median: bool,
+    pub sparse: bool
 }
 
 pub fn fragment_length_formula(n: usize, aa: bool) -> usize {
@@ -74,18 +77,19 @@ pub fn fragment_length_formula(n: usize, aa: bool) -> usize {
 
 #[derive(Default,  PartialEq, Serialize, Deserialize)]
 pub struct SketchParams {
-    pub cs: Vec<usize>,
-    pub ks: Vec<usize>,
+    pub c: usize,
+    pub k: usize,
     pub marker_c: usize,
     pub use_syncs: bool,
     pub use_aa: bool,
     pub acgt_to_aa_encoding: Vec<KmerBits>,
     pub acgt_to_aa_letters: Vec<u8>,
     pub orf_size: usize,
+    pub seed: bool,
 }
 
 impl SketchParams {
-    pub fn new(cs: Vec<usize>, ks: Vec<usize>, use_syncs: bool, use_aa: bool) -> SketchParams {
+    pub fn new(c: usize, k: usize, use_syncs: bool, use_aa: bool, seed: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
         let DNA_TO_AA: [u8; 64] =
             *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
@@ -121,15 +125,19 @@ impl SketchParams {
         }
         let orf_size = ORF_SIZE;
         let marker_c = MARKER_C;
+        if c > marker_c{
+            panic!("We currently don't allow c > {}", marker_c);
+        }
         return SketchParams {
-            cs,
-            ks,
+            c,
+            k,
             marker_c,
             use_syncs,
             use_aa,
             acgt_to_aa_encoding,
             acgt_to_aa_letters: DNA_TO_AA.to_vec(),
-            orf_size
+            orf_size,
+            seed
         };
     }
 }
