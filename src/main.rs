@@ -9,6 +9,7 @@ use skani::chain;
 use skani::file_io;
 use skani::params;
 use skani::parse;
+use skani::search;
 use skani::screen;
 use skani::types;
 use std::fs;
@@ -17,13 +18,18 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::sync::Mutex;
 use std::time::Instant;
+use std::path::Path;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version("0.1")
         .about("skani")
         .subcommand(
+            SubCommand::with_name("help").setting(AppSettings::Hidden)
+        )
+        .subcommand(
             SubCommand::with_name(params::SKETCH_STRING)
+            .about("Sketch (index) genomes. Usage: skani sketch genome1.fa genome2.fa ... -o new_sketch_folder")
                 .arg(
                     Arg::new("fasta_files")
                         .index(1)
@@ -34,7 +40,7 @@ fn main() {
                 .arg(
                     Arg::new("fasta_list")
                         .short('l')
-                        .help("file with each line containing one fasta file.")
+                        .help("file with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
@@ -61,7 +67,7 @@ fn main() {
                         .arg("fasta_list")
                         .required(true),
                 )
-                .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
+                .arg(Arg::new("output").short('o').help("output folder. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true))
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -70,80 +76,104 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(Arg::new("v").short('v').help("verbose."))
-                .arg(
-                    Arg::new("s")
-                        .short('s')
-                        .long("screen")
-                        .help("sketch for screen; don't seed."),
-                )
                 .arg(Arg::new("trace").long("trace").help("verbose.")),
         )
         .subcommand(
             SubCommand::with_name(params::DIST_STRING)
+            .about("Compute ANI/AAI for queries against references fasta files or pre-computed sketch files. Usage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
+                .arg(Arg::new("v").short('v').help("verbose output."))
+                .arg(Arg::new("trace").long("trace").help("trace level output."))
+                .arg(
+                    Arg::new("t")
+                        .short('t')
+                        .default_value("20")
+                        .help("threads. ")
+                        .takes_value(true),
+                )
+                .help_heading("INPUTS")
+                .arg(
+                    Arg::new("query")
+                        .index(1)
+                        .help("query fasta or sketch.")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("reference")
+                        .index(2)
+                        .help("reference fasta(s) or sketch(es).")
+                        .takes_value(true)
+                        .multiple(true)
+                )
+                .arg(
+                    Arg::new("queries")
+                        .short('q')
+                        .help("query fasta(s) or sketch(es)")
+                        .takes_value(true)
+                        .multiple(true)
+                )
+                .arg(
+                    Arg::new("references")
+                        .short('r')
+                        .help("reference fasta(s) or sketch(es)")
+                        .takes_value(true)
+                        .multiple(true),
+                )
+                .arg(
+                    Arg::new("reference list file")
+                        .long("rl")
+                        .help("file with each line containing one fasta/sketch file.")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("query list file")
+                        .long("ql")
+                        .help("file with each line containing one fasta/sketch file.")
+                        .takes_value(true),
+                )
+                .help_heading("OUTPUT")
+                .arg(
+                    Arg::new("output")
+                        .short('o')
+                        .help("output file name; rewrites file by default (default: output to stdout)")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("n")
+                        .short('n')
+                        .help("max number of results to show for each query. (default: unlimited)")
+                        .takes_value(true)
+                )
+                .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new("k")
                         .short('k')
-                        .help("k-mer size.")
+                        .help("k-mer size (default: ANI-15, AAI-6).")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("compression factor.")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::new("query")
-                        .short('q')
-                        .help("query fasta(s) or sketches(es).")
-                        .takes_value(true)
-                        .multiple(true),
-                )
-                .arg(
-                    Arg::new("reference")
-                        .short('r')
-                        .help("reference fasta(s) or sketch(es).")
-                        .takes_value(true)
-                        .multiple(true),
-                )
-                .arg(
-                    Arg::new("ref_fasta_list")
-                        .long("rl")
-                        .help("file with each line containing one fasta file.")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::new("query_fasta_list")
-                        .long("ql")
-                        .help("file with each line containing one fasta file.")
+                        .help("compression factor (default: ANI-80, AAI-15).")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
-                        .help("use amino acid alphabet."),
-                )
-                .arg(Arg::new("v").short('v').help("verbose."))
-                .arg(Arg::new("trace").long("trace").help("verbose."))
-                .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
-                .arg(
-                    Arg::new("t")
-                        .short('t')
-                        .default_value("20")
-                        .help("threads. ")
-                        .takes_value(true),
+                        .help("calculate AAI instead (default: ANI)."),
                 )
                 .group(
                     ArgGroup::new("ref")
                         .arg("reference")
-                        .arg("ref_fasta_list")
-                        .required(true),
+                        .arg("references")
+                        .arg("reference list file")
+//                        .required(true)
                 )
                 .group(
                     ArgGroup::new("q")
                         .arg("query")
-                        .arg("query_fasta_list")
+                        .arg("queries")
+                        .arg("query list file")
                         .required(true),
                 )
                 .arg(Arg::new("s").short('s').takes_value(true).help("screen. "))
@@ -160,6 +190,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::TRIANGLE_STRING)
+            .about("Compute a lower triangular distance ANI/AAI matrix in .phyllip format. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
                 .arg(
                     Arg::new("k")
                         .short('k')
@@ -182,7 +213,7 @@ fn main() {
                 .arg(
                     Arg::new("fasta_list")
                         .short('l')
-                        .help("file with each line containing one fasta file.")
+                        .help("file with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
@@ -193,7 +224,7 @@ fn main() {
                 )
                 .arg(Arg::new("v").short('v').help("verbose."))
                 .arg(Arg::new("trace").long("trace").help("verbose."))
-                .arg(Arg::new("o").short('o').help("output. ").takes_value(true))
+                .arg(Arg::new("output").short('o').help("output. ").takes_value(true))
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -201,7 +232,7 @@ fn main() {
                         .help("threads. ")
                         .takes_value(true),
                 )
-                .arg(Arg::new("s").short('s').takes_value(true).help("screen. "))
+                .arg(Arg::new("s").short('s').takes_value(true).help("screen. ").hidden(true))
                 .group(
                     ArgGroup::new("ref")
                         .arg("fasta_files")
@@ -224,52 +255,136 @@ fn main() {
                         .help("output sparse matrix."),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name(params::SEARCH_STRING)
+            .about("Search or screen queries against a pre-sketched database of reference genomes in a memory efficient manner. Usage: skani search -d sketch_folder query1.fa query2.fa ... ")
+                .arg(Arg::new("v").short('v').help("verbose output."))
+                .arg(Arg::new("trace").long("trace").help("trace level output."))
+                .arg(
+                    Arg::new("t")
+                        .short('t')
+                        .default_value("20")
+                        .help("threads. ")
+                        .takes_value(true),
+                )
+                .help_heading("INPUTS")
+                .arg(
+                    Arg::new("sketched database folder")
+                        .short('d')
+                        .help("folder of outputs from `skani sketch`.")
+                        .takes_value(true)
+                        .required(true)
+                )
+                .arg(
+                    Arg::new("query")
+                        .index(1)
+                        .help("query fasta(s) or sketch(es).")
+                        .multiple(true)
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("queries")
+                        .short('q')
+                        .help("query fasta(s) or sketch(es)")
+                        .takes_value(true)
+                        .multiple(true),
+                )
+                .arg(
+                    Arg::new("query list file")
+                        .long("ql")
+                        .help("file with each line containing one fasta/sketch file.")
+                        .takes_value(true),
+                )
+                .help_heading("OUTPUT")
+                .arg(
+                    Arg::new("output")
+                        .short('o')
+                        .help("output file name; rewrites file by default (default: output to stdout).")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("n")
+                        .short('n')
+                        .help("max number of results to show for each query. (default: unlimited)")
+                        .takes_value(true)
+                )
+                .group(
+                    ArgGroup::new("q")
+                        .arg("query")
+                        .arg("queries")
+                        .arg("query list file")
+                        .required(true),
+                )
+                .help_heading("ALGORITHM PARAMETERS")
+                .arg(Arg::new("s").short('s').takes_value(true).help("ANI/AAI screening threshold."))
+                .arg(
+                    Arg::new("robust")
+                        .long("robust")
+                        .help("robust ani estimation; trim off 5/95% quantiles. "),
+                )
+                .arg(
+                    Arg::new("median")
+                        .long("median")
+                        .help("median ani estimation."),
+                ),
+        )
         .get_matches();
 
     let (mut sketch_params, command_params) = parse::parse_params(&matches);
     if command_params.ref_files.len() == 0 {
         panic!("No reference fastas/sketches found.")
     }
-    let all_range_as_set = (0..command_params.ref_files.len()).collect::<FxHashSet<usize>>();
 
     //SKETCHING
     if command_params.mode == params::Mode::Sketch {
-        let ref_sketches = file_io::fastx_to_sketches(
-            &command_params.ref_files,
-            &sketch_params,
-            !command_params.screen,
-        );
-        //        let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
-        //        let mut flat_kmer_to_sketch: Vec<(types::KmerBits, Vec<usize>)> =
-        //            Vec::with_capacity(kmer_to_sketch.len());
-        //        for (key, set) in kmer_to_sketch {
-        //            let vec = set.iter().map(|x| *x).collect::<Vec<usize>>();
-        //            flat_kmer_to_sketch.push((key, vec));
-        //        }
-        let len = 100;
-        let num_iters = ref_sketches.len() / len + 1;
-        for i in 0..num_iters {
-            let mut file_bin = BufWriter::new(
-                File::create(format!("{}{}", &command_params.out_file_name, i)).unwrap(),
-            );
-            let ind1 = i * len;
-            let ind2 = usize::min(ref_sketches.len(), (i + 1) * len);
+        let p = format!("{}", command_params.out_file_name);
+        std::fs::create_dir_all(p).unwrap();
 
-            //            let ind1_flat = i * flat_kmer_to_sketch.len()/num_iters;
-            //            let ind2_flat = usize::min(
-            //                flat_kmer_to_sketch.len(),
-            //                (i + 1) * flat_kmer_to_sketch.len() / num_iters,
-            //            );
-            bincode::serialize_into(
-                &mut file_bin,
-                &(
-                    &sketch_params,
-                    &ref_sketches[ind1..ind2],
-                    //                    &flat_kmer_to_sketch[ind1_flat..ind2_flat],
-                ),
-            )
-            .unwrap();
-        }
+        let num_iters = command_params.ref_files.len();
+        (0..num_iters).into_par_iter().for_each(|i| {
+            let ref_sketches = file_io::fastx_to_sketches(
+                &vec![command_params.ref_files[i].clone()],
+                &sketch_params,
+                !command_params.screen,
+            );
+            let marker_ref_sketches = ref_sketches.iter().map(|x| types::Sketch::get_markers_only(x)).collect::<Vec<types::Sketch>>();
+            if ref_sketches.len() > 0{
+                let sketch = &ref_sketches[0];
+                let marker_sketch = &marker_ref_sketches[0];
+                let path = Path::new(&sketch.file_name);
+                let filename = path.file_name().unwrap().to_str().unwrap();
+                let mut file_bin = BufWriter::new(
+                    File::create(format!("{}/{}.sketch", &command_params.out_file_name, filename)).unwrap(),
+                );
+                let mut file_bin_marker = BufWriter::new(
+                    File::create(format!("{}/{}.marker", &command_params.out_file_name, filename)).unwrap(),
+                );
+
+                bincode::serialize_into(
+                    &mut file_bin,
+                    &(
+                        &sketch_params,
+                        sketch,
+                    ),
+                )
+                .unwrap();
+
+                bincode::serialize_into(
+                    &mut file_bin_marker,
+                    &(
+                        &sketch_params,
+                        marker_sketch,
+                    ),
+                )
+                .unwrap();
+            }
+
+        });
+        return;
+    }
+
+    if command_params.mode == params::Mode::Search{
+        search::search(&command_params);
         return;
     }
     //
@@ -281,17 +396,11 @@ fn main() {
     if command_params.refs_are_sketch {
         info!("Sketches detected.");
         (sketch_params, ref_sketches) =
-            file_io::sketches_from_sketch(&command_params.ref_files, &sketch_params);
+            file_io::sketches_from_sketch(&command_params.ref_files, command_params.mode == params::Mode::Search);
         if command_params.screen {
             kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
         } else {
             kmer_to_sketch = types::KmerToSketch::default();
-        }
-
-        if sketch_params.seed == false {
-            if command_params.mode != params::Mode::Dist || !command_params.screen {
-                panic!("Sketched references are not seeded; must use `skani dist` with screening parameter `-s`.");
-            }
         }
     } else {
         if command_params.screen && command_params.mode == params::Mode::Dist {
@@ -301,10 +410,9 @@ fn main() {
             ref_sketches =
                 file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
         }
-        if command_params.screen{
+        if command_params.screen {
             kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches)
-        }
-        else{
+        } else {
             kmer_to_sketch = types::KmerToSketch::default();
         }
     }
@@ -313,15 +421,13 @@ fn main() {
     let query_params;
     if command_params.queries_are_sketch {
         (query_params, query_sketches) =
-            file_io::sketches_from_sketch(&command_params.query_files, &sketch_params);
+            file_io::sketches_from_sketch(&command_params.query_files, false);
         if sketch_params != query_params {
             panic!(
                 "Query sketch parameters were not equal to reference sketch parameters. Exiting."
             );
         }
     } else {
-        let all_query_range_set =
-            (0..command_params.query_files.len()).collect::<FxHashSet<usize>>();
         query_sketches =
             file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
     }
@@ -402,12 +508,18 @@ fn main() {
                 } else {
                     ani_res = types::AniEstResult::default();
                 }
-                let mut locked = anis.lock().unwrap();
-                locked.push(ani_res);
+                if ani_res.ani > 0.5 {
+                    let mut locked = anis.lock().unwrap();
+                    locked.push(ani_res);
+                }
             });
         });
         let anis = anis.into_inner().unwrap();
-        file_io::write_query_ref_list(&anis, &command_params.out_file_name);
+        file_io::write_query_ref_list(
+            &anis,
+            &command_params.out_file_name,
+            command_params.max_results,
+        );
     } else if command_params.mode == params::Mode::Triangle {
         let anis: Mutex<FxHashMap<usize, FxHashMap<usize, types::AniEstResult>>> =
             Mutex::new(FxHashMap::default());

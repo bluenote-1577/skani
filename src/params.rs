@@ -9,28 +9,43 @@ pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
 pub const D_MAX_GAP_LENGTH: f64 = 300.;
+pub const D_MAX_GAP_LENGTH_AAI: f64 = 50.;
 pub const D_MAX_LIN_LENGTH: f64 = 5000.;
-pub const D_ANCHOR_SCORE: f64 = 50.;
-pub const D_MIN_ANCHORS: usize = 5;
+pub const D_ANCHOR_SCORE_ANI: f64 = 15.;
+pub const D_ANCHOR_SCORE_AAI: f64 = 15.;
+pub const D_MIN_ANCHORS_ANI: usize = 5;
+pub const D_MIN_ANCHORS_AAI: usize = 2;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
 pub const D_FRAC_COVER_CUTOFF: f64 = 0.15;
+pub const D_FRAC_COVER_CUTOFF_2: f64 = 0.10;
+pub const D_ANI_AND_COVER_CUTOFF: f64 = 0.95;
 pub const D_FRAC_COVER_CUTOFF_AA: f64 = 0.05;
 pub const D_CHAIN_BAND: usize = 25;
+pub const D_CHAIN_BAND_AAI: usize = 25;
 pub const ORF_SIZE: usize = 35;
 pub const MARKER_C: usize = 1000;
 pub const K_MARKER_AA: usize = 10;
 pub const K_MARKER_DNA: usize = 21;
+pub const SEARCH_STRING: &str = "search";
 pub const DIST_STRING: &str = "dist";
 pub const SKETCH_STRING: &str = "sketch";
 pub const TRIANGLE_STRING: &str = "triangle";
 pub const CHUNK_SIZE_DNA: usize = 20000;
+pub const CHUNK_SIZE_AA: usize = 17500;
 pub const MIN_LENGTH_CONTIG: usize = 500;
+pub const MIN_LENGTH_COVER_AAI: usize = 1000;
+pub const MIN_LENGTH_COVER: usize = 500;
+pub const BP_CHAIN_BAND: usize = 2500;
+pub const BP_CHAIN_BAND_AAI: usize = 1500;
+pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.40;
+pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.70;
 
 #[derive(PartialEq)]
 pub enum Mode {
     Sketch,
     Dist,
     Triangle,
+    Search,
 }
 
 #[derive(Default, PartialEq)]
@@ -47,9 +62,12 @@ pub struct MapParams {
     pub amino_acid: bool,
     pub min_score: f64,
     pub robust: bool,
-    pub median: bool
+    pub median: bool,
+    pub bp_chain_band: usize,
+    pub min_length_cover: usize,
 }
 
+#[derive(PartialEq)]
 pub struct CommandParams{
     pub screen: bool,
     pub screen_val: f64,
@@ -61,13 +79,14 @@ pub struct CommandParams{
     pub queries_are_sketch: bool,
     pub robust: bool,
     pub median: bool,
-    pub sparse: bool
+    pub sparse: bool,
+    pub max_results: usize
 }
 
-pub fn fragment_length_formula(n: usize, aa: bool) -> usize {
+pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 10;
     if aa{
-        return 20000;
+        return CHUNK_SIZE_AA;
     }
     else{
         return CHUNK_SIZE_DNA;
@@ -85,11 +104,10 @@ pub struct SketchParams {
     pub acgt_to_aa_encoding: Vec<KmerBits>,
     pub acgt_to_aa_letters: Vec<u8>,
     pub orf_size: usize,
-    pub seed: bool,
 }
 
 impl SketchParams {
-    pub fn new(c: usize, k: usize, use_syncs: bool, use_aa: bool, seed: bool) -> SketchParams {
+    pub fn new(c: usize, k: usize, use_syncs: bool, use_aa: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
         let DNA_TO_AA: [u8; 64] =
             *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
@@ -137,7 +155,6 @@ impl SketchParams {
             acgt_to_aa_encoding,
             acgt_to_aa_letters: DNA_TO_AA.to_vec(),
             orf_size,
-            seed
         };
     }
 }

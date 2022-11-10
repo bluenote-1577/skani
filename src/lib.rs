@@ -5,3 +5,4 @@ pub mod chain;
 pub mod file_io;
 pub mod seeding;
 pub mod screen;
+pub mod search;

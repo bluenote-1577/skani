@@ -87,10 +87,28 @@ pub struct Sketch {
     pub kmer_seeds_k: Option<KmerSeeds>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
+    pub contig_lengths: Vec<GnPosition>,
     pub repetitive_kmers: usize,
     pub marker_seeds: FxHashSet<KmerBits>,
     pub c: usize,
     pub k: usize
+}
+
+impl Sketch{
+    pub fn get_markers_only(sketch: &Sketch) -> Sketch{
+        let ret_sketch = Sketch{
+            file_name : sketch.file_name.clone(),
+            kmer_seeds_k : None,
+            contigs: sketch.contigs.clone(),
+            total_sequence_length : sketch.total_sequence_length,
+            contig_lengths : vec![],
+            repetitive_kmers : sketch.repetitive_kmers,
+            marker_seeds : sketch.marker_seeds.clone(),
+            c : sketch.c,
+            k : sketch.k
+        };
+        return ret_sketch;
+    }
 }
 
 impl Hash for Sketch{
@@ -105,6 +123,7 @@ impl Default for Sketch {
             kmer_seeds_k: None,
             contigs: vec![],
             total_sequence_length: 0,
+            contig_lengths: vec![],
             repetitive_kmers: usize::MAX,
             marker_seeds: FxHashSet::default(),
             c: 0,
@@ -215,7 +234,7 @@ pub struct Anchor {
     pub reverse_match: bool,
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Default)]
 pub struct ChainInterval {
     pub score: f64,
     pub num_anchors: usize,
@@ -224,6 +243,7 @@ pub struct ChainInterval {
     pub ref_contig: usize,
     pub query_contig: usize,
     pub chunk_id: usize,
+    pub reverse_chain: bool
 }
 impl ChainInterval {
     pub fn query_range_len(&self) -> GnPosition {
@@ -276,4 +296,8 @@ pub struct AniEstResult{
     pub ref_file: String,
     pub query_file: String,
     pub query_contig: String,
+    pub ref_contig: String,
+    pub ci_upper: f64,
+    pub ci_lower: f64,
+
 }
