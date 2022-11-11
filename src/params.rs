@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
 pub const STOP_CODON: KmerBits = 21;
-pub const DEFAULT_C: &str = "80";
+pub const DEFAULT_C: &str = "175";
 pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
@@ -13,7 +13,7 @@ pub const D_MAX_GAP_LENGTH_AAI: f64 = 50.;
 pub const D_MAX_LIN_LENGTH: f64 = 5000.;
 pub const D_ANCHOR_SCORE_ANI: f64 = 15.;
 pub const D_ANCHOR_SCORE_AAI: f64 = 15.;
-pub const D_MIN_ANCHORS_ANI: usize = 5;
+pub const D_MIN_ANCHORS_ANI: usize = 3;
 pub const D_MIN_ANCHORS_AAI: usize = 2;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
 pub const D_FRAC_COVER_CUTOFF: f64 = 0.15;
@@ -35,10 +35,10 @@ pub const CHUNK_SIZE_AA: usize = 17500;
 pub const MIN_LENGTH_CONTIG: usize = 500;
 pub const MIN_LENGTH_COVER_AAI: usize = 1000;
 pub const MIN_LENGTH_COVER: usize = 500;
-pub const BP_CHAIN_BAND: usize = 2500;
+pub const BP_CHAIN_BAND: usize = 2000;
 pub const BP_CHAIN_BAND_AAI: usize = 1500;
-pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.40;
-pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.70;
+pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.50;
+pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.75;
 
 #[derive(PartialEq)]
 pub enum Mode {

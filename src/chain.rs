@@ -25,10 +25,12 @@ fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
     }
     mean = mean / mult;
     let mut var = 0.;
+    //TEST TODO
+    let multiplier = 80. / 20000.;
     for ani in ani_ests.iter(){
-        var += ani.1 as f64 * (mean - ani.0) * (mean - ani.0)
+        var += multiplier * ani.1 as f64 * (mean - ani.0) * (mean - ani.0)
     }
-    let std = f64::sqrt(var /(mult-1.));
+    let std = f64::sqrt(var /(mult * multiplier-1.));
     let t = StudentsT::new(0., 1., (ani_ests.len() - 1) as f64).unwrap();
     let alpha = t.cdf(0.975);
     let int = alpha * std / f64::sqrt((ani_ests.len() - 1) as f64);
@@ -204,8 +206,8 @@ fn calculate_ani(
             }
         }
 
-        let mut left_spacing_est = c;
-        let mut right_spacing_est = c;
+        let mut left_spacing_est = 0;
+        let mut right_spacing_est = 0;
         let switched_ref_sketch;
         if switched{
             switched_ref_sketch = &query_sketch;
@@ -263,10 +265,10 @@ fn calculate_ani(
         );
         if putative_ani > 0.960
 //            && total_bases_contained_query > ref_sketch.c as GnPosition * 20
-            && total_bases_contained_query > c  * 5 * (upper_lower_seeds / total_anchors) as GnPosition
+            && total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
             && !map_params.amino_acid
             && total_range_query.1 - total_range_query.0 < (CHUNK_SIZE_DNA * 9 / 10) as GnPosition 
-            //&& anchors_in_chunk_considered as f64 > (10./9.) * upper_lower_seeds as f64 + 3.
+            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64 + 3.
         {
             //                        anchors_in_chunk_considered = num_seeds_in_intervals;
             trace!("putative ani filter {} -> {}", anchors_in_chunk_considered, upper_lower_seeds);
