@@ -437,7 +437,8 @@ fn calculate_ani(
         query_contig: query_sketch.contigs[0].clone(),
         ref_contig: ref_sketch.contigs[0].clone(),
         ci_upper: final_ani + upper,
-        ci_lower: final_ani - lower
+        ci_lower: final_ani - lower,
+        aai: map_params.amino_acid
     };
 }
 

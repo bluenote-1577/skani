@@ -15,11 +15,16 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     let query_sketches;
     let now = Instant::now();
     if command_params.refs_are_sketch {
+        let new_sketch_params;
         info!("Sketches detected.");
-        (sketch_params, ref_sketches) = file_io::sketches_from_sketch(
+        (new_sketch_params, ref_sketches) = file_io::sketches_from_sketch(
             &command_params.ref_files,
             command_params.mode == Mode::Search,
         );
+        if new_sketch_params != sketch_params{
+            warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
+        }
+        sketch_params = new_sketch_params;
     } else {
         if command_params.individual_contig_r{
             ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(&command_params.ref_files, &sketch_params, true);
@@ -31,10 +36,15 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     if command_params.queries_are_sketch {
         (query_params, query_sketches) =
             file_io::sketches_from_sketch(&command_params.query_files, false);
-        if sketch_params != query_params {
+        if sketch_params != query_params  && command_params.refs_are_sketch {
             panic!(
                 "Query sketch parameters were not equal to reference sketch parameters. Exiting."
             );
+        }
+        else{
+            if sketch_params != query_params{
+                warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
+            }
         }
     } else {
         if command_params.individual_contig_q{
@@ -46,6 +56,10 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         query_sketches =
             file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
         }
+    }
+    if query_sketches.is_empty() || ref_sketches.is_empty(){
+        error!("No reference sketches/genomes or query sketches/genomes found.");
+        std::process::exit(1)
     }
     let screen_val;
     if sketch_params.use_aa {
@@ -121,6 +135,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         &anis,
         &command_params.out_file_name,
         command_params.max_results,
+        sketch_params.use_aa,
     );
     info!("ANI/AAI calculation time: {}", now.elapsed().as_secs_f32());
 }

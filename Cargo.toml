@@ -1,6 +1,6 @@
 [package]
 name = "skani"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,13 +10,8 @@ thiserror = "1.0"
 bio = "*"
 rand = "0.8.3"
 fxhash = "*"
-statistical = "*"
-time = "*"
 clap = "3"
 debruijn = "*"
-criterion = "^0.2"
-quickcheck = "^0.7.1"
-disjoint-sets = "0.4.2"
 partitions = "*"
 num-traits = "*"
 needletail = "*"
@@ -31,8 +26,11 @@ intervallum = "*"
 rust-lapper = "*"
 gcollections = "*"
 statrs = "*"
-pariter = "*"
-seq_io = "0.4.0-alpha.0"
+
+[dev-dependencies]
+assert_cmd = "1.0.1"
+predicates = "1"
+
 
 [profile.release]
 opt-level = 3

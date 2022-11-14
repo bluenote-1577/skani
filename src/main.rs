@@ -8,26 +8,37 @@ use skani::triangle;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("0.1")
-        .about("skani")
+        .version("1.0")
+        .about("fast, robust ANI/AAI calculation and database searching. See below subcommands for usage. Examples:\n\nskani dist genome1.fa genome2.fa\n\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
         )
         .subcommand(
             SubCommand::with_name(params::SKETCH_STRING)
             .about("Sketch (index) genomes. Usage: skani sketch genome1.fa genome2.fa ... -o new_sketch_folder")
+                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
+                .help_heading("INPUT/OUTPUT")
                 .arg(
                     Arg::new("fasta_files")
                         .index(1)
-                        .help("reference fasta.")
+                        .help("fastas to sketch.")
                         .takes_value(true)
                         .multiple(true),
                 )
                 .arg(
                     Arg::new("fasta_list")
                         .short('l')
-                        .help("file with each line containing one fasta/sketch file.")
+                        .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
+                )
+                .arg(Arg::new("output").short('o').help("output folder. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true))
+                .help_heading("SKETCH PARAMETERS")
+                .arg(
+                    Arg::new("aai")
+                        .short('a')
+                        .long("aai")
+                        .help("Use amino acid to calculate AAI instead. (default: ANI)"),
                 )
                 .arg(
                     Arg::new("k")
@@ -38,14 +49,8 @@ fn main() {
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("compression factor.")
+                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes. (default: ANI-120, AAI-15) ")
                         .takes_value(true),
-                )
-                .arg(
-                    Arg::new("aai")
-                        .short('a')
-                        .long("aai")
-                        .help("use amino acid alphabet."),
                 )
                 .group(
                     ArgGroup::new("ref")
@@ -53,27 +58,24 @@ fn main() {
                         .arg("fasta_list")
                         .required(true),
                 )
-                .arg(Arg::new("output").short('o').help("output folder. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true))
                 .arg(
                     Arg::new("t")
                         .short('t')
                         .default_value("20")
-                        .help("threads. ")
+                        .help("Number of threads. ")
                         .takes_value(true),
                 )
-                .arg(Arg::new("v").short('v').help("debug level verbosity."))
-                .arg(Arg::new("trace").long("trace").help("trace level verbosity.")),
-        )
+            )
         .subcommand(
             SubCommand::with_name(params::DIST_STRING)
             .about("Compute ANI/AAI for queries against references fasta files or pre-computed sketch files. Usage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
-                .arg(Arg::new("v").short('v').help("debug level verbosity."))
-                .arg(Arg::new("trace").long("trace").help("trace level verbosity."))
+                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
                 .arg(
                     Arg::new("t")
                         .short('t')
                         .default_value("20")
-                        .help("threads. ")
+                        .help("Number of threads.")
                         .takes_value(true),
                 )
                 .help_heading("INPUTS")
@@ -81,68 +83,70 @@ fn main() {
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
-                        .help("calculate AAI instead (default: ANI)."),
+                        .help("Use amino acid to calculate AAI instead. (default: ANI)"),
                 )
                 .arg(
                     Arg::new("query")
                         .index(1)
-                        .help("query fasta or sketch.")
-                        .takes_value(true),
+                        .help("Query fasta or sketch.")
+                        .takes_value(true)
+                        .hidden(true)
                 )
                 .arg(
                     Arg::new("reference")
                         .index(2)
-                        .help("reference fasta(s) or sketch(es).")
+                        .help("Reference fasta(s) or sketch(es).")
                         .takes_value(true)
                         .multiple(true)
+                        .hidden(true)
                 )
                 .arg(
                     Arg::new("queries")
                         .short('q')
-                        .help("query fasta(s) or sketch(es)")
+                        .help("Query fasta(s) or sketch(es)")
                         .takes_value(true)
                         .multiple(true)
                 )
                 .arg(
                     Arg::new("references")
                         .short('r')
-                        .help("reference fasta(s) or sketch(es)")
+                        .help("Reference fasta(s) or sketch(es)")
                         .takes_value(true)
                         .multiple(true),
                 )
                 .arg(
                     Arg::new("reference list file")
                         .long("rl")
-                        .help("file with each line containing one fasta/sketch file.")
+                        .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("query list file")
                         .long("ql")
-                        .help("file with each line containing one fasta/sketch file.")
+                        .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("individual contig query")
                         .long("qi")
-                        .help("Calculate ANI on individual sequences for the QUERY instead the entire file for multi-fastas.")
+                        .help("Use individual sequences for the QUERY instead the entire file for multi-fastas.")
                 )
                 .arg(
                     Arg::new("individual contig ref")
                         .long("ri")
-                        .help("Calculate ANI on individual sequences for the REFERENCE instead the entire file for multi-fastas.")
+                        .help("Use individual sequences for the REFERENCE instead the entire file for multi-fastas.")
                 )
                 .help_heading("OUTPUT")
                 .arg(
                     Arg::new("output")
                         .short('o')
-                        .help("output file name; rewrites file by default (default: output to stdout)")
+                        .help("Output file name; rewrites file by default (default: output to stdout)")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("n")
                         .short('n')
-                        .help("max number of results to show for each query. (default: unlimited)")
+                        .help("Max number of results to show for each query. (default: unlimited)")
                         .takes_value(true)
                 )
                 .help_heading("ALGORITHM PARAMETERS")
@@ -155,7 +159,7 @@ fn main() {
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("compression factor (default: ANI-80, AAI-15).")
+                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes. (default: ANI-120, AAI-15) ")
                         .takes_value(true),
                 )
 
@@ -173,69 +177,70 @@ fn main() {
                         .arg("query list file")
                         .required(true),
                 )
-                .arg(Arg::new("s").short('s').takes_value(true).help("screen out pairs with < % identity using a hash table in constant time. (default ANI : 75%, AAI: 50%)"))
+                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time. (default: ANI-75%, AAI-50%)"))
                 .arg(
                     Arg::new("robust")
                         .long("robust")
-                        .help("robust ani estimation; trim off 5/95% quantiles. "),
+                        .help("Robust ani estimation; trim off 10%/90% quantiles. "),
                 )
                 .arg(
                     Arg::new("median")
                         .long("median")
-                        .help("median ani estimation."),
+                        .help("Estimate median identity instead of average (mean) identity."),
                 ),
         )
         .subcommand(
             SubCommand::with_name(params::TRIANGLE_STRING)
-            .about("Compute a lower triangular distance ANI/AAI matrix in .phyllip format. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
+            .about("Compute a lower triangular distance ANI/AAI matrix. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
                 .arg(Arg::new("v").short('v').help("debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("trace level verbosity."))
                 .arg(
                     Arg::new("t")
                         .short('t')
                         .default_value("20")
-                        .help("threads. ")
+                        .help("Number of threads.")
                         .takes_value(true),
                 )
                 .help_heading("INPUTS")
                 .arg(
                     Arg::new("fasta_list")
                         .short('l')
-                        .help("file with each line containing one fasta/sketch file.")
+                        .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
-                        .help("use amino acid alphabet."),
+                        .help("Use amino acid to calculate AAI instead. (default: ANI)"),
                 )
                 .arg(
                     Arg::new("fasta_files")
                         .index(1)
-                        .help("fasta(s) or sketch(es).")
+                        .help("Fasta(s) or sketch(es).")
                         .takes_value(true)
                         .multiple(true),
                 )
                 .arg(
                     Arg::new("individual contig")
                         .short('i')
-                        .help("Calculate ANI on individual sequences instead the entire file for multi-fastas.")
+                        .help("Use individual sequences instead the entire file for multi-fastas.")
                 )
                 .help_heading("OUTPUT")
                 .arg(
                     Arg::new("output")
                         .short('o')
-                        .help("output file name; rewrites file by default (default: output to stdout)")
+                        .help("Output file name; rewrites file by default (default: output to stdout)")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("sparse")
                         .long("sparse")
-                        .help("output sparse matrix for only non-zero ANI/AAI in the same form as `skani dist`."),
+                        .short('E')
+                        .help("Output sparse matrix for only non-zero ANI/AAI in the same form as `skani dist`."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
-                .arg(Arg::new("s").short('s').takes_value(true).help("screen out pairs with < % identity using a hash table in constant time. (default ANI : 75%, AAI: 50%)"))
+                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time. (default: ANI-75%, AAI-50%)"))
                 .arg(
                     Arg::new("k")
                         .short('k')
@@ -245,7 +250,7 @@ fn main() {
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("compression factor.")
+                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes. (default: ANI-120, AAI-15) ")
                         .takes_value(true),
                 )
                 .group(
@@ -257,71 +262,70 @@ fn main() {
                 .arg(
                     Arg::new("robust")
                         .long("robust")
-                        .help("robust ani estimation; trim off 5/95% quantiles. "),
+                        .help("Robust identity estimation; trim off 10%/90% quantiles."),
                 )
                 .arg(
                     Arg::new("median")
                         .long("median")
-                        .help("median ani estimation."),
-                )
-                ,
+                        .help("Estimate median identity instead of average (mean) identity."),
+                ),
         )
         .subcommand(
             SubCommand::with_name(params::SEARCH_STRING)
             .about("Search queries against a pre-sketched database of reference genomes in a memory efficient manner. Usage: skani search -d sketch_folder query1.fa query2.fa ... ")
-                .arg(Arg::new("v").short('v').help("verbose output."))
-                .arg(Arg::new("trace").long("trace").help("trace level output."))
+                .arg(Arg::new("v").short('v').help("debug level verbosity."))
+                .arg(Arg::new("trace").long("trace").help("trace level verbosity."))
                 .arg(
                     Arg::new("t")
                         .short('t')
                         .default_value("20")
-                        .help("threads. ")
+                        .help("Number of threads.")
                         .takes_value(true),
                 )
                 .help_heading("INPUTS")
                 .arg(
                     Arg::new("sketched database folder")
                         .short('d')
-                        .help("folder of outputs from `skani sketch`.")
+                        .help("Folder of outputs from `skani sketch`.")
                         .takes_value(true)
                         .required(true)
                 )
                 .arg(
                     Arg::new("query")
                         .index(1)
-                        .help("query fasta(s) or sketch(es).")
+                        .help("Query fasta(s) or sketch(es).")
                         .multiple(true)
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("queries")
                         .short('q')
-                        .help("query fasta(s) or sketch(es)")
+                        .help("Query fasta(s) or sketch(es)")
                         .takes_value(true)
                         .multiple(true),
                 )
                 .arg(
                     Arg::new("query list file")
                         .long("ql")
-                        .help("file with each line containing one fasta/sketch file.")
+                        .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("individual contig query")
                         .long("qi")
-                        .help("Calculate ANI on individual sequences for the QUERY instead the entire file for multi-fastas.")
+                        .help("Use individual sequences for the QUERY instead the entire file for multi-fastas.")
                 )
                 .help_heading("OUTPUT")
                 .arg(
                     Arg::new("output")
                         .short('o')
-                        .help("output file name; rewrites file by default (default: output to stdout).")
+                        .help("Output file name; rewrites file by default (default: output to stdout).")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::new("n")
                         .short('n')
-                        .help("max number of results to show for each query. (default: unlimited)")
+                        .help("Max number of results to show for each query. (default: unlimited)")
                         .takes_value(true)
                 )
                 .group(
@@ -332,7 +336,7 @@ fn main() {
                         .required(true),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
-                .arg(Arg::new("s").short('s').takes_value(true).help("screen out pairs with < % identity. (default ANI : 75%, AAI: 50%)"))
+                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity. (default ANI-75%, AAI-50%)"))
                 .arg(
                     Arg::new("robust")
                         .long("robust")
@@ -341,7 +345,7 @@ fn main() {
                 .arg(
                     Arg::new("median")
                         .long("median")
-                        .help("Estimate median identity instead of average (mean)identity."),
+                        .help("Estimate median identity instead of average (mean) identity."),
                 ),
         )
         .get_matches();

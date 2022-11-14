@@ -40,7 +40,8 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         Mutex::new(FxHashMap::default());
 
     if ref_sketches.len() == 0 {
-        panic!("No reference fastas/sketches found.")
+        error!("No genomes/sketches found.");
+        std::process::exit(1)
     }
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
 
@@ -81,7 +82,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         });
     let anis = anis.into_inner().unwrap();
     if command_params.sparse {
-        file_io::write_sparse_matrix(&anis, &ref_sketches, &command_params.out_file_name);
+        file_io::write_sparse_matrix(&anis, &ref_sketches, &command_params.out_file_name, sketch_params.use_aa);
     } else {
         file_io::write_phyllip_matrix(
             &anis,
@@ -89,6 +90,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             &command_params.out_file_name,
             command_params.individual_contig_r,
             false,
+            sketch_params.use_aa
         );
     }
     info!("ANI/AAI triangle time: {}", now.elapsed().as_secs_f32());

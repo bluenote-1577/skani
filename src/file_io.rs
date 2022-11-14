@@ -1,19 +1,13 @@
 use crate::params::*;
 use crate::seeding;
 use crate::types::*;
-use bio::io::fasta;
+use log::*;
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
-use log::trace;
-use log::warn;
 use needletail::parse_fastx_file;
-use pariter::IteratorExt as _;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rayon::prelude::*;
-use seq_io::fastx::Reader;
-use seq_io::BaseRecord;
-use smallvec::SmallVec;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
 use std::sync::Mutex;
@@ -39,7 +33,7 @@ pub fn fastx_to_sketches(
             warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
         } else {
             let mut j = 0;
-            let mut is_valid = true;
+            let mut is_valid = false;
             let mut reader = reader.unwrap();
             trace!("Sketching {} {}", new_sketch.file_name, i);
             while let Some(record) = reader.next() {
@@ -75,6 +69,7 @@ pub fn fastx_to_sketches(
                         }
                         new_sketch.contig_order = j;
                         j += 1;
+                        is_valid = true;
                     }
                 } else {
                     warn!("File {} is not a valid fasta/fastq file", ref_file);
@@ -175,11 +170,13 @@ pub fn write_phyllip_matrix(
     file_name: &str,
     use_contig_names: bool,
     full_matrix: bool,
+    aai: bool,
 ) {
+    let id_str = if aai {"AAI"} else {"ANI"};
     if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write!(&mut handle, "IDENTITY\t{}\n", sketches.len()).unwrap();
+        write!(&mut handle, "IDENTITY_{}\t{}\n", id_str, sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -200,7 +197,7 @@ pub fn write_phyllip_matrix(
             write!(&mut handle, "\n").unwrap();
         }
 
-        write!(&mut handle, "ALIGNED FRACTION\t{}\n", sketches.len()).unwrap();
+        write!(&mut handle, "ALIGNED_FRACTION_{}\t{}\n", id_str, sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -225,8 +222,8 @@ pub fn write_phyllip_matrix(
         let af_mat_file = format!("{}.af", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(&mut ani_file, "{}\n", sketches.len()).unwrap();
-        write!(&mut af_file, "{}\n", sketches.len()).unwrap();
+        write!(&mut ani_file, "IDENTITY_{}\t{}\n",id_str, sketches.len()).unwrap();
+        write!(&mut af_file, "ALIGNED_FRACTION_{}\t{}\n",id_str, sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -251,6 +248,8 @@ pub fn write_phyllip_matrix(
             write!(&mut ani_file, "\n").unwrap();
             write!(&mut af_file, "\n").unwrap();
         }
+
+        info!("Identity and align fraction matrix written to {}.identity and {}.af",file_name, file_name );
     }
 }
 
@@ -258,36 +257,64 @@ pub fn write_sparse_matrix(
     anis: &FxHashMap<usize, FxHashMap<usize, AniEstResult>>,
     sketches: &Vec<Sketch>,
     file_name: &str,
+    aai: bool
 ) {
-    let file_name_wr;
-    if file_name == "" {
-        file_name_wr = "skani_res.sparse"
-    } else {
-        file_name_wr = file_name
+    let id_str = if aai {"AAI"} else {"ANI"};
+    if file_name == ""{
+        let stdout = io::stdout();
+        let mut handle = stdout.lock();
+        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        for i in anis.keys() {
+            for (j, ani_res) in anis[i].iter() {
+                if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
+                write!(
+                    &mut handle,
+                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    ani_res.ref_file,
+                    ani_res.query_file,
+                    ani_res.ani,
+                    ani_res.align_fraction_query,
+                    ani_res.align_fraction_ref,
+                    ani_res.ci_upper,
+                    ani_res.ci_lower,
+                    ani_res.ref_contig,
+                    ani_res.query_contig,
+                )
+                .unwrap();
+                }
+            }
+        }
+
     }
-    let ani_mat_file = format!("{}", file_name_wr);
-    let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name_wr));
-    for i in anis.keys() {
-        for (j, ani_res) in anis[i].iter() {
-            if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
+    else{
+        let ani_mat_file = format!("{}", file_name);
+        let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
+        write!(&mut ani_file,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        for i in anis.keys() {
+            for (j, ani_res) in anis[i].iter() {
+                if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                 write!(
                     &mut ani_file,
-                    "{}\t{}",
-                    sketches[*i].file_name, sketches[*j].file_name
+                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    ani_res.ref_file,
+                    ani_res.query_file,
+                    ani_res.ani,
+                    ani_res.align_fraction_query,
+                    ani_res.align_fraction_ref,
+                    ani_res.ci_upper,
+                    ani_res.ci_lower,
+                    ani_res.ref_contig,
+                    ani_res.query_contig,
                 )
                 .unwrap();
-                write!(
-                    &mut ani_file,
-                    "\t{:.4}\t{:.4}\n",
-                    ani_res.ani, ani_res.align_fraction_query
-                )
-                .unwrap();
+                }
             }
         }
     }
 }
 
-pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize) {
+pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai:bool) {
+    let id_str = if aai {"AAI"} else {"ANI"};
     let mut query_file_result_map = FxHashMap::default();
     let out_file = format!("{}", file_name);
 
@@ -312,7 +339,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize)
         let stdout = io::stdout();
         let mut handle = stdout.lock();
 
-        write!(&mut handle,"Ref_file\tQuery_file\tANI/AAI\tAlign_fraction_query\tAlign_fraction_reference\tANI/AAI_95_percentile\tANI/AAI_5_percentile\tRef_name\tQuery_name\n").unwrap();
+        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
@@ -337,7 +364,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize)
     } else {
         let mut handle;
         handle = File::create(out_file).expect(file_name);
-        write!(&mut handle,"Ref_file\tQuery_file\tANI/AAI\tAlign_fraction_query\tAlign_fraction_reference\tANI/AAI_95_percentile\tANI/AAI_5_percentile\n").unwrap();
+        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
@@ -391,67 +418,4 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
     return (ret_sketch_params, ret_ref_sketches);
 }
 
-pub fn seed_screened_sketches(
-    sketch_params: &SketchParams,
-    ref_sketches: &mut Vec<Sketch>,
-    screened_refs: &FxHashSet<usize>,
-) {
-    let file_names = screened_refs
-        .iter()
-        .map(|x| (*x, ref_sketches[*x].file_name.clone()))
-        .collect::<FxHashMap<usize, String>>();
-    let mutex_refs: Mutex<&mut Vec<Sketch>> = Mutex::new(ref_sketches);
-    screened_refs.into_par_iter().for_each(|i| {
-        let ref_file = &file_names[i];
-        let mut new_sketch = Sketch::default();
-        new_sketch.file_name = ref_file.to_string();
-        new_sketch.c = sketch_params.c;
-        new_sketch.k = sketch_params.k;
 
-        let reader = parse_fastx_file(&ref_file);
-        if !reader.is_ok() {
-            warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
-        } else {
-            let mut is_valid = true;
-            let mut reader = reader.unwrap();
-            let mut j = 0;
-            while let Some(record) = reader.next() {
-                if record.is_ok() {
-                    let record = record.expect(&format!("Invalid record for file {}", ref_file));
-                    let contig = record.id();
-                    let seq = record.seq();
-                    if seq.len() >= MIN_LENGTH_CONTIG {
-                        new_sketch.total_sequence_length += seq.len();
-                        if sketch_params.use_aa {
-                            let orfs = seeding::get_orfs(&seq, sketch_params);
-                            seeding::fmh_seeds_aa_with_orf(
-                                //            seeding::fmh_seeds_aa(
-                                &seq,
-                                sketch_params,
-                                j as u32,
-                                &mut new_sketch,
-                                orfs,
-                                true,
-                            )
-                        } else {
-                            seeding::fmh_seeds(
-                                &seq,
-                                &sketch_params,
-                                j as u32,
-                                &mut new_sketch,
-                                true,
-                            );
-                        }
-                        j += 1;
-                    }
-                } else {
-                    warn!("File {} is not a valid fasta/fastq file", ref_file);
-                    is_valid = false;
-                    break;
-                }
-            }
-            let mut locked = mutex_refs.lock().unwrap();
-            locked[*i] = new_sketch;
-        }
-    });
-}
