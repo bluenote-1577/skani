@@ -4,14 +4,14 @@ use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
 pub const STOP_CODON: KmerBits = 21;
-pub const DEFAULT_C: &str = "175";
+pub const DEFAULT_C: &str = "120";
 pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
 pub const D_MAX_GAP_LENGTH: f64 = 300.;
 pub const D_MAX_GAP_LENGTH_AAI: f64 = 50.;
 pub const D_MAX_LIN_LENGTH: f64 = 5000.;
-pub const D_ANCHOR_SCORE_ANI: f64 = 15.;
+pub const D_ANCHOR_SCORE_ANI: f64 = 20.;
 pub const D_ANCHOR_SCORE_AAI: f64 = 15.;
 pub const D_MIN_ANCHORS_ANI: usize = 3;
 pub const D_MIN_ANCHORS_AAI: usize = 2;
@@ -80,7 +80,9 @@ pub struct CommandParams{
     pub robust: bool,
     pub median: bool,
     pub sparse: bool,
-    pub max_results: usize
+    pub max_results: usize,
+    pub individual_contig_q: bool,
+    pub individual_contig_r: bool
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

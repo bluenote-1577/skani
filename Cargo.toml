@@ -1,0 +1,45 @@
+[package]
+name = "skani"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1.0"
+bio = "*"
+rand = "0.8.3"
+fxhash = "*"
+statistical = "*"
+time = "*"
+clap = "3"
+debruijn = "*"
+criterion = "^0.2"
+quickcheck = "^0.7.1"
+disjoint-sets = "0.4.2"
+partitions = "*"
+num-traits = "*"
+needletail = "*"
+simple-logging= "*"
+log = "*"
+rayon = "*"
+nohash-hasher = "*"
+smallvec = { version = "*", features = ["union","serde","write"] }
+serde = "*"
+bincode = "*"
+intervallum = "*"
+rust-lapper = "*"
+gcollections = "*"
+statrs = "*"
+pariter = "*"
+seq_io = "0.4.0-alpha.0"
+
+[profile.release]
+opt-level = 3
+
+[profile.dev]
+#opt-level = 1
+opt-level = 3
+
+#[rust]
+#debuginfo-level = 1

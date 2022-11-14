@@ -1,11 +1,10 @@
 use crate::params::*;
 use clap::parser::ArgMatches;
 use log::LevelFilter;
-use log::{debug, info};
-use rayon::prelude::*;
+use log::*;
 use std::fs;
 use std::fs::File;
-use std::io::{self, prelude::*, BufReader};
+use std::io::{prelude::*, BufReader};
 
 pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mode;
@@ -159,7 +158,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mut screen_val = 0.;
     let mut robust = false;
     let mut median = false;
-    if mode == Mode::Triangle {
+    if mode == Mode::Triangle || mode == Mode::Dist {
         let screen = matches_subc.is_present("s");
         if screen {
             screen_val = matches_subc.value_of("s").unwrap().parse::<f64>().unwrap();
@@ -191,6 +190,28 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let screen = screen_val > 0.;
+    let individual_contig_q;
+    let individual_contig_r;
+
+    if mode == Mode::Triangle{
+        if matches_subc.is_present("individual contig"){
+            individual_contig_q = true;
+            individual_contig_r = true;
+        }
+        else{
+            individual_contig_q = false;
+            individual_contig_r = false;
+        }
+    }
+    else if mode == Mode::Dist{
+        individual_contig_q = matches_subc.is_present("individual contig query");
+        individual_contig_r = matches_subc.is_present("individual contig ref");
+    }
+    else{
+        individual_contig_q = false;
+        individual_contig_r = false;
+    }
+
     let command_params = CommandParams {
         screen,
         screen_val,
@@ -204,6 +225,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         median,
         sparse,
         max_results,
+        individual_contig_q,
+        individual_contig_r
     };
 
     return (sketch_params, command_params);
@@ -266,6 +289,8 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .unwrap();
     let screen = true;
 
+    let individual_contig_q = matches_subc.is_present("individual contig query");
+
     let command_params = CommandParams {
         screen,
         screen_val,
@@ -279,7 +304,14 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         median,
         sparse,
         max_results,
+        individual_contig_q,
+        individual_contig_r: false
     };
+
+    if command_params.ref_files.len() == 0 {
+        error!("No valid reference fastas or sketches found.");
+        std::process::exit(1)
+    }
 
     return (SketchParams::default(), command_params);
 }

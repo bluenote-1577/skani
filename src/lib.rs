@@ -6,3 +6,6 @@ pub mod file_io;
 pub mod seeding;
 pub mod screen;
 pub mod search;
+pub mod sketch;
+pub mod dist;
+pub mod triangle;

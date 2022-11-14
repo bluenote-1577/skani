@@ -1,4 +1,5 @@
 use debruijn::kmer::*;
+use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
@@ -91,7 +92,8 @@ pub struct Sketch {
     pub repetitive_kmers: usize,
     pub marker_seeds: FxHashSet<KmerBits>,
     pub c: usize,
-    pub k: usize
+    pub k: usize,
+    pub contig_order: usize
 }
 
 impl Sketch{
@@ -105,11 +107,25 @@ impl Sketch{
             repetitive_kmers : sketch.repetitive_kmers,
             marker_seeds : sketch.marker_seeds.clone(),
             c : sketch.c,
-            k : sketch.k
+            k : sketch.k,
+            contig_order: 0
         };
         return ret_sketch;
     }
 }
+
+impl PartialOrd for Sketch {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Sketch {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.file_name, self.contig_order).cmp(&(&other.file_name, other.contig_order))
+    }
+}
+
 
 impl Hash for Sketch{
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -127,8 +143,8 @@ impl Default for Sketch {
             repetitive_kmers: usize::MAX,
             marker_seeds: FxHashSet::default(),
             c: 0,
-            k: 0
-                
+            k: 0,
+            contig_order:0
         };
     }
 }

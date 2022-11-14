@@ -189,14 +189,21 @@ fn calculate_ani(
             //interval_vec.insert(int_insert, i);
         }
 
-        if total_anchors == 0  || total_range_query.1 - total_range_query.0  < map_params.min_length_cover as GnPosition{
+        if total_anchors == 0{
             continue;
         }
 
-        //        total_query_bases += total_bases_contained_query;
+        if  total_range_query.1 - total_range_query.0  < map_params.min_length_cover as GnPosition{
+            total_query_bases += total_range_query.1 - total_range_query.0;
+            total_ref_range += total_range_query.1 - total_range_query.0;
+            continue;
+        }
+
         total_query_bases += total_range_query.1 - total_range_query.0;
         total_ref_range += total_range_query.1 - total_range_query.0;
-        //total_ref_range += total_bases_contained_ref;
+
+        //        total_query_bases += total_bases_contained_query;
+                //total_ref_range += total_bases_contained_ref;
 
         let mut num_seeds_in_intervals = 0;
         let mut upper_lower_seeds = 0;
