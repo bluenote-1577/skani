@@ -22,18 +22,19 @@ fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
     for ani in ani_ests.iter(){
         mean += ani.0 * ani.1 as f64;
         mult += ani.1 as f64;
+        //mult += 1.;
     }
     mean = mean / mult;
     let mut var = 0.;
     //TEST TODO
-    let multiplier = 80. / 20000.;
     for ani in ani_ests.iter(){
-        var += multiplier * ani.1 as f64 * (mean - ani.0) * (mean - ani.0)
+        var += (mean - ani.0) * (mean - ani.0)
     }
-    let std = f64::sqrt(var /(mult * multiplier-1.));
-    let t = StudentsT::new(0., 1., (ani_ests.len() - 1) as f64).unwrap();
-    let alpha = t.cdf(0.975);
-    let int = alpha * std / f64::sqrt((ani_ests.len() - 1) as f64);
+    let std = f64::sqrt(var);
+    let pop_multiplier  = 6.;
+    let t = StudentsT::new(0., 1.,pop_multiplier * (ani_ests.len() - 1) as f64).unwrap();
+    let alpha = t.cdf(0.950);
+    let int = alpha * std / (pop_multiplier * f64::sqrt((ani_ests.len() - 1) as f64));
     return ( int, int);
 
 }
@@ -356,12 +357,12 @@ fn calculate_ani(
     }
     let lower;
     let upper;
-    if map_params.robust {
-        lower = 0.10;
-        upper = 0.90;
-    } else if map_params.median {
+    if map_params.median || map_params.amino_acid {
         lower = 0.499;
         upper = 0.501;
+    } else if map_params.robust{
+        lower = 0.10;
+        upper = 0.90;
     } else {
         lower = 0.;
         upper = 1.;
@@ -424,7 +425,7 @@ fn calculate_ani(
     if covered_query < map_params.frac_cover_cutoff
         && total_query_bases < map_params.length_cover_cutoff as GnPosition
     {
-        if covered_query < D_FRAC_COVER_CUTOFF_2 || final_ani < D_ANI_AND_COVER_CUTOFF {
+        if covered_query < D_FRAC_COVER_CUTOFF_2 || final_ani < D_ANI_AND_COVER_CUTOFF || !map_params.amino_acid{
             final_ani = -1.;
         }
     }
