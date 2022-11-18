@@ -2,7 +2,7 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data.
+**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of genomes or MAGs (metagenome-assembled contigs) with > 85% ANI and > 60% AAI and total sequence length > 50kb. 
 
 The main advantages of skani compared to other methods such as FastANI or Mash are
 
@@ -48,8 +48,7 @@ skani dist -q query1.fa query2.fa -r ref1.fa ref2.fa -t 20
 skani dist --qi -q query1.fa -r ref1.fa
 ```
 
-`dist` computes ANI/AAI between all queries and all references. If aligned fraction for the two genomes (see Outputs) is
-than 15% for ANI or 5% for AAI, no output is given. With skani default parameters, this means that only computations
+`dist` computes ANI/AAI between all queries and all references. If the resulting aligned fraction for the two genomes (see Outputs) is < 15% for ANI or 5% for AAI, no output is given. With skani default parameters, this means that only computations
 with > ~85% ANI and > ~60% AAI are output. 
 
 `dist` loads all reference and query genomes into memory. 
@@ -69,8 +68,8 @@ fully loading genomes that pass a filter into memory, and discarding the index a
 If for some reason you're querying many small sequences (> 1000 small sequences), the loading step will dominate the ANI comparison, so consider 
 using `dist` instead. 
 
-`search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. The parameters
-for `search` are obtained from the parameters used for the `sketch` option, so if you sketch for AAI using the `-a` option, you
+`search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. **The parameters
+for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
 can only use `search` for AAI. 
 
 If querying many genomes (> 100) against a large database (> 10000 genomes) consider using the --fast-screen option. This takes longer on start-up, but speeds up subsequent queries. 
