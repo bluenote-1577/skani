@@ -16,14 +16,13 @@ pub const D_ANCHOR_SCORE_AAI: f64 = 20.;
 pub const D_MIN_ANCHORS_ANI: usize = 3;
 pub const D_MIN_ANCHORS_AAI: usize = 2;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
-pub const D_FRAC_COVER_CUTOFF: f64 = 0.15;
-pub const D_FRAC_COVER_CUTOFF_2: f64 = 0.10;
+pub const D_FRAC_COVER_CUTOFF: &str = "0.15";
 pub const D_ANI_AND_COVER_CUTOFF: f64 = 0.95;
-pub const D_FRAC_COVER_CUTOFF_AA: f64 = 0.05;
+pub const D_FRAC_COVER_CUTOFF_AA: &str = "0.05";
 pub const D_CHAIN_BAND: usize = 25;
 pub const D_CHAIN_BAND_AAI: usize = 15;
 pub const ORF_SIZE: usize = 75;
-pub const MARKER_C: usize = 1000;
+pub const MARKER_C: &str = "1000";
 pub const K_MARKER_AA: usize = 10;
 pub const K_MARKER_DNA: usize = 21;
 pub const SEARCH_STRING: &str = "search";
@@ -37,8 +36,9 @@ pub const MIN_LENGTH_COVER_AAI: usize = 500;
 pub const MIN_LENGTH_COVER: usize = 500;
 pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
-pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.40;
-pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.75;
+pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
+pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
+pub const FULL_INDEX_THRESH: usize = 100;
 
 #[derive(PartialEq)]
 pub enum Mode {
@@ -82,7 +82,8 @@ pub struct CommandParams{
     pub sparse: bool,
     pub max_results: usize,
     pub individual_contig_q: bool,
-    pub individual_contig_r: bool
+    pub individual_contig_r: bool,
+    pub min_aligned_frac: f64
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
@@ -109,7 +110,7 @@ pub struct SketchParams {
 }
 
 impl SketchParams {
-    pub fn new(c: usize, k: usize, use_syncs: bool, use_aa: bool) -> SketchParams {
+    pub fn new(marker_c: usize, c: usize, k: usize, use_syncs: bool, use_aa: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
         let DNA_TO_AA: [u8; 64] =
             *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
@@ -144,7 +145,7 @@ impl SketchParams {
             acgt_to_aa_encoding[i] = letter_to_int_aa[&DNA_TO_AA[i]];
         }
         let orf_size = ORF_SIZE;
-        let marker_c = MARKER_C;
+        let marker_c = marker_c;
         if c > marker_c{
             panic!("We currently don't allow c > {}", marker_c);
         }

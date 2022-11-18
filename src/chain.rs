@@ -2,16 +2,14 @@ use crate::params::*;
 use crate::types::*;
 use bio::data_structures::interval_tree::IntervalTree;
 use fxhash::FxHashMap;
-use log::{debug, info, trace, warn};
+use log::*;
 use partitions::*;
 use std::mem;
 use std::time::Instant;
 extern crate interval;
 use gcollections::ops::set::*;
 use interval::interval_set::*;
-use statrs::distribution::{StudentsT, Continuous, ContinuousCDF};
-use statrs::statistics::Distribution;
-use statrs::prec;
+use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
     if ani_ests.len() == 1{
@@ -39,19 +37,6 @@ fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
 
 }
 
-fn wilson_interval(n: f64, n_s: f64, k: usize) -> (f64, f64) {
-    let z = 2.0;
-    let p_est = n_s / n;
-    let shift_mean = 1. / (1. + f64::powi(z, 2) / n) * (p_est + f64::powi(z, 2) / (2. * n));
-    let dev_term = z / 1. / (1. + f64::powi(z, 2) / n);
-    let dev_term =
-        dev_term * f64::sqrt(p_est * (1. - p_est) / n + f64::powi(z, 2) / (4. * f64::powi(n, 2)));
-    let upper = f64::powf(shift_mean + dev_term, 1. / k as f64);
-    let lower = f64::powf(shift_mean - dev_term, 1. / k as f64);
-    let mid = f64::powf(shift_mean, 1. / k as f64);
-    return (upper - mid, mid - lower);
-}
-
 pub fn map_params_from_sketch(
     ref_sketch: &Sketch,
     amino_acid: bool,
@@ -64,11 +49,13 @@ pub fn map_params_from_sketch(
     let min_length_cover = if amino_acid{MIN_LENGTH_COVER_AAI} else {MIN_LENGTH_COVER};
     let length_cutoff = fragment_length;
     trace!("Fragment length is {}.", fragment_length);
-    let frac_cover_cutoff;
-    if amino_acid {
-        frac_cover_cutoff = D_FRAC_COVER_CUTOFF_AA;
-    } else {
-        frac_cover_cutoff = D_FRAC_COVER_CUTOFF;
+    let mut frac_cover_cutoff = command_params.min_aligned_frac;
+    if frac_cover_cutoff < 0.{
+        if amino_acid {
+            frac_cover_cutoff = D_FRAC_COVER_CUTOFF_AA.parse::<f64>().unwrap();
+        } else {
+            frac_cover_cutoff = D_FRAC_COVER_CUTOFF.parse::<f64>().unwrap();
+        }
     }
     let length_cover_cutoff = 5000000;
     let chain_band = if amino_acid {D_CHAIN_BAND_AAI} else {D_CHAIN_BAND};
@@ -422,12 +409,9 @@ fn calculate_ani(
         covered_query,
     );
 
-    if covered_query < map_params.frac_cover_cutoff
-        && total_query_bases < map_params.length_cover_cutoff as GnPosition
+    if covered_query < map_params.frac_cover_cutoff  && covered_ref < map_params.frac_cover_cutoff
     {
-        if covered_query < D_FRAC_COVER_CUTOFF_2 || final_ani < D_ANI_AND_COVER_CUTOFF || !map_params.amino_acid{
-            final_ani = -1.;
-        }
+        final_ani = -1.;
     }
     return AniEstResult {
         ani: final_ani,
@@ -513,8 +497,11 @@ pub fn check_markers_quickly(
         seeds1 = &query_sketch.marker_seeds;
         min_card = query_sketch.marker_seeds.len();
     }
-    let ratio = screen_val.powi(ref_sketch.k.try_into().unwrap()) * min_card as f64;
+    assert!(ref_sketch.amino_acid == query_sketch.amino_acid);
+    let k = if ref_sketch.amino_acid{K_MARKER_AA} else {K_MARKER_DNA};
+    let ratio = screen_val.powi(k.try_into().unwrap()) * min_card as f64;
     let ratio = ratio as usize;
+    debug!("Ratio {}", ratio);
     let mut intersect_len = 0;
     for marker_seed1 in seeds1.iter(){
         if seeds2.contains(marker_seed1){
@@ -949,42 +936,41 @@ fn get_nonoverlapping_chains(
     return good_non_overlap_intervals;
 }
 
-fn calculate_ani_chain(
-    good_intervals: &Vec<&ChainInterval>,
-    c_adj: f64,
-    k: usize,
-    ref_sketch: &Sketch,
-    query_sketch: &Sketch,
-) {
-    let mut query_cov_length = 0;
-    let mut effective_length = 0;
-    let mut ref_cov_length = 0;
-    let mut num_anchors = 0;
-    //    good_intervals.sort_by(|x, y| x.3.cmp(&y.3));
-    for interval in good_intervals {
-        let add_query_length = interval.query_range_len() + 2 * c_adj as u32;
-        let add_ref_length = interval.ref_range_len() + 2 * c_adj as u32;
-        query_cov_length += add_query_length;
-        ref_cov_length += add_ref_length;
-        effective_length += u32::max(add_query_length, add_ref_length);
-        num_anchors += interval.num_anchors;
-        let ani_est = f64::powf(
-            interval.num_anchors as f64 * c_adj as f64
-                / u32::max(add_query_length, add_ref_length) as f64,
-            1. / k as f64,
-        );
-        //        dbg!(
-        //            ani_est,
-        //            interval.num_anchors,
-        //            add_query_length,
-        //            add_ref_length,
-        //            interval
-        //        );
-    }
 
 
-    let ani_est = f64::powf(
-        num_anchors as f64 / effective_length as f64 * c_adj as f64,
-        1. / k as f64,
-    );
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

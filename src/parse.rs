@@ -1,4 +1,5 @@
 use crate::params::*;
+use crate::cmd_line::*;
 use clap::parser::ArgMatches;
 use log::LevelFilter;
 use log::*;
@@ -146,6 +147,16 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .parse::<usize>()
         .unwrap();
 
+    let min_aligned_frac;
+    if mode != Mode::Sketch{
+        let def_maf = if amino_acid{ D_FRAC_COVER_CUTOFF_AA} else {D_FRAC_COVER_CUTOFF};
+        min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or(def_maf).parse::<f64>().unwrap();
+    }
+    else{
+        min_aligned_frac = 0.;
+    }
+
+    let marker_c = matches_subc.value_of("marker_c").unwrap_or(MARKER_C).parse::<usize>().unwrap();
     let mut out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
     if mode == Mode::Triangle {
         out_file_name = format!("{}", out_file_name).to_string();
@@ -159,19 +170,14 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mut robust = false;
     let mut median = false;
     if mode == Mode::Triangle || mode == Mode::Dist {
-        let screen = matches_subc.is_present("s");
-        if screen {
-            screen_val = matches_subc.value_of("s").unwrap().parse::<f64>().unwrap();
-        } else {
-            screen_val = 0.;
-        }
+        screen_val = matches_subc.value_of("s").unwrap_or("0.00").parse::<f64>().unwrap();
     }
     if mode == Mode::Triangle || mode == Mode::Search || mode == Mode::Dist {
         robust = matches_subc.is_present("robust");
         median = matches_subc.is_present("median");
     }
 
-    let sketch_params = SketchParams::new(c, k, use_syncs, amino_acid);
+    let sketch_params = SketchParams::new(marker_c, c, k, use_syncs, amino_acid);
 
     let mut refs_are_sketch = ref_files.len() > 0;
     for ref_file in ref_files.iter() {
@@ -189,7 +195,21 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
     }
 
-    let screen = screen_val > 0.;
+    let screen;
+    if mode == Mode::Dist{
+        if query_files.len() > FULL_INDEX_THRESH{
+            screen = true;
+        }
+        else{
+            screen = matches_subc.is_present(FULL_INDEX);
+        }
+    }
+    else if mode == Mode::Triangle{
+        screen = true;
+    }
+    else{
+        screen = false;
+    }
     let individual_contig_q;
     let individual_contig_r;
 
@@ -226,7 +246,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         sparse,
         max_results,
         individual_contig_q,
-        individual_contig_r
+        individual_contig_r,
+        min_aligned_frac,
     };
 
     return (sketch_params, command_params);
@@ -287,9 +308,16 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .unwrap_or("0.00")
         .parse::<f64>()
         .unwrap();
-    let screen = true;
+    let screen;
+    if query_files.len() > FULL_INDEX_THRESH{
+        screen = true;
+    }
+    else{
+        screen = matches_subc.is_present(FULL_INDEX);
+    }
 
     let individual_contig_q = matches_subc.is_present("individual contig query");
+    let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-1.0").parse::<f64>().unwrap();
 
     let command_params = CommandParams {
         screen,
@@ -305,7 +333,8 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         sparse,
         max_results,
         individual_contig_q,
-        individual_contig_r: false
+        individual_contig_r: false,
+        min_aligned_frac 
     };
 
     if command_params.ref_files.len() == 0 {

@@ -1,5 +1,7 @@
 use clap::{AppSettings, Arg, ArgGroup, Command, SubCommand};
+use log::*;
 use skani::dist;
+use skani::cmd_line::*;
 use skani::params;
 use skani::parse;
 use skani::search;
@@ -37,7 +39,7 @@ fn main() {
                         .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
-                .arg(Arg::new("output").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true))
+                .arg(Arg::new("output").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true).display_order(1))
                 .help_heading("SKETCH PARAMETERS")
                 .arg(
                     Arg::new("aai")
@@ -55,6 +57,12 @@ fn main() {
                     Arg::new("c")
                         .short('c')
                         .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes.\t[default: ANI 120, AAI 15] ")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::new("marker_c")
+                        .short('m')
+                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
                         .takes_value(true),
                 )
                 .group(
@@ -126,21 +134,29 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::new("individual contig query")
-                        .long("qi")
-                        .help("Use individual sequences for the QUERY instead the entire file for multi-fastas.")
+                    Arg::new(IND_CTG_QRY)
+                        .long(CMD_IND_CTG_QRY)
+                        .help(H_IND_CTG_QRY)
                 )
                 .arg(
-                    Arg::new("individual contig ref")
-                        .long("ri")
-                        .help("Use individual sequences for the REFERENCE instead the entire file for multi-fastas.")
+                    Arg::new(IND_CTG_REF)
+                        .long(CMD_IND_CTG_REF)
+                        .help(H_IND_CTG_REF)
                 )
                 .help_heading("OUTPUT")
                 .arg(
                     Arg::new("output")
                         .short('o')
                         .help("Output file name; rewrites file by default\t[default: output to stdout]")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .display_order(1)
+                )
+                .arg(
+                    Arg::new(MIN_ALIGN_FRAC)
+                        .long(CMD_MIN_ALIGN_FRAC)
+                        .help(H_MIN_ALIGN_FRAC)
+                        .takes_value(true)
+                        .display_order(100)
                 )
                 .arg(
                     Arg::new("n")
@@ -149,6 +165,12 @@ fn main() {
                         .takes_value(true)
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new("marker_c")
+                        .short('m')
+                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
+                        .takes_value(true),
+                )
                 .arg(
                     Arg::new("k")
                         .short('k')
@@ -178,14 +200,19 @@ fn main() {
                 )
                 .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time.\t[default: ANI 0.75, AAI 0.50]"))
                 .arg(
-                    Arg::new("robust")
-                        .long("robust")
-                        .help("Robust ani estimation; trim off 10%/90% quantiles. "),
+                    Arg::new(ROBUST)
+                        .long(CMD_ROBUST)
+                        .help(H_ROBUST),
                 )
                 .arg(
                     Arg::new("median")
                         .long("median")
                         .help("Estimate median identity instead of average (mean) identity."),
+                )
+                .arg(
+                    Arg::new(FULL_INDEX)
+                        .long(CMD_FULL_INDEX)
+                        .help(H_FULL_INDEX),
                 )
                 .help_heading("MISC")
                 .arg(Arg::new("v").short('v').help("Debug level verbosity."))
@@ -231,7 +258,15 @@ fn main() {
                     Arg::new("output")
                         .short('o')
                         .help("Output file name; rewrites file by default\t[default: output to stdout]")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .display_order(1)
+                )
+                .arg(
+                    Arg::new(MIN_ALIGN_FRAC)
+                        .long(CMD_MIN_ALIGN_FRAC)
+                        .help(H_MIN_ALIGN_FRAC)
+                        .takes_value(true)
+                        .display_order(100)
                 )
                 .arg(
                     Arg::new("sparse")
@@ -240,6 +275,12 @@ fn main() {
                         .help("Output sparse matrix for only non-zero ANI/AAI in the same form as `skani dist`."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new("marker_c")
+                        .short('m')
+                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
+                        .takes_value(true),
+                )
                 .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time.\t[default: ANI 0.75, AAI 0.50]"))
                 .arg(
                     Arg::new("k")
@@ -260,9 +301,9 @@ fn main() {
                         .required(true),
                 )
                 .arg(
-                    Arg::new("robust")
-                        .long("robust")
-                        .help("Robust identity estimation; trim off 10%/90% quantiles."),
+                    Arg::new(ROBUST)
+                        .long(CMD_ROBUST)
+                        .help(H_ROBUST),
                 )
                 .arg(
                     Arg::new("median")
@@ -275,7 +316,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::SEARCH_STRING)
-            .about("Search queries against a large pre-sketched database of reference genomes in a memory efficient manner. Usage: skani search -d sketch_folder query1.fa query2.fa ... ")
+            .about("Search queries against a large pre-sketched database of reference genomes in a memory efficient manner. Algorithm parameters are determined by skani sketch parameters. Usage: skani search -d sketch_folder query1.fa query2.fa ... ")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -312,21 +353,28 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::new("individual contig query")
-                        .long("qi")
-                        .help("Use individual sequences for the QUERY instead the entire file for multi-fastas.")
+                    Arg::new(IND_CTG_QRY)
+                        .long(CMD_IND_CTG_QRY)
+                        .help(H_IND_CTG_QRY)
                 )
                 .help_heading("OUTPUT")
                 .arg(
                     Arg::new("output")
                         .short('o')
-                        .help("Output file name; rewrites file by default\t(default: output to stdout).")
-                        .takes_value(true),
+                        .help("Output file name; rewrites file by default\t[default: output to stdout].")
+                        .takes_value(true)
+                        .display_order(1)
+                )
+                .arg(
+                    Arg::new(MIN_ALIGN_FRAC)
+                        .long(CMD_MIN_ALIGN_FRAC)
+                        .help(H_MIN_ALIGN_FRAC)
+                        .takes_value(true)
                 )
                 .arg(
                     Arg::new("n")
                         .short('n')
-                        .help("Max number of results to show for each query.\t(default: unlimited)")
+                        .help("Max number of results to show for each query.\t[default: unlimited]")
                         .takes_value(true)
                 )
                 .group(
@@ -337,11 +385,16 @@ fn main() {
                         .required(true),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new(FULL_INDEX)
+                        .long(CMD_FULL_INDEX)
+                        .help(H_FULL_INDEX),
+                )
                 .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity.\t[default: ANI 0.75, AAI 0.5]"))
                 .arg(
-                    Arg::new("robust")
-                        .long("robust")
-                        .help("Robust identity estimation; trim off 10%/90% quantiles."),
+                    Arg::new(ROBUST)
+                        .long(CMD_ROBUST)
+                        .help(H_ROBUST),
                 )
                 .arg(
                     Arg::new("median")
@@ -356,6 +409,7 @@ fn main() {
         .get_matches();
 
     let (sketch_params, command_params) = parse::parse_params(&matches);
+    info!("Successfully parsed command line options.");
 
     //SKETCHING
     if command_params.mode == params::Mode::Sketch {

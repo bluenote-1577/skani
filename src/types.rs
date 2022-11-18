@@ -91,9 +91,11 @@ pub struct Sketch {
     pub contig_lengths: Vec<GnPosition>,
     pub repetitive_kmers: usize,
     pub marker_seeds: FxHashSet<KmerBits>,
+    pub marker_c: usize,
     pub c: usize,
     pub k: usize,
-    pub contig_order: usize
+    pub contig_order: usize,
+    pub amino_acid: bool
 }
 
 impl Sketch{
@@ -106,11 +108,23 @@ impl Sketch{
             contig_lengths : vec![],
             repetitive_kmers : sketch.repetitive_kmers,
             marker_seeds : sketch.marker_seeds.clone(),
+            marker_c : sketch.marker_c,
             c : sketch.c,
             k : sketch.k,
-            contig_order: 0
+            contig_order: sketch.contig_order,
+            amino_acid: sketch.amino_acid
         };
         return ret_sketch;
+    }
+    
+    pub fn new(marker_c: usize, c: usize, k: usize, file_name: String, amino_acid: bool) -> Sketch{
+        let mut new_sketch = Sketch::default();
+        new_sketch.c = c;
+        new_sketch.k = k;
+        new_sketch.marker_c = c;
+        new_sketch.file_name = file_name;
+        new_sketch.amino_acid = amino_acid;
+        return new_sketch;
     }
 }
 
@@ -142,9 +156,11 @@ impl Default for Sketch {
             contig_lengths: vec![],
             repetitive_kmers: usize::MAX,
             marker_seeds: FxHashSet::default(),
+            marker_c: 0,
             c: 0,
             k: 0,
-            contig_order:0
+            contig_order:0,
+            amino_acid: false,
         };
     }
 }

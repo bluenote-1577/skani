@@ -1,9 +1,9 @@
 use crate::params::*;
 use crate::seeding;
 use crate::types::*;
-use log::*;
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
+use log::*;
 use needletail::parse_fastx_file;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -22,12 +22,13 @@ pub fn fastx_to_sketches(
     index_vec.shuffle(&mut thread_rng());
     index_vec.into_par_iter().for_each(|i| {
         let ref_file = &ref_files[i];
-        let mut new_sketch = Sketch::default();
-        //    new_sketch.file_name = ref_file.split('/').last().unwrap().to_string();
-        new_sketch.file_name = ref_file.to_string();
-        new_sketch.c = sketch_params.c;
-        new_sketch.k = sketch_params.k;
-        //            let mut reader = Reader::from_path(ref_file);
+        let mut new_sketch = Sketch::new(
+            sketch_params.marker_c,
+            sketch_params.c,
+            sketch_params.k,
+            ref_file.to_string(),
+            sketch_params.use_aa,
+        );
         let reader = parse_fastx_file(&ref_file);
         if !reader.is_ok() {
             warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
@@ -67,7 +68,7 @@ pub fn fastx_to_sketches(
                                 seed,
                             );
                         }
-                        new_sketch.contig_order = j;
+                        //new_sketch.contig_order = 0;
                         j += 1;
                         is_valid = true;
                     }
@@ -117,11 +118,13 @@ pub fn fastx_to_multiple_sketch_rewrite(
                     let contig = record.id();
                     let seq = record.seq();
                     if seq.len() >= MIN_LENGTH_CONTIG {
-                        let mut new_sketch = Sketch::default();
-                        new_sketch.file_name = ref_file.to_string();
-                        new_sketch.c = sketch_params.c;
-                        new_sketch.k = sketch_params.k;
-
+                        let mut new_sketch = Sketch::new(
+                            sketch_params.marker_c,
+                            sketch_params.c,
+                            sketch_params.k,
+                            ref_file.to_string(),
+                            sketch_params.use_aa,
+                        );
                         new_sketch
                             .contigs
                             .push(String::from_utf8(contig.to_vec()).unwrap());
@@ -172,11 +175,11 @@ pub fn write_phyllip_matrix(
     full_matrix: bool,
     aai: bool,
 ) {
-    let id_str = if aai {"AAI"} else {"ANI"};
+    let id_str = if aai { "AAI" } else { "ANI" };
     if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write!(&mut handle, "IDENTITY_{}\t{}\n", id_str, sketches.len()).unwrap();
+        write!(&mut handle, "{}\n", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -197,7 +200,14 @@ pub fn write_phyllip_matrix(
             write!(&mut handle, "\n").unwrap();
         }
 
-        write!(&mut handle, "ALIGNED_FRACTION_{}\t{}\n", id_str, sketches.len()).unwrap();
+        let af_mat_file = format!("skani_matrix.af");
+        let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
+        write!(
+            &mut af_file,
+            "{}\n",
+            sketches.len()
+        )
+        .unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -208,11 +218,11 @@ pub fn write_phyllip_matrix(
             write!(&mut handle, "{}", name).unwrap();
             for j in 0..i {
                 if !anis.contains_key(&j) || !anis[&j].contains_key(&i) {
-                    write!(&mut handle, "\t{:.4}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
                 } else if anis[&j][&i].ani == -1. || anis[&j][&i].ani.is_nan() {
-                    write!(&mut handle, "\t{:.4}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
                 } else {
-                    write!(&mut handle, "\t{:.4}", anis[&j][&i].align_fraction_query).unwrap();
+                    write!(&mut af_file, "\t{:.4}", anis[&j][&i].align_fraction_query).unwrap();
                 }
             }
             write!(&mut handle, "\n").unwrap();
@@ -222,8 +232,14 @@ pub fn write_phyllip_matrix(
         let af_mat_file = format!("{}.af", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(&mut ani_file, "IDENTITY_{}\t{}\n",id_str, sketches.len()).unwrap();
-        write!(&mut af_file, "ALIGNED_FRACTION_{}\t{}\n",id_str, sketches.len()).unwrap();
+        write!(&mut ani_file, "IDENTITY_{}\t{}\n", id_str, sketches.len()).unwrap();
+        write!(
+            &mut af_file,
+            "ALIGNED_FRACTION_{}\t{}\n",
+            id_str,
+            sketches.len()
+        )
+        .unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -249,7 +265,10 @@ pub fn write_phyllip_matrix(
             write!(&mut af_file, "\n").unwrap();
         }
 
-        info!("Identity and align fraction matrix written to {}.identity and {}.af",file_name, file_name );
+        info!(
+            "Identity and align fraction matrix written to {}.identity and {}.af",
+            file_name, file_name
+        );
     }
 }
 
@@ -257,64 +276,62 @@ pub fn write_sparse_matrix(
     anis: &FxHashMap<usize, FxHashMap<usize, AniEstResult>>,
     sketches: &Vec<Sketch>,
     file_name: &str,
-    aai: bool
+    aai: bool,
 ) {
-    let id_str = if aai {"AAI"} else {"ANI"};
-    if file_name == ""{
+    let id_str = if aai { "AAI" } else { "ANI" };
+    if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
         write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                write!(
-                    &mut handle,
-                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                    ani_res.ref_file,
-                    ani_res.query_file,
-                    ani_res.ani,
-                    ani_res.align_fraction_query,
-                    ani_res.align_fraction_ref,
-                    ani_res.ci_upper,
-                    ani_res.ci_lower,
-                    ani_res.ref_contig,
-                    ani_res.query_contig,
-                )
-                .unwrap();
+                    write!(
+                        &mut handle,
+                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        ani_res.ref_file,
+                        ani_res.query_file,
+                        ani_res.ani,
+                        ani_res.align_fraction_query,
+                        ani_res.align_fraction_ref,
+                        ani_res.ci_upper,
+                        ani_res.ci_lower,
+                        ani_res.ref_contig,
+                        ani_res.query_contig,
+                    )
+                    .unwrap();
                 }
             }
         }
-
-    }
-    else{
+    } else {
         let ani_mat_file = format!("{}", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         write!(&mut ani_file,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                write!(
-                    &mut ani_file,
-                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                    ani_res.ref_file,
-                    ani_res.query_file,
-                    ani_res.ani,
-                    ani_res.align_fraction_query,
-                    ani_res.align_fraction_ref,
-                    ani_res.ci_upper,
-                    ani_res.ci_lower,
-                    ani_res.ref_contig,
-                    ani_res.query_contig,
-                )
-                .unwrap();
+                    write!(
+                        &mut ani_file,
+                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        ani_res.ref_file,
+                        ani_res.query_file,
+                        ani_res.ani,
+                        ani_res.align_fraction_query,
+                        ani_res.align_fraction_ref,
+                        ani_res.ci_upper,
+                        ani_res.ci_lower,
+                        ani_res.ref_contig,
+                        ani_res.query_contig,
+                    )
+                    .unwrap();
                 }
             }
         }
     }
 }
 
-pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai:bool) {
-    let id_str = if aai {"AAI"} else {"ANI"};
+pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai: bool) {
+    let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
     let out_file = format!("{}", file_name);
 
@@ -347,7 +364,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
                     anis[i].ani,
@@ -372,7 +389,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
                     anis[i].ani,
@@ -380,6 +397,8 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
                     anis[i].align_fraction_ref,
                     anis[i].ci_upper,
                     anis[i].ci_lower,
+                    anis[i].ref_contig,
+                    anis[i].query_contig,
                 )
                 .unwrap();
             }
@@ -390,7 +409,6 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
 pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchParams, Vec<Sketch>) {
     let ret_sketch_params: Mutex<SketchParams> = Mutex::new(SketchParams::default());
     let ret_ref_sketches: Mutex<Vec<Sketch>> = Mutex::new(vec![]);
-    let mut test_map = KmerToSketch::default();
 
     (0..ref_files.len())
         .collect::<Vec<usize>>()
@@ -401,13 +419,17 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
                 || !marker && !sketch_file.contains(".marker")
             {
                 let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
-                let (temp_sketch_param, temp_ref_sketch): (SketchParams, Sketch) =
-                    bincode::deserialize_from(reader).unwrap();
-                //let temp_kmer_to_sketch = temp_kmer_to_sketch.into_iter().map(|x| (x.0,x.1.into_iter().collect::<FxHashSet<usize>>())).collect::<KmerToSketch>();
-                let mut locked = ret_sketch_params.lock().unwrap();
-                *locked = temp_sketch_param;
-                let mut locked = ret_ref_sketches.lock().unwrap();
-                locked.push(temp_ref_sketch);
+                let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
+                if res.is_ok() {
+                    let (temp_sketch_param, temp_ref_sketch) = res.unwrap();
+                    let mut locked = ret_sketch_params.lock().unwrap();
+                    *locked = temp_sketch_param;
+                    let mut locked = ret_ref_sketches.lock().unwrap();
+                    locked.push(temp_ref_sketch);
+                }
+                else{
+                    error!("{} is not a valid .sketch file or is corrupted.", sketch_file);
+                }
             }
         });
 
@@ -417,5 +439,3 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
     ret_ref_sketches.sort_by(|x, y| x.file_name.cmp(&y.file_name));
     return (ret_sketch_params, ret_ref_sketches);
 }
-
-

@@ -31,10 +31,14 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         }
     }
     let screen_val;
-    if sketch_params.use_aa {
-        screen_val = f64::max(SEARCH_AAI_CUTOFF_DEFAULT, command_params.screen_val);
+    if command_params.screen_val == 0. {
+        if sketch_params.use_aa {
+            screen_val = SEARCH_AAI_CUTOFF_DEFAULT;
+        } else {
+            screen_val = SEARCH_ANI_CUTOFF_DEFAULT;
+        }
     } else {
-        screen_val = f64::max(SEARCH_ANI_CUTOFF_DEFAULT, command_params.screen_val);
+        screen_val = command_params.screen_val;
     }
     let anis: Mutex<FxHashMap<usize, FxHashMap<usize, AniEstResult>>> =
         Mutex::new(FxHashMap::default());
@@ -44,6 +48,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         std::process::exit(1)
     }
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
+    let counter : Mutex<usize> = Mutex::new(0);
 
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
@@ -79,6 +84,11 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                     mapi.insert(j, ani_res);
                 }
             });
+            let mut locked = counter.lock().unwrap();
+            *locked += 1;
+            if *locked % 100 == 0 && *locked != 0{
+                info!("{} query sequences processed.", locked);
+            }
         });
     let anis = anis.into_inner().unwrap();
     if command_params.sparse {

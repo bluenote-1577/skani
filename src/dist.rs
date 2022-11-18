@@ -21,58 +21,69 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             &command_params.ref_files,
             command_params.mode == Mode::Search,
         );
-        if new_sketch_params != sketch_params{
+        if new_sketch_params != sketch_params {
             warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
         }
         sketch_params = new_sketch_params;
     } else {
-        if command_params.individual_contig_r{
-            ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(&command_params.ref_files, &sketch_params, true);
-        }
-        else{
-            ref_sketches = file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
+        if command_params.individual_contig_r {
+            ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+                &command_params.ref_files,
+                &sketch_params,
+                true,
+            );
+        } else {
+            ref_sketches =
+                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
         }
     }
     if command_params.queries_are_sketch {
         (query_params, query_sketches) =
             file_io::sketches_from_sketch(&command_params.query_files, false);
-        if sketch_params != query_params  && command_params.refs_are_sketch {
+        if sketch_params != query_params && command_params.refs_are_sketch {
             panic!(
                 "Query sketch parameters were not equal to reference sketch parameters. Exiting."
             );
-        }
-        else{
-            if sketch_params != query_params{
+        } else {
+            if sketch_params != query_params {
                 warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
             }
         }
     } else {
-        if command_params.individual_contig_q{
-        query_sketches =
-            file_io::fastx_to_multiple_sketch_rewrite(&command_params.query_files, &sketch_params, true);
-
-        }
-        else{
-        query_sketches =
-            file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
+        if command_params.individual_contig_q {
+            query_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+                &command_params.query_files,
+                &sketch_params,
+                true,
+            );
+        } else {
+            query_sketches =
+                file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
         }
     }
-    if query_sketches.is_empty() || ref_sketches.is_empty(){
+    if query_sketches.is_empty() || ref_sketches.is_empty() {
         error!("No reference sketches/genomes or query sketches/genomes found.");
         std::process::exit(1)
     }
+
     let screen_val;
-    if sketch_params.use_aa {
-        screen_val = f64::max(SEARCH_AAI_CUTOFF_DEFAULT, command_params.screen_val);
+    if command_params.screen_val == 0. {
+        if sketch_params.use_aa {
+            screen_val = SEARCH_AAI_CUTOFF_DEFAULT;
+        } else {
+            screen_val = SEARCH_ANI_CUTOFF_DEFAULT;
+        }
     } else {
-        screen_val = f64::max(SEARCH_ANI_CUTOFF_DEFAULT, command_params.screen_val);
+        screen_val = command_params.screen_val;
     }
 
     let kmer_to_sketch;
 
     if command_params.screen {
-        info!("Screen option detected; generating marker hash table");
+        let now = Instant::now();
+        info!("Full index option detected; generating marker hash table");
         kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
+        info!("Full indexing time: {}", now.elapsed().as_secs_f32());
     } else {
         kmer_to_sketch = KmerToSketch::default();
     }
@@ -83,6 +94,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         .into_iter()
         .collect::<Vec<usize>>();
     let anis: Mutex<Vec<AniEstResult>> = Mutex::new(vec![]);
+    let counter: Mutex<usize> = Mutex::new(0);
     js.into_par_iter().for_each(|j| {
         let query_sketch = &query_sketches[j];
         if !command_params.screen {
@@ -128,6 +140,11 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                 let mut locked = anis.lock().unwrap();
                 locked.push(ani_res);
             });
+        }
+        let mut locked = counter.lock().unwrap();
+        *locked += 1;
+        if *locked % 100 == 0 && *locked != 0{
+            info!("{} query sequences processed.", locked);
         }
     });
     let anis = anis.into_inner().unwrap();

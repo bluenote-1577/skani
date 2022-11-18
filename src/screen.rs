@@ -6,6 +6,45 @@ use crate::types::*;
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
 
+pub fn screen_refs_filenames<'a>(
+    identity: f64,
+    kmer_to_sketch: &KmerToSketch,
+    query_sketch: &Sketch,
+    sketch_params: &SketchParams,
+    ref_sketches: &'a Vec<Sketch>
+) -> Vec<&'a String>{
+    let mut count_hash_map = FxHashMap::default();
+    for marker in query_sketch.marker_seeds.iter() {
+        if kmer_to_sketch.contains_key(marker) {
+            for sketch_id in kmer_to_sketch[marker].iter() {
+                let count = count_hash_map.entry(sketch_id).or_insert(0);
+                *count += 1;
+            }
+        }
+    }
+    //Use fixed K value for AA markers, but flexible ones for DNA because saturation less of an
+    //issue.
+    let k = if sketch_params.use_aa {
+        K_MARKER_AA
+    } else {
+        K_MARKER_DNA
+    };
+    let cutoff = identity.powi(k as i32);
+    let ret = count_hash_map
+        .iter()
+        .filter(|x| {
+            *x.1 > ((cutoff 
+                * usize::min(
+                    ref_sketches[**x.0].marker_seeds.len(),
+                    query_sketch.marker_seeds.len(),
+                ) as f64) as usize)
+        })
+        .map(|x| &ref_sketches[**x.0].file_name)
+        .collect();
+    return ret;
+
+}
+
 pub fn screen_refs(
     identity: f64,
     kmer_to_sketch: &KmerToSketch,

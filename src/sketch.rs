@@ -1,6 +1,8 @@
 use crate::file_io;
 use crate::types::*;
+use log::*;
 use std::fs::File;
+use std::time::Instant;
 use std::path::Path;
 use crate::params::*;
 use rand::seq::SliceRandom;
@@ -9,6 +11,8 @@ use rayon::prelude::*;
 use std::io::{BufWriter};
 
 pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
+    let now = Instant::now();
+    info!("Sketching files...");
     let p = format!("{}", command_params.out_file_name);
     std::fs::create_dir_all(p).unwrap();
 
@@ -52,5 +56,6 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
                 .unwrap();
         }
     });
+    info!("Sketching time: {}", now.elapsed().as_secs_f32());
     return;
 }
