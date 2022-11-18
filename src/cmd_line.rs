@@ -17,3 +17,7 @@ pub const H_FULL_INDEX: &str = "Loads a larger index for faster filtering. Uses 
 pub const ROBUST: &str = "robust";
 pub const CMD_ROBUST: &str = "robust";
 pub const H_ROBUST: &str = "Robust ani estimation; estimate mean after trim off 10%/90% quantiles.";
+
+pub const FULL_MAT: &str = "full-matrix";
+pub const CMD_FULL_MAT: &str = "full-matrix";
+pub const H_FULL_MAT: &str = "Output full matrix instead of lower-triangular matrix.";

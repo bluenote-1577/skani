@@ -99,7 +99,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             &ref_sketches,
             &command_params.out_file_name,
             command_params.individual_contig_r,
-            false,
+            command_params.full_matrix,
             sketch_params.use_aa
         );
     }

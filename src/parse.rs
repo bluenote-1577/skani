@@ -231,6 +231,14 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q = false;
         individual_contig_r = false;
     }
+    
+    let full_matrix;
+    if mode == Mode::Triangle{
+        full_matrix = matches_subc.is_present(FULL_MAT);
+    }
+    else{
+        full_matrix = false;
+    }
 
     let command_params = CommandParams {
         screen,
@@ -244,6 +252,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         robust,
         median,
         sparse,
+        full_matrix,
         max_results,
         individual_contig_q,
         individual_contig_r,
@@ -331,6 +340,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         robust,
         median,
         sparse,
+        full_matrix: false,
         max_results,
         individual_contig_q,
         individual_contig_r: false,

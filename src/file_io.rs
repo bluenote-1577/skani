@@ -188,13 +188,23 @@ pub fn write_phyllip_matrix(
                 name = &sketches[i].file_name;
             }
             write!(&mut handle, "{}", name).unwrap();
-            for j in 0..i {
-                if !anis.contains_key(&j) || !anis[&j].contains_key(&i) {
+            let end;
+            if full_matrix {
+                end = sketches.len();
+            } else {
+                end = i;
+            }
+            for j in 0..end {
+                let x = usize::min(i, j);
+                let y = usize::max(i, j);
+                if i == j {
+                    write!(&mut handle, "\t{:.4}", 1.).unwrap();
+                } else if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
                     write!(&mut handle, "\t{:.4}", 0.).unwrap();
-                } else if anis[&j][&i].ani == -1. || anis[&j][&i].ani.is_nan() {
+                } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     write!(&mut handle, "\t{:.4}", 0.).unwrap();
                 } else {
-                    write!(&mut handle, "\t{:.4}", anis[&j][&i].ani).unwrap();
+                    write!(&mut handle, "\t{:.4}", anis[&x][&y].ani).unwrap();
                 }
             }
             write!(&mut handle, "\n").unwrap();
@@ -202,12 +212,7 @@ pub fn write_phyllip_matrix(
 
         let af_mat_file = format!("skani_matrix.af");
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(
-            &mut af_file,
-            "{}\n",
-            sketches.len()
-        )
-        .unwrap();
+        write!(&mut af_file, "{}\n", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -215,31 +220,33 @@ pub fn write_phyllip_matrix(
             } else {
                 name = &sketches[i].file_name;
             }
-            write!(&mut handle, "{}", name).unwrap();
-            for j in 0..i {
-                if !anis.contains_key(&j) || !anis[&j].contains_key(&i) {
+            write!(&mut af_file, "{}", name).unwrap();
+            let end;
+            if full_matrix {
+                end = sketches.len();
+            } else {
+                end = i;
+            }
+            for j in 0..end {
+                let x = usize::min(i, j);
+                let y = usize::max(i, j);
+                if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
                     write!(&mut af_file, "\t{:.4}", 0.).unwrap();
-                } else if anis[&j][&i].ani == -1. || anis[&j][&i].ani.is_nan() {
+                } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     write!(&mut af_file, "\t{:.4}", 0.).unwrap();
                 } else {
-                    write!(&mut af_file, "\t{:.4}", anis[&j][&i].align_fraction_query).unwrap();
+                    write!(&mut af_file, "\t{:.4}", anis[&x][&y].align_fraction_query).unwrap();
                 }
             }
-            write!(&mut handle, "\n").unwrap();
+            write!(&mut af_file, "\n").unwrap();
         }
     } else {
         let ani_mat_file = format!("{}.identity", file_name);
         let af_mat_file = format!("{}.af", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(&mut ani_file, "IDENTITY_{}\t{}\n", id_str, sketches.len()).unwrap();
-        write!(
-            &mut af_file,
-            "ALIGNED_FRACTION_{}\t{}\n",
-            id_str,
-            sketches.len()
-        )
-        .unwrap();
+        write!(&mut ani_file, "{}\n", sketches.len()).unwrap();
+        write!(&mut af_file, "{}\n", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -249,16 +256,25 @@ pub fn write_phyllip_matrix(
             }
             write!(&mut ani_file, "{}", name).unwrap();
             write!(&mut af_file, "{}", name).unwrap();
-            for j in 0..i {
-                if !anis.contains_key(&j) || !anis[&j].contains_key(&i) {
+            let end;
+            if full_matrix {
+                end = sketches.len();
+            } else {
+                end = i;
+            }
+            for j in 0..end {
+                let x = usize::min(i, j);
+                let y = usize::max(i, j);
+
+                if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
                     write!(&mut ani_file, "\t{:.4}", 0.).unwrap();
                     write!(&mut af_file, "\t{:.4}", 0.).unwrap();
-                } else if anis[&j][&i].ani == -1. || anis[&j][&i].ani.is_nan() {
+                } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     write!(&mut ani_file, "\t{:.4}", 0.).unwrap();
                     write!(&mut af_file, "\t{:.4}", 0.).unwrap();
                 } else {
-                    write!(&mut ani_file, "\t{:.4}", anis[&j][&i].ani).unwrap();
-                    write!(&mut af_file, "\t{:.4}", anis[&j][&i].align_fraction_query).unwrap();
+                    write!(&mut ani_file, "\t{:.4}", anis[&x][&y].ani).unwrap();
+                    write!(&mut af_file, "\t{:.4}", anis[&x][&y].align_fraction_query).unwrap();
                 }
             }
             write!(&mut ani_file, "\n").unwrap();
@@ -426,9 +442,11 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
                     *locked = temp_sketch_param;
                     let mut locked = ret_ref_sketches.lock().unwrap();
                     locked.push(temp_ref_sketch);
-                }
-                else{
-                    error!("{} is not a valid .sketch file or is corrupted.", sketch_file);
+                } else {
+                    error!(
+                        "{} is not a valid .sketch file or is corrupted.",
+                        sketch_file
+                    );
                 }
             }
         });

@@ -80,6 +80,7 @@ pub struct CommandParams{
     pub robust: bool,
     pub median: bool,
     pub sparse: bool,
+    pub full_matrix: bool,
     pub max_results: usize,
     pub individual_contig_q: bool,
     pub individual_contig_r: bool,

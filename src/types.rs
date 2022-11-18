@@ -118,6 +118,7 @@ impl Sketch{
     }
     
     pub fn new(marker_c: usize, c: usize, k: usize, file_name: String, amino_acid: bool) -> Sketch{
+        assert!(marker_c >= c);
         let mut new_sketch = Sketch::default();
         new_sketch.c = c;
         new_sketch.k = k;

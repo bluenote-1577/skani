@@ -11,7 +11,7 @@ fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version("1.0")
-        .about("fast, robust ANI/AAI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI (AAI) calculation:\nskani dist genome1.fa genome2.fa (--aai)\n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...")
+        .about("fast, robust ANI/AAI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI (AAI) calculation:\nskani dist genome1.fa genome2.fa (--aai)\n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
         )
@@ -262,11 +262,15 @@ fn main() {
                         .display_order(1)
                 )
                 .arg(
+                    Arg::new(FULL_MAT)
+                        .long(CMD_FULL_MAT)
+                        .help(H_FULL_MAT)
+                )
+                .arg(
                     Arg::new(MIN_ALIGN_FRAC)
                         .long(CMD_MIN_ALIGN_FRAC)
                         .help(H_MIN_ALIGN_FRAC)
                         .takes_value(true)
-                        .display_order(100)
                 )
                 .arg(
                     Arg::new("sparse")
@@ -328,7 +332,7 @@ fn main() {
                 .arg(
                     Arg::new("sketched database folder")
                         .short('d')
-                        .help("Folder of outputs from `skani sketch`.")
+                        .help("Output folder from `skani sketch`.")
                         .takes_value(true)
                         .required(true)
                 )
