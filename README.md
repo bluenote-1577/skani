@@ -1,4 +1,4 @@
-# skani - robust sketched nucleotide/amino acid identity calculation for metagenomic data by approximate alignment
+# skani - accurate, robust, and fast nucleotide/amino acid identity calculation for MAGs and databases
 
 ## Introduction
 
@@ -6,7 +6,7 @@
 
 The main advantages of skani compared to other methods such as FastANI or Mash are
 
-1. **Robustsness to fragmentation and incompleteness** in MAGs for comparing similar species. This is done 
+1. **Robustness to fragmentation and incompleteness** in MAGs for comparing similar species. This is done 
 by the usage of sparse k-mer chaining to find approximate alignments. 
 
 2. **Extremely fast**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash).
@@ -43,6 +43,9 @@ skani dist -a genome1.fa genome2.fa
 
 #all-to-all, 20 threads
 skani dist -q query1.fa query2.fa -r ref1.fa ref2.fa -t 20
+
+#query each record in a multi-fasta (--qi for query, --ri for reference)
+skani dist --qi -q query1.fa -r ref1.fa
 ```
 
 `dist` computes ANI/AAI between all queries and all references. If aligned fraction for the two genomes (see Outputs) is
@@ -63,10 +66,14 @@ skani search -d sketch_folder query1.fa query2.fa ...
 the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
 fully loading genomes that pass a filter into memory, and discarding the index after each query is done. 
 
+If for some reason you're querying many small sequences (> 1000 small sequences), the loading step will dominate the ANI comparison, so consider 
+using `dist` instead. 
+
 `search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. The parameters
 for `search` are obtained from the parameters used for the `sketch` option, so if you sketch for AAI using the `-a` option, you
 can only use `search` for AAI. 
 
+If querying many genomes (> 100) against a large database (> 10000 genomes) consider using the --fast-screen option. This takes longer on start-up, but speeds up subsequent queries. 
 
 ### skani triangle - all-to-all ANI/AAI compution 
 ```
@@ -103,4 +110,10 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - Ref/Query_name: the id of the first contig in the reference/query file.
 
 ## Advanced
+
+### Adjusting memory/speed tradeoffs 
+
+### Different types of ANI/AAI estimation
+
+
 
