@@ -35,6 +35,7 @@ cargo build --release
 ```
 skani sketch genome1.fa genome2.fa ... -o sketch_folder 
 skani sketch -l list_of_genomes.txt -o sketch_folder
+skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
@@ -135,7 +136,7 @@ The aligned fraction output is also less accurate on low-similarity genomes, so 
 
 ### ANI calculations for small genomes/reads
 
-skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI.
+skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
 
 - skani can not classify short-reads. Use a taxonomic classifier such as kraken for this.
 - skani can not compare sets of short-reads. Use Mash or sourmash for this.
