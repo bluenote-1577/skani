@@ -4,9 +4,9 @@
 
 **skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of genomes or MAGs (metagenome-assembled contigs) with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
 
-The main advantages of skani compared to other methods such as FastANI or Mash are
+skani uses an approximate alignment method without base-level alignment by sparse k-mer chaining. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for similar MAGs**. Mash ANI estimates are not accurate when MAGs are even < 90% complete. 
+1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates are not accurate when MAGs are < 90% complete. 
 
 2. **Extremely fast**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
 
@@ -14,11 +14,9 @@ The main advantages of skani compared to other methods such as FastANI or Mash a
 
 4. **Efficient AAI calculation**. AAI calculation is about 10-20x slower than ANI, but much faster than any other BLAST+Prodigal based method. The sketches for AAI can get quite large but can be stored on disk and queried efficiently.
 
-### Requirements
+### Requirements and Install
 
 1. [rust](https://www.rust-lang.org/tools/install) and associated tools such as cargo are required and assumed to be in PATH.
-
-### Install
 
 ```
 git clone https://github.com/bluenote-1577/skani
@@ -40,7 +38,7 @@ skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
 
-`sketch` computes the sketch of a genome and stores it in a new folder. For each file `genome.fa`, two new files `genome.fa.sketch` and `genome.fa.markers`
+`sketch` computes the sketch (a.k.a index) of a genome and stores it in a new folder. For each file `genome.fa`, two new files `genome.fa.sketch` and `genome.fa.markers`
 are created in the output folder. 
 
 The .sketch files can be used as drop-in substitutes for fasta files. 
