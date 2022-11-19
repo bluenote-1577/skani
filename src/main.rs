@@ -51,7 +51,8 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.\t[default: ANI 15, AAI 6]")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .hidden(true)
                 )
                 .arg(
                     Arg::new("c")
@@ -175,7 +176,8 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.\t[default: ANI 15, AAI 6].")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .hidden(true)
                 )
                 .arg(
                     Arg::new("c")
@@ -290,7 +292,8 @@ fn main() {
                     Arg::new("k")
                         .short('k')
                         .help("k-mer size.\t[default: ANI 15, AAI 6]")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .hidden(true)
                 )
                 .arg(
                     Arg::new("c")

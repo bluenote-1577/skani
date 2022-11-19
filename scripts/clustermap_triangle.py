@@ -31,6 +31,7 @@ for line in open(file, 'r'):
         spl = line.split(delim);
     else:
         spl = line.split();
+    print(spl[0].split('/')[-1])
     labels.append(spl[0].split('/')[-1])
     endpoints = range(1,counter)
     for i in endpoints:
@@ -55,7 +56,11 @@ else:
     cg = seaborn.clustermap(square_mat, row_linkage = Z, col_linkage = Z, cmap = cmap)
 
  
-cg.ax_heatmap.set_xticklabels(labels, rotation=90)
-cg.ax_heatmap.set_yticklabels(labels, rotation=0)
+print(cg.dendrogram_row.reordered_ind)
+re = [labels[x] for x in cg.dendrogram_row.reordered_ind]
+xticks = [x for x in range(len(labels))]
+cg.ax_heatmap.set_xticks(xticks)
+cg.ax_heatmap.set_xticklabels(re, rotation=90)
+#cg.ax_heatmap.set_yticklabels(re, rotation=0)
 plt.tight_layout()
 plt.show()

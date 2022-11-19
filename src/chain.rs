@@ -500,7 +500,10 @@ pub fn check_markers_quickly(
     assert!(ref_sketch.amino_acid == query_sketch.amino_acid);
     let k = if ref_sketch.amino_acid{K_MARKER_AA} else {K_MARKER_DNA};
     let ratio = screen_val.powi(k.try_into().unwrap()) * min_card as f64;
-    let ratio = ratio as usize;
+    let mut ratio = ratio as usize;
+    if ratio == 0{
+        ratio = 1;
+    }
     debug!("Ratio {}", ratio);
     let mut intersect_len = 0;
     for marker_seed1 in seeds1.iter(){
@@ -525,13 +528,28 @@ fn get_anchors(
     let kmer_seeds_query;
     let mut query_positions_all;
     let switched;
-    let score_query = query_sketch.total_sequence_length as f64
-        * (query_sketch.total_sequence_length as f64 / query_sketch.contigs.len() as f64).ln();
-    let score_ref = ref_sketch.total_sequence_length as f64
-        * (ref_sketch.total_sequence_length as f64 / ref_sketch.contigs.len() as f64).ln();
+    if ref_sketch.contig_lengths.is_empty() || query_sketch.contig_lengths.is_empty(){
+        return (AnchorChunks::default(), true);
+    }
+//    let score_query = query_sketch.total_sequence_length as f64
+//        * (query_sketch.total_sequence_length as f64 / query_sketch.contigs.len() as f64).ln();
+//    let score_ref = ref_sketch.total_sequence_length as f64
+//        * (ref_sketch.total_sequence_length as f64 / ref_sketch.contigs.len() as f64).ln();
+//
+    let mut ctgs_q = query_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
+    ctgs_q.sort();
+    let med_ctg_len_q = *ctgs_q[query_sketch.contig_lengths.len()/2] as f64;
+    let mut ctgs_r = ref_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
+    ctgs_r.sort();
+    let med_ctg_len_r = *ctgs_r[ref_sketch.contig_lengths.len()/2] as f64;
+    let score_query = (query_sketch.total_sequence_length as f64).sqrt()
+        * med_ctg_len_q;
+    let score_ref = (ref_sketch.total_sequence_length as f64).sqrt()
+        * med_ctg_len_r;
 
     //        if query_sketch.contigs.len() < ref_sketch.contigs.len(){
     //    if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
+//    if score_query > score_ref {
     if score_query > score_ref {
         switched = true;
         if !check_markers_quickly(&query_sketch, &ref_sketch, 0.0){
