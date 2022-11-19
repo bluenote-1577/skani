@@ -4,7 +4,7 @@
 
 **skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of genomes or MAGs (metagenome-assembled contigs) with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
 
-skani uses an approximate alignment method without base-level alignment by sparse k-mer chaining. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates are not accurate when MAGs are < 90% complete. 
 
@@ -152,4 +152,6 @@ For parameters:
 2. Set -c to 60 for noisy-long reads (mean identity < 95), or keeping c = 120 for higher quality reads (or if memory is an issue). Longer + High identity => higher -c. 
 3. skani currently loads the entire file into memory instead of processing one read at a time. Consider splitting large sets of reads. 
 
+## Citation
 
+TODO
