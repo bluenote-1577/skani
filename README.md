@@ -22,14 +22,14 @@ skani uses an approximate alignment method without base-level alignment. It is m
 git clone https://github.com/bluenote-1577/skani
 cd skani
 cargo build --release
+
+# skani binary found in ./target/release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 # Optional: soft link to skani in PATH. May not work if ~/.cargo/bin is not in path
 ln -s  $PWD/target/release/skani ~/.cargo/bin/ 
 skani -h
 ```
-
-`cargo build --release` builds the **skani** binary, which is found in the ./target/release/ directory. 
 
 #### Quick start
 
