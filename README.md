@@ -25,7 +25,7 @@ cargo build --release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 # create soft link to skani binary in $PATH
-ln -s  $PWD/target/release/flopp ~/.cargo/bin/ 
+ln -s  $PWD/target/release/skani ~/.cargo/bin/ 
 skani -h
 ```
 
