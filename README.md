@@ -18,11 +18,15 @@ skani uses an approximate alignment method without base-level alignment. It is m
 
 1. [rust](https://www.rust-lang.org/tools/install) and associated tools such as cargo are required and assumed to be in PATH.
 
-```
+```sh
 git clone https://github.com/bluenote-1577/skani
 cd skani
 cargo build --release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+
+# create soft link to skani binary in $PATH
+ln -s  $PWD/target/release/flopp ~/.cargo/bin/ 
+skani -h
 ```
 
 `cargo build --release` builds the **skani** binary, which is found in the ./target/release/ directory. 
