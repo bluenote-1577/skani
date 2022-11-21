@@ -2,13 +2,13 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of genomes or MAGs (metagenome-assembled contigs) with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
+**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of sequences with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates are not accurate when MAGs are < 90% complete. 
+1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates that are not accurate when MAGs are < 90% complete. 
 
-2. **Extremely fast**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
+2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
 
 3. **Efficient database search**. Querying a genome against a pre-sketched GTDB database (>65000 genomes) for ANI takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash.
 
@@ -31,10 +31,16 @@ cargo build --release
 
 ### skani sketch - storing sketches/indices on disk
 ```
+#Sketch genomes, output in sketch_folder
 skani sketch genome1.fa genome2.fa ... -o sketch_folder 
+
+#Sketch a list of genomes specified in a file
 skani sketch -l list_of_genomes.txt -o sketch_folder
+
+#Sketch for AAI instead of ANI (ANI by default).
 skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 
+#Use sketch file for computation
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
 
@@ -66,6 +72,8 @@ If you're searching against a database, `search` can use much less memory (see b
 ```
 # use -a while sketching for AAI computation instead
 skani sketch genome1.fa genome2.fa ... -o sketch_folder -t (threads)
+
+# query query1.fa, query2.fa, ... against sketches in sketch_folder
 skani search -d sketch_folder query1.fa query2.fa ...  -t (threads) -o output.txt
 ```
 `search` is a memory efficient method of calculating ANI/AAI against a large reference database. Searching against
@@ -81,8 +89,13 @@ can only use `search` for AAI.
 
 ### skani triangle - all-to-all ANI/AAI compution 
 ```
+#all-to-all ANI comparison in lower-triangular matrix
 skani triangle genome1.fa genome2.fa genome3.fa -o lower_triangle_matrix.txt
-skani triangle -l list_of_genomes.txt -o sparse_output --sparse 
+
+#output sparse matrix/list of comparisons
+skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse 
+
+#output square matrix
 skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
 ```
 
