@@ -2,7 +2,7 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of sequences with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
+**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from DNA sequences. skani is designed for pairs of sequences with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
