@@ -27,20 +27,33 @@ cargo build --release
 
 `cargo build --release` builds the **skani** binary, which is found in the ./target/release/ directory. 
 
+#### Quick start
+
+```sh
+# compare two genomes for ANI
+skani dist genome1.fa genome2.fa
+
+# compare two genomes for AAI
+skani dist -a genome1.fa genome2.fa > aai_results.txt
+
+# compare multiple genomes
+skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
+```
+
 ## Using skani
 
 ### skani sketch - storing sketches/indices on disk
-```
-#Sketch genomes, output in sketch_folder
+```sh
+# sketch genomes, output in sketch_folder
 skani sketch genome1.fa genome2.fa ... -o sketch_folder 
 
-#Sketch a list of genomes specified in a file
+# sketch a list of genomes specified in a file
 skani sketch -l list_of_genomes.txt -o sketch_folder
 
-#Sketch for AAI instead of ANI (ANI by default).
+# sketch for AAI instead of ANI (ANI by default).
 skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 
-#Use sketch file for computation
+# use sketch file for computation
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
 
@@ -50,17 +63,11 @@ are created in the output folder. The .sketch files can be used as drop-in subst
 
 ### skani dist - simple ANI/AAI calculation
 
-```
-#simple ANI calculation
-skani dist genome1.fa genome2.fa 
-
-#AAI computation
-skani dist -a genome1.fa genome2.fa 
-
-#all-to-all, 20 threads
+```sh
+# all-to-all, 20 threads
 skani dist -q query1.fa query2.fa -r ref1.fa ref2.fa -t 20
 
-#query each record in a multi-fasta (--qi for query, --ri for reference)
+# query each record in a multi-fasta (--qi for query, --ri for reference)
 skani dist --qi -q query1.fa -r ref1.fa
 ```
 
@@ -69,7 +76,7 @@ If you're searching against a database, `search` can use much less memory (see b
 
 ### skani search - memory-efficient ANI/AAI database queries
 
-```
+```sh
 # use -a while sketching for AAI computation instead
 skani sketch genome1.fa genome2.fa ... -o sketch_folder -t (threads)
 
@@ -80,22 +87,22 @@ skani search -d sketch_folder query1.fa query2.fa ...  -t (threads) -o output.tx
 the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
 fully loading genomes that pass a filter into memory, and discarding the index after each query is done. 
 
-If you're querying many sequences (> 1000 small sequences), the loading step will dominate the ANI comparison, so consider 
-using `dist` instead if you have enough RAM. 
-
 `search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. **The parameters
 for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
 can only use `search` for AAI. 
 
+If you're querying many sequences, the file I/O step will dominate the running time, so consider 
+using `dist` instead if you have enough RAM. 
+
 ### skani triangle - all-to-all ANI/AAI compution 
-```
-#all-to-all ANI comparison in lower-triangular matrix
+```sh
+# all-to-all ANI comparison in lower-triangular matrix
 skani triangle genome1.fa genome2.fa genome3.fa -o lower_triangle_matrix.txt
 
-#output sparse matrix/list of comparisons
+# output sparse matrix/list of comparisons
 skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse 
 
-#output square matrix
+# output square matrix
 skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
 ```
 
@@ -108,7 +115,6 @@ Use `--sparse` to output in the same format as `search` or `dist`.
 If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the -h options.
 
 **In practice, this means that only genomes with > ~82% ANI and > ~60% AAI are output** with default parameters. 
-
 
 The default output for `search` and `dist` looks like
 ```
@@ -154,7 +160,7 @@ skani is not necessarily designed for comparing long-reads or small contigs, but
 
 - skani can not classify short-reads. Use a taxonomic classifier such as kraken for this.
 - skani can not compare *collections* of short-reads. Use Mash or sourmash for this.
-- skani can not compute AAI for long-reads
+- skani can not compute AAI for long-reads.
 
 For small contigs or long-reads, here are some suggestions:
 
