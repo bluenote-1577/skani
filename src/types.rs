@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
 use crate::params::*;
-use fxhash::{FxHashMap, FxHashSet};
+use fxhash::{FxHashSet};
 use partitions::*;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};

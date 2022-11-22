@@ -1,12 +1,12 @@
 use crate::params::*;
 use crate::types::*;
-use bio::data_structures::interval_tree::IntervalTree;
-use fxhash::{hash, FxHashMap, FxHashSet};
+//use bio::data_structures::interval_tree::IntervalTree;
+//use fxhash::{hash, FxHashMap, FxHashSet};
 use rust_lapper::{Interval, Lapper};
 use smallvec::SmallVec;
 
 #[inline]
-fn position_min<T: Ord>(slice: &[T]) -> Option<usize> {
+fn _position_min<T: Ord>(slice: &[T]) -> Option<usize> {
     slice
         .iter()
         .enumerate()

@@ -1,5 +1,4 @@
 use clap::{AppSettings, Arg, ArgGroup, Command, SubCommand};
-use log::*;
 use skani::dist;
 use skani::cmd_line::*;
 use skani::params;
@@ -416,7 +415,6 @@ fn main() {
         .get_matches();
 
     let (sketch_params, command_params) = parse::parse_params(&matches);
-    info!("Successfully parsed command line options.");
 
     //SKETCHING
     if command_params.mode == params::Mode::Sketch {

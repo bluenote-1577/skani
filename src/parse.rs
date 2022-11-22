@@ -195,21 +195,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
     }
 
-    let screen;
-    if mode == Mode::Dist{
-        if query_files.len() > FULL_INDEX_THRESH{
-            screen = true;
-        }
-        else{
-            screen = matches_subc.is_present(FULL_INDEX);
-        }
-    }
-    else if mode == Mode::Triangle{
-        screen = true;
-    }
-    else{
-        screen = false;
-    }
+    
     let individual_contig_q;
     let individual_contig_r;
 
@@ -238,6 +224,22 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
     else{
         full_matrix = false;
+    }
+
+    let screen;
+    if mode == Mode::Dist{
+        if query_files.len() > FULL_INDEX_THRESH || individual_contig_q{
+            screen = true;
+        }
+        else{
+            screen = matches_subc.is_present(FULL_INDEX);
+        }
+    }
+    else if mode == Mode::Triangle{
+        screen = true;
+    }
+    else{
+        screen = false;
     }
 
     let command_params = CommandParams {
@@ -318,14 +320,14 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .parse::<f64>()
         .unwrap();
     let screen;
-    if query_files.len() > FULL_INDEX_THRESH{
+    let individual_contig_q = matches_subc.is_present("individual contig query");
+    if query_files.len() > FULL_INDEX_THRESH || individual_contig_q{
         screen = true;
     }
     else{
         screen = matches_subc.is_present(FULL_INDEX);
     }
 
-    let individual_contig_q = matches_subc.is_present("individual contig query");
     let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-1.0").parse::<f64>().unwrap();
 
     let command_params = CommandParams {

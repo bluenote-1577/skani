@@ -2,7 +2,6 @@ use crate::params::*;
 use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
-use fxhash::FxHashSet;
 use log::*;
 use needletail::parse_fastx_file;
 use rand::seq::SliceRandom;
@@ -456,4 +455,18 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
 
     ret_ref_sketches.sort_by(|x, y| x.file_name.cmp(&y.file_name));
     return (ret_sketch_params, ret_ref_sketches);
+}
+
+pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec<Sketch>){
+
+    let reader = BufReader::new(File::open(marker_file).unwrap());
+    let res: Result<(SketchParams, Vec<Sketch>), _> = bincode::deserialize_from(reader);
+    if res.is_ok(){
+        return res.unwrap();
+    }
+    else{
+        error!("Problem reading {}. Exiting. ", marker_file);
+        std::process::exit(1)
+
+    }
 }
