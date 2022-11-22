@@ -2,13 +2,13 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) for metagenomic data. skani is designed for pairs of genomes or MAGs (metagenome-assembled contigs) with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
+**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from DNA sequences. skani is designed for pairs of sequences with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates are not accurate when MAGs are < 90% complete. 
+1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates that are not accurate when MAGs are < 90% complete. 
 
-2. **Extremely fast**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
+2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
 
 3. **Efficient database search**. Querying a genome against a pre-sketched GTDB database (>65000 genomes) for ANI takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash.
 
@@ -18,45 +18,60 @@ skani uses an approximate alignment method without base-level alignment. It is m
 
 1. [rust](https://www.rust-lang.org/tools/install) and associated tools such as cargo are required and assumed to be in PATH.
 
-```
+```sh
 git clone https://github.com/bluenote-1577/skani
 cd skani
 cargo build --release
+
+# skani binary found in ./target/release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+
+# Optional: soft link to skani in PATH. May not work if ~/.cargo/bin is not in path
+ln -s  $PWD/target/release/skani ~/.cargo/bin/ 
+skani -h
 ```
 
-`cargo build --release` builds the **skani** binary, which is found in the ./target/release/ directory. 
+#### Quick start
+
+```sh
+# compare two genomes for ANI
+skani dist genome1.fa genome2.fa
+
+# compare two genomes for AAI
+skani dist -a genome1.fa genome2.fa > aai_results.txt
+
+# compare multiple genomes
+skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
+```
 
 ## Using skani
 
 ### skani sketch - storing sketches/indices on disk
-```
+```sh
+# sketch genomes, output in sketch_folder
 skani sketch genome1.fa genome2.fa ... -o sketch_folder 
+
+# sketch a list of genomes specified in a file
 skani sketch -l list_of_genomes.txt -o sketch_folder
+
+# sketch for AAI instead of ANI (ANI by default).
 skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 
+# use sketch file for computation
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
 
 `sketch` computes the sketch (a.k.a index) of a genome and stores it in a new folder. For each file `genome.fa`, two new files `genome.fa.sketch` and `genome.fa.markers`
-are created in the output folder. 
-
-The .sketch files can be used as drop-in substitutes for fasta files. 
+are created in the output folder. The .sketch files can be used as drop-in substitutes for fasta files. 
 
 
 ### skani dist - simple ANI/AAI calculation
 
-```
-#simple ANI calculation
-skani dist genome1.fa genome2.fa 
-
-#AAI computation
-skani dist -a genome1.fa genome2.fa 
-
-#all-to-all, 20 threads
+```sh
+# all-to-all, 20 threads
 skani dist -q query1.fa query2.fa -r ref1.fa ref2.fa -t 20
 
-#query each record in a multi-fasta (--qi for query, --ri for reference)
+# query each record in a multi-fasta (--qi for query, --ri for reference)
 skani dist --qi -q query1.fa -r ref1.fa
 ```
 
@@ -65,26 +80,34 @@ If you're searching against a database, `search` can use much less memory (see b
 
 ### skani search - memory-efficient ANI/AAI database queries
 
-```
+```sh
 # use -a while sketching for AAI computation instead
 skani sketch genome1.fa genome2.fa ... -o sketch_folder -t (threads)
+
+# query query1.fa, query2.fa, ... against sketches in sketch_folder
 skani search -d sketch_folder query1.fa query2.fa ...  -t (threads) -o output.txt
 ```
 `search` is a memory efficient method of calculating ANI/AAI against a large reference database. Searching against
 the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
 fully loading genomes that pass a filter into memory, and discarding the index after each query is done. 
 
-If for some reason you're querying many small sequences (> 1000 small sequences), the loading step will dominate the ANI comparison, so consider 
-using `dist` instead if you have enough RAM. 
-
 `search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. **The parameters
 for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
 can only use `search` for AAI. 
 
+If you're querying many sequences, the file I/O step will dominate the running time, so consider 
+using `dist` instead if you have enough RAM. 
+
 ### skani triangle - all-to-all ANI/AAI compution 
-```
+```sh
+# all-to-all ANI comparison in lower-triangular matrix
 skani triangle genome1.fa genome2.fa genome3.fa -o lower_triangle_matrix.txt
-skani triangle -l list_of_genomes.txt -o sparse_output --sparse 
+
+# output sparse matrix/list of comparisons
+skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse 
+
+# output square matrix
+skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
 ```
 
 `triangle` outputs a lower-triangular matrix in phyllip format. 
@@ -96,7 +119,6 @@ Use `--sparse` to output in the same format as `search` or `dist`.
 If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the -h options.
 
 **In practice, this means that only genomes with > ~82% ANI and > ~60% AAI are output** with default parameters. 
-
 
 The default output for `search` and `dist` looks like
 ```
@@ -110,7 +132,7 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
 
-For `triangle`, if the genomes fail to meet the alignment fraction cutoff, 0 is output. The default output for `triangle` is a lower-triangular ANI/AAI matrix to stdout, and a lower-triangular aligned-fraction matrix to the skani_matrix.af file. The name can be changed using the -o option for all outputs. 
+For `triangle`, if the genomes fail to meet the alignment fraction cutoff, 0 is output. The default output for `triangle` is a lower-triangular ANI/AAI matrix to stdout, and a lower-triangular aligned-fraction matrix to the skani_matrix.af file. The name can be changed using the -o option for all outputs, and `full-matrix` gives a square matrix instead. 
 
 ## Advanced
 
@@ -120,9 +142,13 @@ For `triangle`, if the genomes fail to meet the alignment fraction cutoff, 0 is 
 The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. Building the table takes a bit of time, and the table itself is ~10 GB for 60000 genomes with default parameters. This is turned off if less than 100 query files are input, and turned on automatically otherwise. If you're querying less than 100 genomes (or if you're using the --qi option), you need to turn this on manually. 
 
 #### Adjusting c
-If you want skani to run faster, the main parameter to adjust is the `-c` parameter. skani's speed and memory efficiency is inversely proportional to c as it controls the sampling rate of the k-mer seeds. As a default, c = 120 for ANI and c = 15 for AAI. For genomes of ANI > 95%, c can be comfortably made higher up to 200. AAI TODO
+If you want skani to run faster, the main parameter to adjust is the `-c` parameter. skani's speed and memory efficiency is inversely proportional to c, so increasing c by 2x means 2x faster and less memory. As a default, c = 120 for ANI and c = 15 for AAI. 
 
-However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85% ANI genomes** since default parameters are built around c = 120 and c = 15.
+**ANI**: for genomes of ANI > 95%, c can be comfortably made higher up to 200 or even 300, but aligned fraction may get less accurate. 
+
+**AAI**: for genomes of AAI > 65%, c can be made up to 30 and still relatively accurate. Results degrade a bit after c gets past 40. 
+
+However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85% ANI genomes** since default parameters are built around the default values. Furthermore, increasing c means that distant genomes will no longer be comparable; see below. 
 
 ### Comparing low-ANI/AAI genomes. 
 
@@ -130,21 +156,20 @@ skani focuses on ANI/AAI comparisons for genomes with > 85% ANI and > 60% AAI. T
 
 For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae genome, and running ``skani dist refs/MN-03.fa refs/e.coli-K12.fa`` returns nothing, because the two genomes do not have a good enough alignment. However, ``skani dist refs/MN-03.fa refs/e.coli-K12.fa -c 30`` returns an ANI estimate of ~79%. 
 
-The aligned fraction output is also less accurate on low-similarity genomes, so decreasing `c` will make it more accurate. 
+The aligned fraction output is also less accurate on low-similarity genomes, so decreasing `c` will make it more accurate. However, decreasing `c` may not make high ANI calculations more accurate. 
 
 ### ANI calculations for small genomes/reads
 
 skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
 
 - skani can not classify short-reads. Use a taxonomic classifier such as kraken for this.
-- skani can not compare sets of short-reads. Use Mash or sourmash for this.
-- skani has not been tested for AAI on long-reads
+- skani can not compare *collections* of short-reads. Use Mash or sourmash for this.
+- skani can not compute AAI for long-reads.
 
 For small contigs or long-reads, here are some suggestions:
 
-1. **Make sure to use `--marker-index` option for comparing against large databases.**
-2. Use the --qi option for `skani search` or `skani dist`.
-3. `skani dist` will be much faster than `skani search`, since the bottleneck will be loading genomes into memory. 
+1. Make sure to use the --qi option for `skani search` or `skani dist` if your contigs/reads are all in one file. 
+2. `skani dist` will be much faster than `skani search`, since the bottleneck will be loading genomes into memory. 
 
 For parameters:
 
