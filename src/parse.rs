@@ -181,7 +181,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let mut refs_are_sketch = ref_files.len() > 0;
     for ref_file in ref_files.iter() {
-        if !ref_file.contains(".sketch") && !ref_file.contains(".marker") {
+        if !ref_file.contains(".sketch") && !ref_file.contains(".marker") && !ref_file.contains("markers.bin"){
             refs_are_sketch = false;
             break;
         }
