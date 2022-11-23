@@ -431,7 +431,7 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
         .for_each(|i| {
             let sketch_file = &ref_files[i];
             if marker && sketch_file.contains(".marker")
-                || !marker && !sketch_file.contains(".marker")
+                || !marker && !sketch_file.contains(".marker") 
             {
                 let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
                 let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
@@ -442,10 +442,12 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
                     let mut locked = ret_ref_sketches.lock().unwrap();
                     locked.push(temp_ref_sketch);
                 } else {
-                    error!(
-                        "{} is not a valid .sketch file or is corrupted.",
-                        sketch_file
-                    );
+                    if sketch_file != "markers.bin"{
+                        error!(
+                            "{} is not a valid .sketch file or is corrupted.",
+                            sketch_file
+                        );
+                    }
                 }
             }
         });
