@@ -6,7 +6,7 @@
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for similar MAGs**. Other methods, such as Mash, give estimates that are not accurate when MAGs are < 90% complete. 
+1. **Accurate ANI calculations for MAGs**. Other methods, such as Mash, give estimates that are not accurate when MAGs are < 90% complete. 
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
 
@@ -103,7 +103,7 @@ using `dist` instead if you have enough RAM.
 # all-to-all ANI comparison in lower-triangular matrix
 skani triangle genome1.fa genome2.fa genome3.fa -o lower_triangle_matrix.txt
 
-# output sparse matrix/list of comparisons
+# output sparse matrix a.k.a an edge list of comparisons
 skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse 
 
 # output square matrix
@@ -112,7 +112,8 @@ skani triangle genome1.fa genom2.fa genome3.fa --full-matrix
 
 `triangle` outputs a lower-triangular matrix in phyllip format. 
 It avoids doing n^2 computations and only does n(n-1)/2 computations as opposed to `dist`. 
-Use `--sparse` to output in the same format as `search` or `dist`. 
+
+`triangle` loads all genome indices into memory. For doing comparisons on massive data sets, see the Advanced section for suggestions on reducing memory cost.
 
 ## Output
 
@@ -136,29 +137,36 @@ For `triangle`, if the genomes fail to meet the alignment fraction cutoff, 0 is 
 
 ## Advanced
 
-### Adjusting memory/speed tradeoffs 
+## Adjusting memory/speed tradeoffs 
 
-#### Marker index 
-The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. Building the table takes a bit of time, and the table itself is ~10 GB for 60000 genomes with default parameters. This is turned off if less than 100 query files are input, and turned on automatically otherwise. If you're querying less than 100 genomes (or if you're using the --qi option), you need to turn this on manually. 
+### Marker index 
+The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. Building the table takes a bit of time, and the table itself is ~10 GB for 60000 genomes with default parameters. This is turned off if less than 100 query files are input or when using the `--qi` option. Otherwise, it is turned on automatically. 
 
-#### Adjusting c
+### Adjusting c
 If you want skani to run faster, the main parameter to adjust is the `-c` parameter. skani's speed and memory efficiency is inversely proportional to c, so increasing c by 2x means 2x faster and less memory. As a default, c = 120 for ANI and c = 15 for AAI. 
 
 **ANI**: for genomes of ANI > 95%, c can be comfortably made higher up to 200 or even 300, but aligned fraction may get less accurate. 
 
 **AAI**: for genomes of AAI > 65%, c can be made up to 30 and still relatively accurate. Results degrade a bit after c gets past 40. 
 
-However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85% ANI genomes** since default parameters are built around the default values. Furthermore, increasing c means that distant genomes will no longer be comparable; see below. 
+However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85% ANI genomes** since many other default algorithm parameters are designed these default values. Furthermore, increasing c means that distant genomes will no longer be comparable; see the section on **Comparing lower ANI/AAI genomes**. 
 
-### Comparing low-ANI/AAI genomes. 
+## All-to-all comparisons on massive data sets
+
+`skani triangle` should be used for all-to-all comparisons on reasonably sized data sets. However, it loads all genome indices into memory, so RAM may be an issue. If RAM is an issue, consider: 
+1. Pre-sketch using `skani sketch -l list_of_genomes.txt -o sketched_genomes` and run `skani search -d sketched_genomes -l list_of_genomes -o output` to do slower but low-memory all-to-all comparisons.
+2. Consider using a lower marker density, `-m`. It defaults to 1000 but 2000 is reasonable for most bacterial genomes. 
+3. Raising the `-c` parameter can help, see the above section on the `-c` parameter. 
+
+## Comparing lower ANI/AAI genomes. 
 
 skani focuses on ANI/AAI comparisons for genomes with > 85% ANI and > 60% AAI. To get more accurate results for low ANI/AAI values, one should use a lower value for `c`. 
 
-For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae genome, and running ``skani dist refs/MN-03.fa refs/e.coli-K12.fa`` returns nothing, because the two genomes do not have a good enough alignment. However, ``skani dist refs/MN-03.fa refs/e.coli-K12.fa -c 30`` returns an ANI estimate of ~79%. 
+For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae genome, and running ``skani dist refs/MN-03.fa refs/e.coli-K12.fa`` returns nothing because the two genomes do not have a good enough alignment. However, ``skani dist refs/MN-03.fa refs/e.coli-K12.fa -c 30`` returns an ANI estimate of ~79%. 
 
-The aligned fraction output is also less accurate on low-similarity genomes, so decreasing `c` will make it more accurate. However, decreasing `c` may not make high ANI calculations more accurate. 
+For distant genomes, the aligned fraction output becomes more accurate as `c` gets smaller. However, decreasing `c` may *not necessarily* make high ANI calculations more accurate. 
 
-### ANI calculations for small genomes/reads
+## ANI calculations for small genomes/reads
 
 skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
 
@@ -173,7 +181,7 @@ For small contigs or long-reads, here are some suggestions:
 
 For parameters:
 
-1. The default marker size -m is set to 1000, so we take one marker per every 1000 k-mers. A good rule of thumb is that you want at least 30 markers on average, so set -m = avg_read_length / 30. 
+1. The default marker size -m is set to 1000, so we take one marker per every 1000 k-mers. A good rule of thumb is that you want at least 20 markers on average, so set -m > avg_read_length / 20. 
 2. Set -c to 60 for noisy-long reads (mean identity < 95), or keeping c = 120 for higher quality reads (or if memory is an issue). Longer + High identity => higher -c. 
 3. skani currently loads the entire file into memory instead of processing one read at a time. Consider splitting large sets of reads. 
 
