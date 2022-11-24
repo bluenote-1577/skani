@@ -164,12 +164,12 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 
 ## Advanced
 
-## Adjusting memory/speed tradeoffs 
+### Adjusting memory/speed tradeoffs 
 
-### Marker index 
+#### Marker index 
 The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. Building the table takes a bit of time, and the table itself is ~10 GB for 60000 genomes with default parameters. This is turned off if less than 100 query files are input or when using the `--qi` option. Otherwise, it is turned on automatically. 
 
-### Adjusting c
+#### Adjusting c
 If you want skani to run faster, the main parameter to adjust is the `-c` parameter. skani's speed and memory efficiency is inversely proportional to c, so increasing c by 2x means 2x faster and less memory. As a default, c = 120 for ANI and c = 15 for AAI. 
 
 **ANI**: for genomes of ANI > 95%, c can be comfortably made higher up to 200 or even 300, but aligned fraction may get less accurate. 
@@ -178,14 +178,14 @@ If you want skani to run faster, the main parameter to adjust is the `-c` parame
 
 However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85% ANI genomes** since many other default algorithm parameters are designed these default values. Furthermore, increasing c means that distant genomes will no longer be comparable; see the section on **Comparing lower ANI/AAI genomes**. 
 
-## All-to-all comparisons on massive data sets
+### All-to-all comparisons on massive data sets
 
 `skani triangle` should be used for all-to-all comparisons on reasonably sized data sets. However, it loads all genome indices into memory, so RAM may be an issue. If RAM is an issue, consider: 
 1. Pre-sketch using `skani sketch -l list_of_genomes.txt -o sketched_genomes` and run `skani search -d sketched_genomes -l list_of_genomes -o output` to do slower but low-memory all-to-all comparisons.
 2. Consider using a lower marker density, `-m`. It defaults to 1000 but 2000 is reasonable for most bacterial genomes. 
 3. Raising the `-c` parameter can help, see the above section on the `-c` parameter. 
 
-## Comparing lower ANI/AAI genomes. 
+### Comparing lower ANI/AAI genomes. 
 
 skani focuses on ANI/AAI comparisons for genomes with > 85% ANI and > 60% AAI. To get more accurate results for low ANI/AAI values, one should use a lower value for `c`. 
 
@@ -194,7 +194,7 @@ For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae geno
 For distant genomes, the aligned fraction output becomes more accurate as `c` gets smaller. However, decreasing `c` may *not necessarily* make high ANI calculations more accurate. Nevertheless, I would not recommend ANI comparisons for genomes with < 75% ANI, and advise using skani's AAI method instead, which is tuned for sensitive comparisons by default.
 
 
-## ANI calculations for small genomes/reads
+### ANI calculations for small genomes/reads
 
 skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
 
