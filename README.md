@@ -16,9 +16,9 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 ### Requirements and Install
 
-#### Option 1: Pre-built binary
+#### Option 1: Pre-built linux binary
 
-We offer a pre-built binary for 64-bit linux systems. 
+We offer a pre-built binary for 64-bit linux systems. See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
 
 ```sh
 # TODO ENSURE THIS LINK WORKS ON RELEASE
@@ -46,7 +46,7 @@ ln -s  $PWD/target/release/skani ~/.cargo/bin/
 skani -h
 ```
 
-#### Quick start
+## Quick start
 
 ```sh
 # compare two genomes for ANI
@@ -62,9 +62,10 @@ skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_r
 skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
 
-# construct distance matrix 
-skani triangle genome1.fa genome2.fa ... > distance_matrix.txt
-# we provide a script in this repository for visualizing distance matrices.
+# construct distance matrix for all genomes in folder
+skani triangle genome_folder/* > distance_matrix.txt
+
+# we provide a script in this repository for clustering/visualizing distance matrices.
 # requires python3, seaborn, scipy/numpy, and matplotlib.
 python scripts/clustermap_triangle.py distance_matrix.txt 
 ```
