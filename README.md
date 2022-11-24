@@ -2,23 +2,27 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from DNA sequences. skani is designed for pairs of sequences with > 85% ANI and > 60% AAI and total sequence length > 20kb. 
+**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from DNA sequences. skani is designed for species or genus-level ANI calculations, whereas the AAI mode offers more sensitivity.
 
-skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method to get orthology without base-level alignment, and then estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is more accurate than approximate sketching methods, such as Mash. skani still correctly calculates ANI even for medium-quality MAGs with ~50% completes, whereas Mash will be inaccurate.
+1. **Accurate ANI calculations for MAGs**. skani is more accurate than approximate sketching methods, such as Mash. skani remains accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs), whereas Mash loses accuracy when genomes are incomplete. 
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
 3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash. Constructing a database from genome sequences takes only a few minutes. 
 
-4. **Efficient AAI calculation**. AAI calculation for two genomes takes at most 1 second. Querying against a database takes a few minutes, much faster than any other BLAST+Prodigal based method. The sketches (a.k.a indices) for AAI can get quite large but can be stored on disk and queried efficiently.
+4. **Efficient AAI calculation on DNA sequences**. skani can calculate AAI between two DNA sequences without requiring the user to predict genes. AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
 
 ### Requirements and Install
 
 #### Option 1: Pre-built binary
 
-See the releases page for a pre-built skani binary.
+See the releases page for a pre-built skani binary. 
+
+```sh
+TODO wget ....
+```
 
 #### Option 2: Build from source
 
@@ -203,4 +207,4 @@ For parameters:
 
 ## Citation
 
-Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2022).
+Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani (2022). Submitted.
