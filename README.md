@@ -6,13 +6,13 @@
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. Sketching methods, such as Mash, may give estimates that are not accurate when MAGs are < 90% complete. 
+1. **Accurate ANI calculations for MAGs**. skani is more accurate than approximate sketching methods, such as Mash. skani still correctly calculates ANI even for medium-quality MAGs with ~50% completes, whereas Mash will be inaccurate.
 
-2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
+2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-3. **Efficient database search**. Querying a genome against a pre-sketched GTDB database (>65000 genomes) for ANI takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash.
+3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash. Constructing a database from genome sequences takes only a few minutes. 
 
-4. **Efficient AAI calculation**. AAI calculation is about 10-20x slower than ANI, but much faster than any other BLAST+Prodigal based method. The sketches for AAI can get quite large but can be stored on disk and queried efficiently.
+4. **Efficient AAI calculation**. AAI calculation for two genomes takes at most 1 second. Querying against a database takes a few minutes, much faster than any other BLAST+Prodigal based method. The sketches (a.k.a indices) for AAI can get quite large but can be stored on disk and queried efficiently.
 
 ### Requirements and Install
 
@@ -20,9 +20,9 @@ skani uses an approximate alignment method without base-level alignment. It is m
 
 See the releases page for a pre-built skani binary.
 
-#### Option 2: Install
+#### Option 2: Build from source
 
-1. [rust](https://www.rust-lang.org/tools/install) and associated tools such as cargo are required and assumed to be in PATH.
+1. [rust](https://www.rust-lang.org/tools/install) programming language and associated tools such as cargo are required and assumed to be in PATH.
 
 ```sh
 git clone https://github.com/bluenote-1577/skani
@@ -49,6 +49,13 @@ skani dist -a genome1.fa genome2.fa > aai_results.txt
 
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
+
+# construct database and do memory-efficient search
+skani sketch genomes_to_search/* -o database
+skani search query1.fa query2.fa ... -d database
+
+# construct distance matrix 
+skani triangle genome1.fa genome2.fa ...
 ```
 
 ## Using skani
@@ -68,8 +75,11 @@ skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
 ```
 
-`sketch` computes the sketch (a.k.a index) of a genome and stores it in a new folder. For each file `genome.fa`, two new files `genome.fa.sketch` and `genome.fa.markers`
-are created in the output folder. The .sketch files can be used as drop-in substitutes for fasta files. 
+`sketch` computes the sketch (a.k.a index) of a genome and stores it in a new folder. For each file `genome.fa`,  the new file `sketch_folder/genome.fa.sketch` is created. 
+
+The `.sketch` files can be used as faster drop-in substitutes for fasta files. 
+
+A special file `markers.bin` is also constructed and used specifically for the `search` command. 
 
 
 ### skani dist - simple ANI/AAI calculation
@@ -117,14 +127,14 @@ skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse
 skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
 ```
 
-`triangle` outputs a lower-triangular matrix in phyllip format. 
+`triangle` outputs a lower-triangular matrix in [phyllip format](https://mothur.org/wiki/phylip-formatted_distance_matrix/). 
 It avoids doing n^2 computations and only does n(n-1)/2 computations as opposed to `dist`. 
 
 `triangle` loads all genome indices into memory. For doing comparisons on massive data sets, see the Advanced section for suggestions on reducing memory cost.
 
 ## Output
 
-If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the -h options.
+If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the `--min-aligned-fraction` option.
 
 **In practice, this means that only genomes with > ~82% ANI and > ~60% AAI are output** with default parameters. 
 
@@ -139,8 +149,6 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
-
-For `triangle`, if the genomes fail to meet the alignment fraction cutoff, 0 is output. The default output for `triangle` is a lower-triangular ANI/AAI matrix to stdout, and a lower-triangular aligned-fraction matrix to the skani_matrix.af file. The name can be changed using the -o option for all outputs, and `full-matrix` gives a square matrix instead. 
 
 ## Advanced
 
@@ -171,7 +179,8 @@ skani focuses on ANI/AAI comparisons for genomes with > 85% ANI and > 60% AAI. T
 
 For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae genome, and running ``skani dist refs/MN-03.fa refs/e.coli-K12.fa`` returns nothing because the two genomes do not have a good enough alignment. However, ``skani dist refs/MN-03.fa refs/e.coli-K12.fa -c 30`` returns an ANI estimate of ~79%. 
 
-For distant genomes, the aligned fraction output becomes more accurate as `c` gets smaller. However, decreasing `c` may *not necessarily* make high ANI calculations more accurate. 
+For distant genomes, the aligned fraction output becomes more accurate as `c` gets smaller. However, decreasing `c` may *not necessarily* make high ANI calculations more accurate. Nevertheless, I would not recommend ANI comparisons for genomes with < 75% ANI, and advise using skani's AAI method instead, which is tuned for sensitive comparisons by default.
+
 
 ## ANI calculations for small genomes/reads
 
@@ -194,4 +203,4 @@ For parameters:
 
 ## Citation
 
-TODO
+Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2022).
