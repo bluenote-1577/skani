@@ -18,10 +18,14 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 #### Option 1: Pre-built binary
 
-See the releases page for a pre-built skani binary. 
+We offer a pre-built binary for 64-bit linux systems. 
 
 ```sh
-TODO wget ....
+# TODO ENSURE THIS LINK WORKS ON RELEASE
+wget https://github.com/bluenote-1577/skani/releases/download/binary-release/skani-linux-1.0.0-alpha.tar
+tar -xf skani-linux-1.0.0-alpha.tar
+cd skani-linux-1.0.0-alpha
+./skani -h
 ```
 
 #### Option 2: Build from source
