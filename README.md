@@ -59,7 +59,10 @@ skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
 
 # construct distance matrix 
-skani triangle genome1.fa genome2.fa ...
+skani triangle genome1.fa genome2.fa ... > distance_matrix.txt
+# we provide a script in this repository for visualizing distance matrices.
+# requires python3, seaborn, scipy/numpy, and matplotlib.
+python scripts/clustermap_triangle.py distance_matrix.txt 
 ```
 
 ## Using skani
