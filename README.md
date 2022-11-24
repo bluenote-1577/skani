@@ -6,7 +6,7 @@
 
 skani uses an approximate alignment method without base-level alignment. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. Other methods, such as Mash, give estimates that are not accurate when MAGs are < 90% complete. 
+1. **Accurate ANI calculations for MAGs**. Sketching methods, such as Mash, may give estimates that are not accurate when MAGs are < 90% complete. 
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 20x faster than FastANI (but slower than Mash). 
 
@@ -15,6 +15,12 @@ skani uses an approximate alignment method without base-level alignment. It is m
 4. **Efficient AAI calculation**. AAI calculation is about 10-20x slower than ANI, but much faster than any other BLAST+Prodigal based method. The sketches for AAI can get quite large but can be stored on disk and queried efficiently.
 
 ### Requirements and Install
+
+#### Option 1: Pre-built binary
+
+See the releases page for a pre-built skani binary.
+
+#### Option 2: Install
 
 1. [rust](https://www.rust-lang.org/tools/install) and associated tools such as cargo are required and assumed to be in PATH.
 
@@ -26,7 +32,8 @@ cargo build --release
 # skani binary found in ./target/release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
-# Optional: soft link to skani in PATH. May not work if ~/.cargo/bin is not in path
+# OPTIONAL: soft link to skani in PATH. 
+#~/.cargo/bin is present for default rust installations. Link to another directory in PATH if needed 
 ln -s  $PWD/target/release/skani ~/.cargo/bin/ 
 skani -h
 ```
