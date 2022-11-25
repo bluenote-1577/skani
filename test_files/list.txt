@@ -1,0 +1,10 @@
+test_files/e.coli-EC590.fasta
+test_files/e.coli-h5.fasta
+test_files/e.coli-K12-base_change_temp.fasta
+test_files/e.coli-K12.fasta
+test_files/e.coli-o157.fasta
+test_files/e.coli-W.fasta
+test_files/e.coli-W.fasta.gz
+test_files/o157_plasmid.fasta
+test_files/o157_reads.fastq
+test_files/test.fasta
