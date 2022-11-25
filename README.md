@@ -102,7 +102,7 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 ## Skani usage tutorials/manuals
 
 
-See the wiki for more information on how to use skani.](https://github.com/bluenote-1577/skani/wiki).
+[See the wiki for more information on how to use skani.](https://github.com/bluenote-1577/skani/wiki).
 
 
 ## Citation
