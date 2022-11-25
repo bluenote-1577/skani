@@ -81,6 +81,25 @@ skani triangle genome_folder/* > distance_matrix.txt
 python scripts/clustermap_triangle.py distance_matrix.txt 
 
 ```
+
+### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+See [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide) for an explanation of each of skani's subcommands, and which one to use for your situation.
+
+### [skani tutorials](https://github.com/bluenote-1577/skani/wiki/skani-tutorials)
+
+See [skani tutorials](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide) for tutorials on how to set up databases for search, etc (WORK IN PROGRESS).
+
+### [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usgae-guide)
+
+For more information about topics such as:
+
+* using skani for long-reads
+* making skani for memory efficient for huge data sets
+* optimizing skani for speed/memory tradeoffs
+
+see [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usage-guide).
+
 ## Output
 
 If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the `--min-aligned-fraction` option.
@@ -98,12 +117,6 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
-
-## Skani usage tutorials/manuals
-
-
-[See the wiki for more information on how to use skani.](https://github.com/bluenote-1577/skani/wiki).
-
 
 ## Citation
 
