@@ -99,9 +99,10 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
 
-## Advanced
+## Skani usage tutorials/manuals
 
-See [skani's wiki for tutorials and information on optimal usage](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide).
+
+See the wiki for more information on how to use skani.](https://github.com/bluenote-1577/skani/wiki).
 
 
 ## Citation
