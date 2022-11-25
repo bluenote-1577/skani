@@ -173,10 +173,31 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 
 ## Advanced
 
+### ANI calculations for small genomes/reads
+
+skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
+
+- skani can not classify short-reads. Use a taxonomic classifier such as kraken for this.
+- skani can not compare *collections* of short-reads. Use Mash or sourmash for this.
+- skani can not compute AAI for long-reads.
+
+For small contigs or long-reads, here are some suggestions:
+
+1. Make sure to use the `--qi` option for `skani search` or `skani dist` if your contigs/reads are all in one file. 
+2. `skani dist` will be faster than `skani search`, since the bottleneck will be loading genomes into memory. 
+
+For parameters:
+
+1. The default marker size `-m` is set to 1000, so we take one marker per every 1000 k-mers. A good rule of thumb is that you want at least 20 markers on average, so set `-m` > avg_read_length / 20. 
+2. Set `-c` to lower values, e.g. 60, for noisy-long reads (mean identity < 95). The longer + higher identity the reads, the higher `-c` can be.
+3. skani currently loads the entire file into memory instead of processing one read at a time. Consider splitting large sets of reads. 
+
 ### Adjusting memory/speed tradeoffs 
 
 #### Marker index 
-The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. Building the table takes a bit of time, and the table itself is ~10 GB for 60000 genomes with default parameters. This is turned off if less than 100 query files are input or when using the `--qi` option. Otherwise, it is turned on automatically. 
+The ``--marker-index`` option is available for `skani dist` and `skani search`. This loads all marker k-mers into a hash table for constant time filtering. This is turned off if less than 100 query files are input or when using the `--qi` option. Otherwise, it is turned on automatically. 
+
+Building the table can take up to a minute (for large databases), and the table itself is ~10 GB for 65000 genomes with default parameters. Consider changing the `-m` option, which is inversely proportional to the memory of this table, if memory is an issue. 
 
 #### Adjusting c
 If you want skani to run faster, the main parameter to adjust is the `-c` parameter. skani's speed and memory efficiency is inversely proportional to c, so increasing c by 2x means 2x faster and less memory. As a default, c = 120 for ANI and c = 15 for AAI. 
@@ -191,8 +212,8 @@ However, decreasing `c` **may not necessarily improve ANI/AAI accuracy for > 85%
 
 `skani triangle` should be used for all-to-all comparisons on reasonably sized data sets. However, it loads all genome indices into memory, so RAM may be an issue. If RAM is an issue, consider: 
 1. Pre-sketch using `skani sketch -l list_of_genomes.txt -o sketched_genomes` and run `skani search -d sketched_genomes -l list_of_genomes -o output` to do slower but low-memory all-to-all comparisons.
-2. Consider using a lower marker density, `-m`. It defaults to 1000 but 2000 is reasonable for most bacterial genomes. 
-3. Raising the `-c` parameter can help, see the above section on the `-c` parameter. 
+2. Raising the `-c` parameter can help, see the above section on the `-c` parameter. 
+3. Consider raising the parameter `-m` for faster screens. It defaults to 1000 but 2000 is reasonable for most bacterial genomes, but may lose sensitivity on small genomes such as viruses. 
 
 ### Comparing lower ANI/AAI genomes. 
 
@@ -208,28 +229,9 @@ The option `-s` controls for an approximate ANI/AAI cutoff. Computations proceed
 
 You can use a higher value of `-s` if you're only interested in comparing more similar strains. 
 
-This cutoff is only **approximate**: the true predicted ANI can be greater than `-s`, but the putative may be smaller than `-s`, in which case calculation *does not proceed*. The reverse also holds: a putative ANI can be greater than `-s` but the true predicted can be less than `-s`, in which case calculation still proceeds.
+This cutoff is only **approximate**. If the true predicted ANI is greater than `-s`, but the putative is smaller than `-s`, the calculation *does not proceed*. Therefore, too high `-s` and you'll lose sensitivity. The reverse also holds: a putative ANI can be greater than `-s` but the true predicted can be less than `-s`, in which case calculation still proceeds.
 
 We don't recommend a lower value of `-s` unless you know what you're doing, since ANI/AAI calculations under 80%/60% will be bad with default parameters.
-
-### ANI calculations for small genomes/reads
-
-skani is not necessarily designed for comparing long-reads or small contigs, but it seems to work relatively well for ANI when the reads/contigs are long enough. 
-
-- skani can not classify short-reads. Use a taxonomic classifier such as kraken for this.
-- skani can not compare *collections* of short-reads. Use Mash or sourmash for this.
-- skani can not compute AAI for long-reads.
-
-For small contigs or long-reads, here are some suggestions:
-
-1. Make sure to use the --qi option for `skani search` or `skani dist` if your contigs/reads are all in one file. 
-2. `skani dist` will be much faster than `skani search`, since the bottleneck will be loading genomes into memory. 
-
-For parameters:
-
-1. The default marker size -m is set to 1000, so we take one marker per every 1000 k-mers. A good rule of thumb is that you want at least 20 markers on average, so set -m > avg_read_length / 20. 
-2. Set -c to 60 for noisy-long reads (mean identity < 95), or keeping c = 120 for higher quality reads (or if memory is an issue). Longer + High identity => higher -c. 
-3. skani currently loads the entire file into memory instead of processing one read at a time. Consider splitting large sets of reads. 
 
 ## Citation
 
