@@ -14,11 +14,34 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 4. **Efficient AAI calculation on DNA sequences**. skani can calculate AAI between two DNA sequences (i.e. no gene prediction needed). AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
 
-### Requirements and Install
+##  Install
 
-#### Option 1: Pre-built linux binary
+#### Option 1: Build from source
 
-We offer a pre-built binary for 64-bit linux systems. See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
+Requirements:
+1. [rust](https://www.rust-lang.org/tools/install) programming language and associated tools such as cargo are required and assumed to be in PATH.
+
+Building takes a few minutes (depending on # of cores).
+
+```sh
+git clone https://github.com/bluenote-1577/skani
+cd skani
+# make sure ~/.cargo exists
+cargo install --path . --root ~/.cargo
+skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+```
+
+#### If ~/.cargo is not present (non-standard rust installs)
+```
+cargo build --release
+./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+```
+
+#### Option 2: Pre-built linux binary
+
+We offer a pre-built binary for 64-bit linux systems. This is convenient but may not be as up-to-date as the source. 
+
+See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
 
 ```sh
 # TODO ENSURE THIS LINK WORKS ON RELEASE
@@ -28,23 +51,7 @@ cd skani-linux-1.0.0-alpha
 ./skani -h
 ```
 
-#### Option 2: Build from source
 
-1. [rust](https://www.rust-lang.org/tools/install) programming language and associated tools such as cargo are required and assumed to be in PATH.
-
-```sh
-git clone https://github.com/bluenote-1577/skani
-cd skani
-cargo build --release
-
-# skani binary found in ./target/release
-./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
-
-# OPTIONAL: soft link to skani in PATH. 
-#~/.cargo/bin is present for default rust installations. Link to another directory in PATH if needed 
-ln -s  $PWD/target/release/skani ~/.cargo/bin/ 
-skani -h
-```
 
 ## Quick start
 
@@ -55,7 +62,7 @@ All skani modes take the argument `-t` as number of threads (default: 3).
 # all options take -t for multi-threading.
 skani dist genome1.fa genome2.fa -t 5
 
-# use '-a' for all commands to calculate AAI instead of ANI
+# use -a or --aai for all commands to calculate AAI instead of ANI
 skani dist -a genome1.fa genome2.fa > aai_results.txt
 
 # compare multiple genomes
@@ -71,6 +78,7 @@ skani triangle genome_folder/* > distance_matrix.txt
 # we provide a script in this repository for clustering/visualizing distance matrices.
 # requires python3, seaborn, scipy/numpy, and matplotlib.
 python scripts/clustermap_triangle.py distance_matrix.txt 
+
 ```
 
 ## Using skani
@@ -81,7 +89,7 @@ python scripts/clustermap_triangle.py distance_matrix.txt
 skani sketch genome1.fa genome2.fa ... -o sketch_folder -t 20
 
 # sketch for AAI instead of ANI (ANI by default).
-skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
+skani sketch -a genome1.fa genome2.fa ... -o aai_sketch_folder
 
 # use sketch file for computation
 skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
@@ -111,18 +119,17 @@ If you're searching against a database, `search` can use much less memory (see b
 
 ```sh
 # options used in "sketch" will also be used for searching. 
-# e.g. -a implies search will do AAI computions
-skani sketch genome1.fa genome2.fa ... -o sketch_folder (-a)
+# e.g. -a or --aai implies search will do AAI computions
+skani sketch genome1.fa genome2.fa ... -o database
 
 # query query1.fa, query2.fa, ... against sketches in sketch_folder
-skani search -d sketch_folder query1.fa query2.fa ...  -o output.txt
+skani search -d database query1.fa query2.fa ...  -o output.txt
 ```
 `search` is a memory efficient method of calculating ANI/AAI against a large reference database. Searching against
 the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
 fully loading genomes that pass a filter into memory, and discarding the index after each query is done. 
 
-`search` requires all reference genomes to be sketched first using `skani sketch` and output into a new folder. **The parameters
-for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
+**The parameters for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
 can only use `search` for AAI. 
 
 If you're querying many sequences, the file I/O step will dominate the running time, so consider 
@@ -195,6 +202,15 @@ For example, the supplied genome `refs/MN-03.fa` is a Klebsiella Pneumoniae geno
 
 For distant genomes, the aligned fraction output becomes more accurate as `c` gets smaller. However, decreasing `c` may *not necessarily* make high ANI calculations more accurate. Nevertheless, I would not recommend ANI comparisons for genomes with < 75% ANI, and advise using skani's AAI method instead, which is tuned for sensitive comparisons by default.
 
+### Comparing only high ANI/AAI genomes with -s
+
+The option `-s` controls for an approximate ANI/AAI cutoff. Computations proceed only if the putative ANI (obtained by k-mer max-containment index) is higher than `-s`. By default, this is 0.8 (80%) for ANI and 0.6 (60%) for AAI. 
+
+You can use a higher value of `-s` if you're only interested in comparing more similar strains. 
+
+This cutoff is only **approximate**: the true predicted ANI can be greater than `-s`, but the putative may be smaller than `-s`, in which case calculation *does not proceed*. The reverse also holds: a putative ANI can be greater than `-s` but the true predicted can be less than `-s`, in which case calculation still proceeds.
+
+We don't recommend a lower value of `-s` unless you know what you're doing, since ANI/AAI calculations under 80%/60% will be bad with default parameters.
 
 ### ANI calculations for small genomes/reads
 
