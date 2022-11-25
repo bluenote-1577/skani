@@ -10,9 +10,9 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM, almost as fast as Mash. Constructing a database from genome sequences takes only a few minutes. 
+3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM. Constructing a database from genome sequences takes only a few minutes. 
 
-4. **Efficient AAI calculation on DNA sequences**. skani can calculate AAI between two DNA sequences without requiring the user to predict genes. AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
+4. **Efficient AAI calculation on DNA sequences**. skani can calculate AAI between two DNA sequences (i.e. no gene prediction needed). AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
 
 ### Requirements and Install
 
@@ -48,11 +48,14 @@ skani -h
 
 ## Quick start
 
-```sh
-# compare two genomes for ANI
-skani dist genome1.fa genome2.fa
+All skani modes take the argument `-t` as number of threads (default: 3).
 
-# compare two genomes for AAI
+```sh
+# compare two genomes for ANI. 
+# all options take -t for multi-threading.
+skani dist genome1.fa genome2.fa -t 5
+
+# use '-a' for all commands to calculate AAI instead of ANI
 skani dist -a genome1.fa genome2.fa > aai_results.txt
 
 # compare multiple genomes
@@ -74,11 +77,8 @@ python scripts/clustermap_triangle.py distance_matrix.txt
 
 ### skani sketch - storing sketches/indices on disk
 ```sh
-# sketch genomes, output in sketch_folder
-skani sketch genome1.fa genome2.fa ... -o sketch_folder 
-
-# sketch a list of genomes specified in a file
-skani sketch -l list_of_genomes.txt -o sketch_folder
+# sketch genomes, output in sketch_folder, 20 threads
+skani sketch genome1.fa genome2.fa ... -o sketch_folder -t 20
 
 # sketch for AAI instead of ANI (ANI by default).
 skani sketch -a/--aai genome1.fa genome2.fa ... -o aai_sketch_folder
@@ -97,11 +97,11 @@ A special file `markers.bin` is also constructed and used specifically for the `
 ### skani dist - simple ANI/AAI calculation
 
 ```sh
-# all-to-all, 20 threads
-skani dist -q query1.fa query2.fa -r ref1.fa ref2.fa -t 20
-
-# query each record in a multi-fasta (--qi for query, --ri for reference)
+# query each individal record in a multi-fasta (--qi for query, --ri for reference)
 skani dist --qi -q query1.fa -r ref1.fa
+
+# use lists of fastas, one line per fasta
+skani dist --rl ref_list.txt --ql query_list.txt
 ```
 
 `dist` computes ANI/AAI between all queries and all references. `dist` loads all reference and query genomes into memory. 
@@ -110,11 +110,12 @@ If you're searching against a database, `search` can use much less memory (see b
 ### skani search - memory-efficient ANI/AAI database queries
 
 ```sh
-# use -a while sketching for AAI computation instead
-skani sketch genome1.fa genome2.fa ... -o sketch_folder -t (threads)
+# options used in "sketch" will also be used for searching. 
+# e.g. -a implies search will do AAI computions
+skani sketch genome1.fa genome2.fa ... -o sketch_folder (-a)
 
 # query query1.fa, query2.fa, ... against sketches in sketch_folder
-skani search -d sketch_folder query1.fa query2.fa ...  -t (threads) -o output.txt
+skani search -d sketch_folder query1.fa query2.fa ...  -o output.txt
 ```
 `search` is a memory efficient method of calculating ANI/AAI against a large reference database. Searching against
 the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
@@ -139,8 +140,9 @@ skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse
 skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
 ```
 
-`triangle` outputs a lower-triangular matrix in [phyllip format](https://mothur.org/wiki/phylip-formatted_distance_matrix/). 
-It avoids doing n^2 computations and only does n(n-1)/2 computations as opposed to `dist`. 
+`triangle` outputs a lower-triangular matrix in [phyllip format](https://mothur.org/wiki/phylip-formatted_distance_matrix/). The ANI/AAI is output to stdout or the file specified. The aligned fraction is also output in a separate file with the suffix `.af` attached.
+
+`triangle` avoids doing n^2 computations and only does n(n-1)/2 computations as opposed to `dist`, so it is more efficient. It also sets some smarter default parameters for all-to-all search.
 
 `triangle` loads all genome indices into memory. For doing comparisons on massive data sets, see the Advanced section for suggestions on reducing memory cost.
 
