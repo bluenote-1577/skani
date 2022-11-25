@@ -83,7 +83,7 @@ python scripts/clustermap_triangle.py distance_matrix.txt
 
 ```
 
-## Using skani
+## Basic skani usage
 
 ### skani sketch - storing sketches/indices on disk
 ```sh
