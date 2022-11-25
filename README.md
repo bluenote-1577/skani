@@ -81,79 +81,6 @@ skani triangle genome_folder/* > distance_matrix.txt
 python scripts/clustermap_triangle.py distance_matrix.txt 
 
 ```
-
-## Basic skani usage
-
-### skani sketch - storing sketches/indices on disk
-```sh
-# sketch genomes, output in sketch_folder, 20 threads
-skani sketch genome1.fa genome2.fa ... -o sketch_folder -t 20
-
-# sketch for AAI instead of ANI (ANI by default).
-skani sketch -a genome1.fa genome2.fa ... -o aai_sketch_folder
-
-# use sketch file for computation
-skani dist sketch_folder/genome1.fa.sketch sketch_folder/genome2.fa.sketch
-```
-
-`sketch` computes the sketch (a.k.a index) of a genome and stores it in a new folder. For each file `genome.fa`,  the new file `sketch_folder/genome.fa.sketch` is created. 
-
-The `.sketch` files can be used as faster drop-in substitutes for fasta files. 
-
-A special file `markers.bin` is also constructed and used specifically for the `search` command. 
-
-
-### skani dist - simple ANI/AAI calculation
-
-```sh
-# query each individal record in a multi-fasta (--qi for query, --ri for reference)
-skani dist --qi -q query1.fa -r ref1.fa
-
-# use lists of fastas, one line per fasta
-skani dist --rl ref_list.txt --ql query_list.txt
-```
-
-`dist` computes ANI/AAI between all queries and all references. `dist` loads all reference and query genomes into memory. 
-If you're searching against a database, `search` can use much less memory (see below). With default settings, the entire GTDB database (65000 bacterial genomes) takes about 95 GB of memory to store in memory. 
-
-### skani search - memory-efficient ANI/AAI database queries
-
-```sh
-# options used in "sketch" will also be used for searching. 
-# e.g. -a or --aai implies search will do AAI computions
-skani sketch genome1.fa genome2.fa ... -o database
-
-# query query1.fa, query2.fa, ... against sketches in sketch_folder
-skani search -d database query1.fa query2.fa ...  -o output.txt
-```
-`search` is a memory efficient method of calculating ANI/AAI against a large reference database. Searching against
-the GTDB database (> 65000 genomes) takes only 4.5 GB of memory using `search`. This is achieved by only
-fully loading genomes that pass a filter into memory, and discarding the index after each query is done. 
-
-**The parameters for `search` are obtained from the parameters used for the `sketch` option**, so if you sketch for AAI using the `-a` option, you
-can only use `search` for AAI. 
-
-If you're querying many sequences, the file I/O step will dominate the running time, so consider 
-using `dist` instead if you have enough RAM. 
-
-### skani triangle - all-to-all ANI/AAI compution 
-```sh
-# all-to-all ANI comparison in lower-triangular matrix
-skani triangle genome1.fa genome2.fa genome3.fa -o lower_triangle_matrix.txt
-
-# output sparse matrix a.k.a an edge list of comparisons
-skani triangle -l list_of_genomes.txt -o sparse_matrix.txt --sparse 
-
-# output square matrix
-skani triangle genome1.fa genom2.fa genome3.fa --full-matrix 
-```
-
-`triangle` outputs a lower-triangular matrix in [phyllip format](https://mothur.org/wiki/phylip-formatted_distance_matrix/). The ANI/AAI is output to stdout or the file specified. The aligned fraction is also output in a separate file with the suffix `.af` attached.
-
-`triangle` avoids doing n^2 computations and only does n(n-1)/2 computations as opposed to `dist`, so it is more efficient. It also sets some smarter default parameters for all-to-all search.
-
-`triangle` loads all genome indices into memory. For doing comparisons on massive data sets, see the Advanced section for suggestions on reducing memory cost.
-
 ## Output
 
 If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the `--min-aligned-fraction` option.
@@ -171,6 +98,11 @@ data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
+
+## Advanced
+
+See [skani's wiki for tutorials and information on optimal usage](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide).
+
 
 ## Citation
 
