@@ -46,7 +46,6 @@ We offer a pre-built binary for 64-bit linux systems. This is convenient but may
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
 
 ```sh
-# TODO ENSURE THIS LINK WORKS ON RELEASE
 wget https://github.com/bluenote-1577/skani/releases/download/binary-release/skani-linux-1.0.0-alpha.tar
 tar -xf skani-linux-1.0.0-alpha.tar
 cd skani-linux-1.0.0-alpha
