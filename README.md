@@ -90,7 +90,7 @@ See [skani commands usage information](https://github.com/bluenote-1577/skani/wi
 
 1. #### [Tutorial: setting up a 65000 bacterial genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
 
-### [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usgae-guide)
+### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
 For more information about topics such as:
 
@@ -98,7 +98,7 @@ For more information about topics such as:
 * making skani for memory efficient for huge data sets
 * optimizing skani for speed/memory tradeoffs
 
-see [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usage-guide).
+see [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide).
 
 ## Output
 
