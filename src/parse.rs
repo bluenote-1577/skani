@@ -157,13 +157,16 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let marker_c = matches_subc.value_of("marker_c").unwrap_or(MARKER_C).parse::<usize>().unwrap();
-    let mut out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
+    let out_file_name;
     if mode == Mode::Triangle {
-        out_file_name = format!("{}", out_file_name).to_string();
+        out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
     } else if mode == Mode::Sketch {
-        out_file_name = format!("{}", out_file_name).to_string();
+        out_file_name = matches_subc.value_of("output sketch folder").unwrap_or("").to_string();
     } else if mode == Mode::Dist {
-        out_file_name = format!("{}", out_file_name).to_string();
+        out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
+    }
+    else{
+        panic!("Mode doesn't exist");
     }
 
     let mut screen_val = 0.;

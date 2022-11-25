@@ -6,6 +6,9 @@ use skani::parse;
 use skani::search;
 use skani::sketch;
 use skani::triangle;
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -38,7 +41,7 @@ fn main() {
                         .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
                 )
-                .arg(Arg::new("output").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true).display_order(1))
+                .arg(Arg::new("output sketch folder").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true).display_order(1))
                 .help_heading("SKETCH PARAMETERS")
                 .arg(
                     Arg::new("aai")

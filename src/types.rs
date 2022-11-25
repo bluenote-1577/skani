@@ -1,4 +1,3 @@
-use debruijn::kmer::*;
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
@@ -6,10 +5,9 @@ use smallvec::SmallVec;
 use crate::params::*;
 use fxhash::{FxHashSet};
 use partitions::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
-use nohash_hasher::NoHashHasher;
 
 pub const BYTE_TO_SEQ: [KmerBits; 256] = [
     0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -23,7 +21,6 @@ pub const BYTE_TO_SEQ: [KmerBits; 256] = [
 ];
 
 pub type KmerLength = usize;
-pub type KSize = K20;
 pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
@@ -37,8 +34,6 @@ pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>
 //Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
-pub type NoHashMap<K, V> = HashMap<K, V, BuildHasherDefault<NoHashHasher<KmerBits>>>;
-pub type NoHashSet<K> = HashSet<K, BuildHasherDefault<NoHashHasher<KmerBits>>>;
 
 
 

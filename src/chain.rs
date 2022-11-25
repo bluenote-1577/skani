@@ -12,9 +12,10 @@ use interval::interval_set::*;
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
-    if ani_ests.len() == 1{
-        return (ani_ests[0].0, ani_ests[0].0)
+    if ani_ests.len() < 30{
+        return (1.,1.)
     }
+
     let mut mean = 0.;
     let mut mult = 0.;
     for ani in ani_ests.iter(){
@@ -398,14 +399,16 @@ fn calculate_ani(
     let q_string;
     q_string = &query_sketch.file_name;
     let id_string = if map_params.amino_acid { "AAI" } else { "ANI" };
+    let ci =(f64::min(final_ani + upper,1.0),
+        f64::max(final_ani - lower,0.));
     debug!(
         "Query {} Ref {} - {} {}, +/- = {}/{}. Covered {}",
         q_string,
         ref_sketch.file_name,
         id_string,
         final_ani,
-        final_ani + upper,
-        final_ani - lower,
+        ci.0,
+        ci.1,
         covered_query,
     );
 
@@ -429,8 +432,8 @@ fn calculate_ani(
         query_file: query_sketch.file_name.clone(),
         query_contig: query_sketch.contigs[0].clone(),
         ref_contig: ref_sketch.contigs[0].clone(),
-        ci_upper: final_ani + upper,
-        ci_lower: final_ani - lower,
+        ci_upper: ci.1,
+        ci_lower: ci.0,
         aai: map_params.amino_acid
     };
 }

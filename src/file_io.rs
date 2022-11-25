@@ -240,7 +240,7 @@ pub fn write_phyllip_matrix(
             write!(&mut af_file, "\n").unwrap();
         }
     } else {
-        let ani_mat_file = format!("{}.identity", file_name);
+        let ani_mat_file = format!("{}", file_name);
         let af_mat_file = format!("{}.af", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
