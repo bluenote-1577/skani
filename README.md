@@ -2,7 +2,9 @@
 
 ## Introduction
 
-**skani** is a software package for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences. skani is designed for species or genus-level ANI calculations, whereas the AAI mode offers more sensitivity.
+**skani** is a program for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences (contigs/MAGs/genomes). 
+
+skani is designed species or genus-level ANI calculations, whereas the AAI mode offers more sensitivity. 
 
 skani uses an approximate mapping method to get orthology without base-level alignment, and then estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
