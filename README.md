@@ -8,7 +8,7 @@ skani is designed species or genus-level ANI calculations, whereas the AAI mode 
 
 skani uses an approximate mapping method to get orthology without base-level alignment, and then estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods unerestimate ANI for noisy MAGs.
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for noisy MAGs.
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
