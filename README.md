@@ -86,9 +86,9 @@ python scripts/clustermap_triangle.py distance_matrix.txt
 
 See [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide) for an explanation of each of skani's subcommands, and which one to use for your situation.
 
-### [skani tutorials](https://github.com/bluenote-1577/skani/wiki/skani-tutorials)
+### skani tutorials
 
-See [skani tutorials](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide) for tutorials on how to set up databases for search, etc (WORK IN PROGRESS).
+1. #### [Tutorial: setting up a 65000 bacterial genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usgae-guide)
 
