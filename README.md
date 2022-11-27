@@ -33,7 +33,7 @@ cargo install --path . --root ~/.cargo
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### If ~/.cargo is not present (non-standard rust installs)
+#### If ~/.cargo is not present: (for non-standard rust installs)
 ```
 cargo build --release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
