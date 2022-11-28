@@ -43,12 +43,12 @@ cargo build --release
 
 We offer a pre-built binary for 64-bit linux systems. This is convenient but may not be as up-to-date as the source. 
 
-See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
+See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
+
+For using the latest version of skani: 
 
 ```sh
-wget https://github.com/bluenote-1577/skani/releases/download/binary-release/skani-linux-1.0.0-alpha.tar
-tar -xf skani-linux-1.0.0-alpha.tar
-cd skani-linux-1.0.0-alpha
+wget https://github.com/bluenote-1577/skani/releases/download/latest/skani
 ./skani -h
 ```
 
