@@ -28,20 +28,21 @@ Building takes a few minutes (depending on # of cores).
 ```sh
 git clone https://github.com/bluenote-1577/skani
 cd skani
-# make sure ~/.cargo exists
+
+# If default rust install directory is ~/.cargo
 cargo install --path . --root ~/.cargo
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+
+# If ~/.cargo doesn't exist use below commands instead
+#cargo build --release
+#./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### If ~/.cargo is not present: (for non-standard rust installs)
-```
-cargo build --release
-./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
-```
+#### Option 2: Pre-built linux statically compiled binary
 
-#### Option 2: Pre-built linux binary
+We offer a pre-built statically compiled binary for 64-bit linux systems. That is, if you're on a linux 64-bit system, you can just download the binary and run it without installing anything. 
 
-We offer a pre-built binary for 64-bit linux systems. This is convenient but may not be as up-to-date as the source. 
+This is convenient but is compiled with a different set of libraries (musl instead of glibc) which possibly may affect performance. The binary may also be not as updated as the source files. 
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
