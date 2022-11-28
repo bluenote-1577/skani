@@ -16,7 +16,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: sudo apt-get install musl; cargo build --release --target=x86_64-unknown-linux-musl
+      - run: sudo apt-get install musl; rustup target add x86_64-unknown-linux-musl; cargo build --release --target=x86_64-unknown-linux-musl
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
