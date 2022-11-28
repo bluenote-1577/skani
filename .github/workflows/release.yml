@@ -21,5 +21,6 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
+          automatic_release_tag: "latest"
           files: |
             target/x86_64-unknown-linux-musl/release/skani
