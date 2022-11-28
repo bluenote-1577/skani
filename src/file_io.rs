@@ -239,6 +239,8 @@ pub fn write_phyllip_matrix(
             }
             write!(&mut af_file, "\n").unwrap();
         }
+
+        info!("Align fraciton matrix written to skani_matrix.af");
     } else {
         let ani_mat_file = format!("{}", file_name);
         let af_mat_file = format!("{}.af", file_name);
@@ -281,7 +283,7 @@ pub fn write_phyllip_matrix(
         }
 
         info!(
-            "Identity and align fraction matrix written to {}.identity and {}.af",
+            "Identity and align fraction matrix written to {} and {}.af",
             file_name, file_name
         );
     }

@@ -11,6 +11,29 @@ use gcollections::ops::set::*;
 use interval::interval_set::*;
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
+fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
+    let score_query = (q_sk_len as f64)
+        * f64::min(med_ctg_len_q, 100000.);
+    let score_ref = (r_sk_len)
+        * f64::min(med_ctg_len_r, 100000.);
+    return score_query > score_ref;
+
+
+
+    //let mut score_query = 1. / (1. + f64::powf(2.73, -(med_ctg_len_q - 30000.)));
+    //let mut score_ref = 1. / (1. + f64::powf(2.73, -(med_ctg_len_r - 30000.)));
+//    score_query *= q_sk_len;
+//    score_ref *= r_sk_len;
+//    let norm_len_r = f64::min(med_ctg_len_r, 20000.);
+//    let norm_len_q = f64::min(med_ctg_len_q, 20000.);
+//    if norm_len_r == norm_len_q{
+//        return r_sk_len * med_ctg_len_r.ln() < q_sk_len * med_ctg_len_q.ln()
+//    }
+//    else{
+//        return norm_len_q > norm_len_r
+//    }
+}
+
 fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
     if ani_ests.len() < 30{
         return (1.,1.)
@@ -553,15 +576,15 @@ fn get_anchors(
     let mut ctgs_r = ref_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
     ctgs_r.sort();
     let med_ctg_len_r = *ctgs_r[ref_sketch.contig_lengths.len()/2] as f64;
-    let score_query = (query_sketch.total_sequence_length as f64).sqrt()
-        * med_ctg_len_q;
-    let score_ref = (ref_sketch.total_sequence_length as f64).sqrt()
-        * med_ctg_len_r;
+//    let score_query = (query_sketch.total_sequence_length as f64)
+//        * f64::min(med_ctg_len_q, 40000.);
+//    let score_ref = (ref_sketch.total_sequence_length as f64)
+//        * f64::min(med_ctg_len_r, 40000.);
 
     //        if query_sketch.contigs.len() < ref_sketch.contigs.len(){
-    //    if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
+//        if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
 //    if score_query > score_ref {
-    if score_query > score_ref {
+    if switch_qr(med_ctg_len_r,med_ctg_len_q, query_sketch.total_sequence_length as f64, ref_sketch.total_sequence_length as f64){
         switched = true;
         if !check_markers_quickly(&query_sketch, &ref_sketch, 0.0){
             return (AnchorChunks::default(), switched);
