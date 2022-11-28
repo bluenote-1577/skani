@@ -49,6 +49,7 @@ For using the latest version of skani:
 
 ```sh
 wget https://github.com/bluenote-1577/skani/releases/download/latest/skani
+chmod +x skani
 ./skani -h
 ```
 
