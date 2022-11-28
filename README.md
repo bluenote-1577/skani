@@ -4,9 +4,9 @@
 
 **skani** is a program for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80% and AAI > ~60%. 
 
-skani uses an approximate mapping method to get orthology without base-level alignment to estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method to get orthology without base-level alignment to estimate ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for noisy MAGs.
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
