@@ -8,7 +8,7 @@ skani is designed species or genus-level ANI calculations, whereas the AAI mode 
 
 skani uses an approximate mapping method to get orthology without base-level alignment, and then estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is more accurate than approximate sketching methods, such as Mash. skani remains accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs), whereas Mash loses accuracy when genomes are incomplete. 
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for noisy MAGs.
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
@@ -33,7 +33,7 @@ cargo install --path . --root ~/.cargo
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### If ~/.cargo is not present (non-standard rust installs)
+#### If ~/.cargo is not present: (for non-standard rust installs)
 ```
 cargo build --release
 ./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
@@ -90,7 +90,7 @@ See [skani commands usage information](https://github.com/bluenote-1577/skani/wi
 
 1. #### [Tutorial: setting up a 65000 bacterial genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
 
-### [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usgae-guide)
+### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
 For more information about topics such as:
 
@@ -98,7 +98,7 @@ For more information about topics such as:
 * making skani for memory efficient for huge data sets
 * optimizing skani for speed/memory tradeoffs
 
-see [skani advanced usage information](https://github.com/bluenote-1577/skani/skani-advanced-usage-guide).
+see [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide).
 
 ## Output
 
