@@ -54,7 +54,7 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
         let mut locked = counter.lock().unwrap();
         *locked += 1;
         if *locked % 100 == 0 && *locked != 0 {
-            info!("{} query sequences processed.", locked);
+            info!("{} sequences sketched.", locked);
         }
     });
     let mut file_bin_marker = BufWriter::new(
