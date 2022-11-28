@@ -1,14 +1,24 @@
+name: "tagged-release"
+
 on:
-  release:
-    types: [created]
-name: Handle Release
+  push:
+    tags:
+      - "v*"
+
 jobs:
-  generate:
-    name: Create release-artifacts
-    runs-on: ubuntu-latest
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
     steps:
-    - uses: actions/checkout@master
-    - name: Generate
-      uses: skx/github-action-build@master
-      with:
-        builder: .github/build
+      # ...
+      - name: "Build & test"
+        run: |
+          .github/build
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            target/x86_64-unknown-linux-musl/release/skani
