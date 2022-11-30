@@ -38,7 +38,7 @@ pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
 pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
-pub const FULL_INDEX_THRESH: usize = 100;
+pub const FULL_INDEX_THRESH: usize = 50;
 
 #[derive(PartialEq)]
 pub enum Mode {

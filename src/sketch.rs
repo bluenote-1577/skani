@@ -29,7 +29,6 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
             &vec![shuffle_ref_files[i].clone()],
             &sketch_params,
             !command_params.screen,
-            true
         );
         let mut marker_ref_sketches = ref_sketches
             .iter()

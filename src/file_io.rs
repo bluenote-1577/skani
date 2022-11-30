@@ -16,7 +16,6 @@ pub fn fastx_to_sketches(
     ref_files: &Vec<String>,
     sketch_params: &SketchParams,
     seed: bool,
-    avx2: bool
 ) -> Vec<Sketch> {
     let ref_sketches: Mutex<Vec<_>> = Mutex::new(vec![]);
     let mut index_vec = (0..ref_files.len()).collect::<Vec<usize>>();
@@ -64,14 +63,13 @@ pub fn fastx_to_sketches(
                             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                             if is_x86_feature_detected!("avx2") {
                                 unsafe {
-                                seeding::avx2_fmh_seeds(
-                                    &seq,
-                                    &sketch_params,
-                                    j as u32,
-                                    &mut new_sketch,
-                                    seed,
-                                );
-
+                                    seeding::avx2_fmh_seeds(
+                                        &seq,
+                                        &sketch_params,
+                                        j as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
                                 }
                             } else {
                                 seeding::fmh_seeds(
@@ -157,13 +155,26 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                 seed,
                             )
                         } else {
-                            seeding::fmh_seeds(
-                                &seq,
-                                &sketch_params,
-                                0 as u32,
-                                &mut new_sketch,
-                                seed,
-                            );
+                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                            if is_x86_feature_detected!("avx2") {
+                                unsafe {
+                                    seeding::avx2_fmh_seeds(
+                                        &seq,
+                                        &sketch_params,
+                                        0 as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
+                                }
+                            } else {
+                                seeding::fmh_seeds(
+                                    &seq,
+                                    &sketch_params,
+                                    0 as u32,
+                                    &mut new_sketch,
+                                    seed,
+                                );
+                            }
                         }
                         new_sketch.contig_order = j;
                         let mut locked = ref_sketches.lock().unwrap();

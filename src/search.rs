@@ -77,7 +77,7 @@ pub fn search(command_params: CommandParams) {
                 );
             } else {
                 query_sketches =
-                    file_io::fastx_to_sketches(&vec![query_file.clone()], &sketch_params, true, true);
+                    file_io::fastx_to_sketches(&vec![query_file.clone()], &sketch_params, true);
             }
         }
 
