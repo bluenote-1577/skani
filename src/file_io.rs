@@ -62,7 +62,7 @@ pub fn fastx_to_sketches(
                             )
                         } else {
                             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2"){
+                            if is_x86_feature_detected!("avx2") {
                                 unsafe {
                                 seeding::avx2_fmh_seeds(
                                     &seq,

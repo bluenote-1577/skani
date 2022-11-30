@@ -287,7 +287,7 @@ fn calculate_ani(
             && total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
             && !map_params.amino_acid
             && total_range_query.1 - total_range_query.0 < (CHUNK_SIZE_DNA * 9 / 10) as GnPosition 
-            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64 + 3.
+            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64
         {
             //                        anchors_in_chunk_considered = num_seeds_in_intervals;
             trace!("putative ani filter {} -> {}", anchors_in_chunk_considered, upper_lower_seeds);
@@ -467,9 +467,6 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
     {
         return f64::MIN;
     }
-    if anchor_curr.ref_contig != anchor_past.ref_contig {
-        return f64::MIN;
-    }
     if anchor_curr.reverse_match != anchor_past.reverse_match {
         return f64::MIN;
     }
@@ -572,10 +569,10 @@ fn get_anchors(
 //        * (ref_sketch.total_sequence_length as f64 / ref_sketch.contigs.len() as f64).ln();
 //
     let mut ctgs_q = query_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
-    ctgs_q.sort();
+    ctgs_q.sort_unstable();
     let med_ctg_len_q = *ctgs_q[query_sketch.contig_lengths.len()/2] as f64;
     let mut ctgs_r = ref_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
-    ctgs_r.sort();
+    ctgs_r.sort_unstable();
     let med_ctg_len_r = *ctgs_r[ref_sketch.contig_lengths.len()/2] as f64;
 //    let score_query = (query_sketch.total_sequence_length as f64)
 //        * f64::min(med_ctg_len_q, 40000.);
@@ -648,9 +645,9 @@ fn get_anchors(
         );
         return (AnchorChunks::default(), true);
     }
-    anchors.sort();
+    anchors.sort_unstable();
     for query_position_vec in query_positions_all.iter_mut() {
-        query_position_vec.sort();
+        query_position_vec.sort_unstable();
     }
     debug!(
         "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}",
@@ -780,9 +777,6 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
             let mut best_prev_index = i;
             for j in (0..i).rev() {
                 let anchor_past = &anchor_chunk[j];
-                if anchor_curr.query_contig != anchor_past.query_contig {
-                    continue;
-                }
                 if anchor_curr.ref_contig != anchor_past.ref_contig {
                     continue;
                 }
