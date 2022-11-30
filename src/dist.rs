@@ -34,7 +34,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             );
         } else {
             ref_sketches =
-                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
+                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true, true);
         }
     }
     if command_params.queries_are_sketch {
@@ -58,7 +58,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             );
         } else {
             query_sketches =
-                file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
+                file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true, true);
         }
     }
     if query_sketches.is_empty() || ref_sketches.is_empty() {

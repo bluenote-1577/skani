@@ -29,6 +29,7 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
             &vec![shuffle_ref_files[i].clone()],
             &sketch_params,
             !command_params.screen,
+            command_params.avx2
         );
         let mut marker_ref_sketches = ref_sketches
             .iter()
@@ -47,7 +48,11 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
                 .unwrap(),
             );
 
+            trace!("{} compress factor", sketch.total_sequence_length / sketch.kmer_seeds_k.as_ref().unwrap().len());
+            trace!("{} marker compress factor", sketch.total_sequence_length / sketch.marker_seeds.len());
+
             bincode::serialize_into(&mut file_bin, &(&sketch_params, sketch)).unwrap();
+
             let mut locked = marker_sketches.lock().unwrap();
             locked.push(std::mem::take(marker_sketch));
         }

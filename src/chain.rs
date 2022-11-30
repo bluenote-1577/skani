@@ -548,6 +548,7 @@ pub fn check_markers_quickly(
             return true;
         }
     }
+    debug!("Ratio {}, intersect_len {}", ratio, intersect_len);
     return false;
 }
 

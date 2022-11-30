@@ -27,7 +27,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             );
         } else {
             ref_sketches =
-                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
+                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true, true);
         }
     }
     let screen_val;

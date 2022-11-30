@@ -16,6 +16,7 @@ pub fn fastx_to_sketches(
     ref_files: &Vec<String>,
     sketch_params: &SketchParams,
     seed: bool,
+    avx2: bool
 ) -> Vec<Sketch> {
     let ref_sketches: Mutex<Vec<_>> = Mutex::new(vec![]);
     let mut index_vec = (0..ref_files.len()).collect::<Vec<usize>>();
@@ -61,7 +62,7 @@ pub fn fastx_to_sketches(
                             )
                         } else {
                             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") {
+                            if is_x86_feature_detected!("avx2") && avx2{
                                 unsafe {
                                 seeding::avx2_fmh_seeds(
                                     &seq,
