@@ -225,7 +225,7 @@ fn calculate_ani(
             }
         }
 
-        let mut left_spacing_est = 0;
+        let mut left_spacing_est =  0;
         let mut right_spacing_est = 0;
         let switched_ref_sketch;
         if switched{
@@ -235,6 +235,7 @@ fn calculate_ani(
             switched_ref_sketch = &ref_sketch;
         }
 
+        //TODO this was for testing... don't use this mechanism
         let extend = 0;
         if leftmost_interval.reverse_chain{
             let ref_ctg_len =switched_ref_sketch.contig_lengths[leftmost_interval.ref_contig];
@@ -461,19 +462,16 @@ fn calculate_ani(
     };
 }
 
+#[inline]
 pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &MapParams) -> f64 {
     if anchor_curr.query_phase != anchor_past.query_phase
         || anchor_curr.ref_phase != anchor_past.ref_phase
     {
         return f64::MIN;
     }
-    if anchor_curr.ref_contig != anchor_past.ref_contig {
-        return f64::MIN;
-    }
     if anchor_curr.reverse_match != anchor_past.reverse_match {
         return f64::MIN;
     }
-
     if anchor_curr.ref_pos == anchor_past.ref_pos || anchor_curr.query_pos == anchor_past.query_pos
     {
         return f64::MIN;
@@ -538,7 +536,6 @@ pub fn check_markers_quickly(
     if ratio == 0{
         ratio = 1;
     }
-    debug!("Ratio {}", ratio);
     let mut intersect_len = 0;
     for marker_seed1 in seeds1.iter(){
         if seeds2.contains(marker_seed1){
@@ -548,6 +545,7 @@ pub fn check_markers_quickly(
             return true;
         }
     }
+    debug!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
     return false;
 }
 
@@ -647,9 +645,9 @@ fn get_anchors(
         );
         return (AnchorChunks::default(), true);
     }
-    anchors.sort();
+    anchors.sort_unstable();
     for query_position_vec in query_positions_all.iter_mut() {
-        query_position_vec.sort();
+        query_position_vec.sort_unstable();
     }
     debug!(
         "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}",
@@ -766,7 +764,8 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
     let mut chaining_results = vec![];
 
     let num_chunks = anchor_chunks.chunks.len();
-    let past_chain_length = usize::min(map_params.fragment_length / 2, map_params.bp_chain_band);
+    let past_chain_length = usize::min(map_params.fragment_length / 2, map_params.bp_chain_band) as u32;
+
     for anchor_chunk in anchor_chunks.chunks.iter() {
         let mut pointer_vec = vec![0; anchor_chunk.len()];
         let mut score_vec = vec![0.; anchor_chunk.len()];
@@ -779,17 +778,18 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
             let mut best_prev_index = i;
             for j in (0..i).rev() {
                 let anchor_past = &anchor_chunk[j];
-                if anchor_curr.query_contig != anchor_past.query_contig {
-                    continue;
-                }
-                if anchor_curr.ref_contig != anchor_past.ref_contig {
-                    continue;
-                }
-                if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length as u32
+                if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length
                     || i - j > map_params.chain_band
                 {
                     break;
                 }
+//                if anchor_curr.query_contig != anchor_past.query_contig {
+//                    continue;
+//                }
+                if anchor_curr.ref_contig != anchor_past.ref_contig {
+                    continue;
+                }
+
                 let anchor_score = score_anchors(anchor_curr, anchor_past, map_params);
                 if anchor_score == f64::MIN {
                     continue;
