@@ -41,14 +41,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .build_global()
         .unwrap();
 
-    let avx2;
-    if mode == Mode::Sketch{
-        avx2 = matches_subc.is_present("avx2"); 
-    }
-    else{
-        avx2 = false;
-    }
-
     simple_logging::log_to_stderr(LevelFilter::Info);
     if matches_subc.is_present("v") {
         simple_logging::log_to_stderr(LevelFilter::Debug);
@@ -270,7 +262,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
-        avx2
     };
 
     return (sketch_params, command_params);
@@ -359,7 +350,6 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         individual_contig_q,
         individual_contig_r: false,
         min_aligned_frac ,
-        avx2:false
     };
 
     if command_params.ref_files.len() == 0 {

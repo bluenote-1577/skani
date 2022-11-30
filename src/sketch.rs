@@ -7,7 +7,7 @@ use rand::thread_rng;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::BufWriter;
-use std::mem::*;
+
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::Instant;
@@ -29,7 +29,7 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
             &vec![shuffle_ref_files[i].clone()],
             &sketch_params,
             !command_params.screen,
-            command_params.avx2
+            true
         );
         let mut marker_ref_sketches = ref_sketches
             .iter()

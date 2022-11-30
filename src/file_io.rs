@@ -1,5 +1,5 @@
 use crate::params::*;
-use std::arch::x86_64::*;
+
 use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
@@ -62,7 +62,7 @@ pub fn fastx_to_sketches(
                             )
                         } else {
                             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") && avx2{
+                            if is_x86_feature_detected!("avx2"){
                                 unsafe {
                                 seeding::avx2_fmh_seeds(
                                     &seq,
@@ -190,7 +190,7 @@ pub fn write_phyllip_matrix(
     full_matrix: bool,
     aai: bool,
 ) {
-    let id_str = if aai { "AAI" } else { "ANI" };
+    let _id_str = if aai { "AAI" } else { "ANI" };
     if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
@@ -307,7 +307,7 @@ pub fn write_phyllip_matrix(
 
 pub fn write_sparse_matrix(
     anis: &FxHashMap<usize, FxHashMap<usize, AniEstResult>>,
-    sketches: &Vec<Sketch>,
+    _sketches: &Vec<Sketch>,
     file_name: &str,
     aai: bool,
 ) {
@@ -372,7 +372,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
         if anis[i].ani < 0. || anis[i].ani.is_nan() {
             continue;
         }
-        let ani = if anis[i].ani < 0. {
+        let _ani = if anis[i].ani < 0. {
             "NA".to_string()
         } else {
             format!("{}", anis[i].ani)
