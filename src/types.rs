@@ -35,7 +35,20 @@ pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
 
+//Thomas Wang's hash function taken from minimap2
 
+#[inline]
+pub fn mm_hashi64(kmer: i64) -> i64 {
+    let mut key = kmer as u64;
+    key = !(key.wrapping_add(key << 21)); // key = (key << 21) - key - 1;
+    key = key ^ key >> 24;
+    key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
+    key = key ^ key >> 14;
+    key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
+    key = key ^ key >> 28;
+    key = key.wrapping_add(key << 31);
+    return key as i64;
+}
 
 #[inline]
 pub fn mm_hash64(kmer: u64) -> u64 {

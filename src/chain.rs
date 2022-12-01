@@ -13,9 +13,11 @@ use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
     let score_query = (q_sk_len as f64)
-        * f64::min(med_ctg_len_q, 100000.);
-    let score_ref = (r_sk_len)
-        * f64::min(med_ctg_len_r, 100000.);
+        * med_ctg_len_q;
+//        * (f64::min(med_ctg_len_q, 60000.));
+    let score_ref = (r_sk_len as f64)
+        * med_ctg_len_r;
+//        * (f64::min(med_ctg_len_r, 60000.));
     return score_query > score_ref;
 
 
@@ -285,10 +287,11 @@ fn calculate_ani(
         );
         if putative_ani > 0.950
 //            && total_bases_contained_query > ref_sketch.c as GnPosition * 20
-            && total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
+            //&& total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
+            && total_bases_contained_query > c * 5
             && !map_params.amino_acid
             && total_range_query.1 - total_range_query.0 < (CHUNK_SIZE_DNA * 9 / 10) as GnPosition 
-            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64 
+            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64
         {
             //                        anchors_in_chunk_considered = num_seeds_in_intervals;
             trace!("putative ani filter {} -> {}", anchors_in_chunk_considered, upper_lower_seeds);
@@ -545,7 +548,11 @@ pub fn check_markers_quickly(
             return true;
         }
     }
+<<<<<<< HEAD
     debug!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
+=======
+    debug!("Ratio {}, intersect_len {}", ratio, intersect_len);
+>>>>>>> avx2
     return false;
 }
 
@@ -564,25 +571,31 @@ fn get_anchors(
         return (AnchorChunks::default(), true);
     }
 //    let score_query = query_sketch.total_sequence_length as f64
-//        * (query_sketch.total_sequence_length as f64 / query_sketch.contigs.len() as f64).ln();
 //    let score_ref = ref_sketch.total_sequence_length as f64
 //        * (ref_sketch.total_sequence_length as f64 / ref_sketch.contigs.len() as f64).ln();
 //
     let mut ctgs_q = query_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
+<<<<<<< HEAD
     ctgs_q.sort_unstable();
     let med_ctg_len_q = *ctgs_q[query_sketch.contig_lengths.len()/2] as f64;
     let mut ctgs_r = ref_sketch.contig_lengths.iter().collect::<Vec<&GnPosition>>();
     ctgs_r.sort_unstable();
     let med_ctg_len_r = *ctgs_r[ref_sketch.contig_lengths.len()/2] as f64;
+=======
+    let mean_ctg_len_q = query_sketch.contig_lengths.iter().map(|x| *x as f64).sum::<f64>()
+        /(query_sketch.contig_lengths.len() as f64);
+    ctgs_q.sort_unstable();
+//    let med_ctg_len_q = *ctgs_q[query_sketch.contig_lengths.len()/2] as f64;
+    let mean_ctg_len_r = ref_sketch.contig_lengths.iter().map(|x| *x as f64).sum::<f64>()
+        /(ref_sketch.contig_lengths.len() as f64);
+
+>>>>>>> avx2
 //    let score_query = (query_sketch.total_sequence_length as f64)
 //        * f64::min(med_ctg_len_q, 40000.);
 //    let score_ref = (ref_sketch.total_sequence_length as f64)
 //        * f64::min(med_ctg_len_r, 40000.);
 
-    //        if query_sketch.contigs.len() < ref_sketch.contigs.len(){
-//        if query_sketch.total_sequence_length > ref_sketch.total_sequence_length {
-//    if score_query > score_ref {
-    if switch_qr(med_ctg_len_r,med_ctg_len_q, query_sketch.total_sequence_length as f64, ref_sketch.total_sequence_length as f64){
+    if switch_qr(mean_ctg_len_r,mean_ctg_len_q, query_sketch.total_sequence_length as f64, ref_sketch.total_sequence_length as f64){
         switched = true;
         if !check_markers_quickly(&query_sketch, &ref_sketch, 0.0){
             return (AnchorChunks::default(), switched);
@@ -778,7 +791,14 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
             let mut best_prev_index = i;
             for j in (0..i).rev() {
                 let anchor_past = &anchor_chunk[j];
+<<<<<<< HEAD
                 if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length
+=======
+                if anchor_curr.ref_contig != anchor_past.ref_contig {
+                    continue;
+                }
+                if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length as u32
+>>>>>>> avx2
                     || i - j > map_params.chain_band
                 {
                     break;

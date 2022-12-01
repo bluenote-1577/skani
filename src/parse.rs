@@ -349,7 +349,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         max_results,
         individual_contig_q,
         individual_contig_r: false,
-        min_aligned_frac 
+        min_aligned_frac ,
     };
 
     if command_params.ref_files.len() == 0 {

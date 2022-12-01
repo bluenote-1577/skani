@@ -7,7 +7,7 @@ use rand::thread_rng;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::BufWriter;
-use std::mem::*;
+
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::Instant;
@@ -47,7 +47,11 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
                 .unwrap(),
             );
 
+            trace!("{} compress factor", sketch.total_sequence_length / sketch.kmer_seeds_k.as_ref().unwrap().len());
+            trace!("{} marker compress factor", sketch.total_sequence_length / sketch.marker_seeds.len());
+
             bincode::serialize_into(&mut file_bin, &(&sketch_params, sketch)).unwrap();
+
             let mut locked = marker_sketches.lock().unwrap();
             locked.push(std::mem::take(marker_sketch));
         }

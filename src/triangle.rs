@@ -3,7 +3,7 @@ use crate::file_io;
 use crate::params::*;
 use crate::screen;
 use crate::types::*;
-use fxhash::{FxHashMap, FxHashSet};
+use fxhash::{FxHashMap};
 use log::*;
 use rayon::prelude::*;
 use std::sync::Mutex;

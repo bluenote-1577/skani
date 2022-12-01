@@ -38,7 +38,7 @@ pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
 pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
-pub const FULL_INDEX_THRESH: usize = 100;
+pub const FULL_INDEX_THRESH: usize = 50;
 
 #[derive(PartialEq)]
 pub enum Mode {
@@ -84,7 +84,7 @@ pub struct CommandParams{
     pub max_results: usize,
     pub individual_contig_q: bool,
     pub individual_contig_r: bool,
-    pub min_aligned_frac: f64
+    pub min_aligned_frac: f64,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

@@ -1,4 +1,5 @@
 use crate::params::*;
+
 use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
@@ -59,13 +60,26 @@ pub fn fastx_to_sketches(
                                 seed,
                             )
                         } else {
-                            seeding::fmh_seeds(
-                                &seq,
-                                &sketch_params,
-                                j as u32,
-                                &mut new_sketch,
-                                seed,
-                            );
+                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                            if is_x86_feature_detected!("avx2") {
+                                unsafe {
+                                    seeding::avx2_fmh_seeds(
+                                        &seq,
+                                        &sketch_params,
+                                        j as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
+                                }
+                            } else {
+                                seeding::fmh_seeds(
+                                    &seq,
+                                    &sketch_params,
+                                    j as u32,
+                                    &mut new_sketch,
+                                    seed,
+                                );
+                            }
                         }
                         //new_sketch.contig_order = 0;
                         j += 1;
@@ -141,13 +155,26 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                 seed,
                             )
                         } else {
-                            seeding::fmh_seeds(
-                                &seq,
-                                &sketch_params,
-                                0 as u32,
-                                &mut new_sketch,
-                                seed,
-                            );
+                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                            if is_x86_feature_detected!("avx2") {
+                                unsafe {
+                                    seeding::avx2_fmh_seeds(
+                                        &seq,
+                                        &sketch_params,
+                                        0 as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
+                                }
+                            } else {
+                                seeding::fmh_seeds(
+                                    &seq,
+                                    &sketch_params,
+                                    0 as u32,
+                                    &mut new_sketch,
+                                    seed,
+                                );
+                            }
                         }
                         new_sketch.contig_order = j;
                         let mut locked = ref_sketches.lock().unwrap();
@@ -174,7 +201,7 @@ pub fn write_phyllip_matrix(
     full_matrix: bool,
     aai: bool,
 ) {
-    let id_str = if aai { "AAI" } else { "ANI" };
+    let _id_str = if aai { "AAI" } else { "ANI" };
     if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
@@ -291,7 +318,7 @@ pub fn write_phyllip_matrix(
 
 pub fn write_sparse_matrix(
     anis: &FxHashMap<usize, FxHashMap<usize, AniEstResult>>,
-    sketches: &Vec<Sketch>,
+    _sketches: &Vec<Sketch>,
     file_name: &str,
     aai: bool,
 ) {
@@ -356,7 +383,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
         if anis[i].ani < 0. || anis[i].ani.is_nan() {
             continue;
         }
-        let ani = if anis[i].ani < 0. {
+        let _ani = if anis[i].ani < 0. {
             "NA".to_string()
         } else {
             format!("{}", anis[i].ani)
@@ -433,7 +460,7 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
         .for_each(|i| {
             let sketch_file = &ref_files[i];
             if marker && sketch_file.contains(".marker")
-                || !marker && !sketch_file.contains(".marker") 
+                || !marker && !sketch_file.contains(".marker")
             {
                 let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
                 let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
@@ -444,7 +471,7 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
                     let mut locked = ret_ref_sketches.lock().unwrap();
                     locked.push(temp_ref_sketch);
                 } else {
-                    if sketch_file != "markers.bin"{
+                    if sketch_file != "markers.bin" {
                         error!(
                             "{} is not a valid .sketch file or is corrupted.",
                             sketch_file
@@ -461,16 +488,13 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>, marker: bool) -> (SketchPar
     return (ret_sketch_params, ret_ref_sketches);
 }
 
-pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec<Sketch>){
-
+pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec<Sketch>) {
     let reader = BufReader::new(File::open(marker_file).unwrap());
     let res: Result<(SketchParams, Vec<Sketch>), _> = bincode::deserialize_from(reader);
-    if res.is_ok(){
+    if res.is_ok() {
         return res.unwrap();
-    }
-    else{
+    } else {
         error!("Problem reading {}. Exiting. ", marker_file);
         std::process::exit(1)
-
     }
 }
