@@ -2,17 +2,15 @@
 
 ## Introduction
 
-**skani** is a program for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences (contigs/MAGs/genomes). 
+**skani** is a program for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80% and AAI > ~60%. 
 
-skani is designed species or genus-level ANI calculations, whereas the AAI mode offers more sensitivity. 
+skani uses an approximate mapping method to get orthology without base-level alignment to estimate ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-skani uses an approximate mapping method to get orthology without base-level alignment, and then estimates ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
-
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for noisy MAGs.
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
 2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM. Constructing a database from genome sequences takes only a few minutes. 
+3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour. 
 
 4. **Efficient AAI calculation on DNA sequences**. skani can calculate AAI between two DNA sequences (i.e. no gene prediction needed). AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
 
@@ -22,35 +20,41 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 Requirements:
 1. [rust](https://www.rust-lang.org/tools/install) programming language and associated tools such as cargo are required and assumed to be in PATH.
+2. A c compiler (e.g. GCC)
+3. make
 
 Building takes a few minutes (depending on # of cores).
 
 ```sh
 git clone https://github.com/bluenote-1577/skani
 cd skani
-# make sure ~/.cargo exists
+
+# If default rust install directory is ~/.cargo
 cargo install --path . --root ~/.cargo
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
+
+# If ~/.cargo doesn't exist use below commands instead
+#cargo build --release
+#./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### If ~/.cargo is not present: (for non-standard rust installs)
-```
-cargo build --release
-./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
-```
+#### Option 2 (Convenient): Pre-built linux statically compiled executable
 
-#### Option 2: Pre-built linux binary
+We offer a pre-built statically compiled executable for 64-bit linux systems. That is, if you're on a linux 64-bit system, you can just download the binary and run it without installing anything. 
 
-We offer a pre-built binary for 64-bit linux systems. This is convenient but may not be as up-to-date as the source. 
-
-See the [Releases](https://github.com/bluenote-1577/skani/releases) page. 
+For using the latest version of skani: 
 
 ```sh
-wget https://github.com/bluenote-1577/skani/releases/download/binary-release/skani-linux-1.0.0-alpha.tar
-tar -xf skani-linux-1.0.0-alpha.tar
-cd skani-linux-1.0.0-alpha
+wget https://github.com/bluenote-1577/skani/releases/download/latest/skani
+chmod +x skani
 ./skani -h
 ```
+
+Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). The binary may also be not as updated as the source files. 
+
+See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
+
+
 
 
 
