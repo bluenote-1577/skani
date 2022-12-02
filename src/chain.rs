@@ -363,7 +363,7 @@ fn calculate_ani(
 
     if ani_ests.len() == 0 {
         let mut ret = AniEstResult::default();
-        ret.ani = f64::NAN;
+        ret.ani = f32::NAN;
         return ret;
     }
     let mut total_multiplicitiy = 0;
@@ -372,10 +372,10 @@ fn calculate_ani(
     }
     let lower;
     let upper;
-    if map_params.median || map_params.amino_acid {
+    if map_params.median{
         lower = 0.499;
         upper = 0.501;
-    } else if map_params.robust{
+    } else if map_params.robust || map_params.amino_acid{
         lower = 0.10;
         upper = 0.90;
     } else {
@@ -452,15 +452,15 @@ fn calculate_ani(
         }
     }
     return AniEstResult {
-        ani: final_ani,
-        align_fraction_query: covered_query,
-        align_fraction_ref: covered_ref,
+        ani: final_ani as f32,
+        align_fraction_query: covered_query as f32,
+        align_fraction_ref: covered_ref as f32,
         ref_file: ref_sketch.file_name.clone(),
         query_file: query_sketch.file_name.clone(),
         query_contig: query_sketch.contigs[0].clone(),
         ref_contig: ref_sketch.contigs[0].clone(),
-        ci_upper: ci.1,
-        ci_lower: ci.0,
+        ci_upper: ci.1 as f32,
+        ci_lower: ci.0 as f32,
         aai: map_params.amino_acid
     };
 }

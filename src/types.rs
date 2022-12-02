@@ -8,7 +8,7 @@ use partitions::*;
 use std::collections::{HashMap};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
-pub const BYTE_TO_SEQ: [KmerBits; 256] = [
+pub const BYTE_TO_SEQ: [MarkerBits; 256] = [
     0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -20,20 +20,22 @@ pub const BYTE_TO_SEQ: [KmerBits; 256] = [
 ];
 
 
-pub type KmerLength = usize;
 pub type GnPosition = u32;
 pub type ContigIndex = u32;
 //pub type KmerBits = u128;
-pub type KmerBits = u64;
-pub type KmerToSketch = MMHashMap<KmerBits, SmallVec<[usize; 1]>>;
+pub type MarkerBits = u64;
+pub type SeedBits = u32;
+pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[usize; 1]>>;
 pub const USE_SMALLVEC: bool = false;
-pub type KmerSeeds = MMHashMap<KmerBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
+pub type KmerSeeds = MMHashMap32<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 //pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
 
 
 //Implement minimap2 hashing, will test later.
 pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
+pub type MMBuildHasher32 = BuildHasherDefault<MMHasher32>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
+pub type MMHashMap32<K, V> = HashMap<K, V, MMBuildHasher32>;
 
 //Thomas Wang's hash function taken from minimap2
 
@@ -53,6 +55,19 @@ pub fn mm_hashi64(kmer: i64) -> i64 {
 #[inline]
 pub fn mm_hash64(kmer: u64) -> u64 {
     let mut key = kmer;
+    key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
+    key = key ^ key >> 24;
+    key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
+    key = key ^ key >> 14;
+    key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
+    key = key ^ key >> 28;
+    key = key.wrapping_add(key << 31);
+    return key;
+}
+
+#[inline]
+pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
+    let mut key = (u32::from_be_bytes(bytes.try_into().unwrap())) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
@@ -98,7 +113,7 @@ pub struct Sketch {
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
     pub repetitive_kmers: usize,
-    pub marker_seeds: FxHashSet<KmerBits>,
+    pub marker_seeds: FxHashSet<MarkerBits>,
     pub marker_c: usize,
     pub c: usize,
     pub k: usize,
@@ -174,6 +189,30 @@ impl Default for Sketch {
     }
 }
 
+pub struct MMHasher32 {
+    hash: usize,
+}
+
+impl Hasher for MMHasher32 {
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        self.hash = mm_hash_bytes_32(bytes);
+    }
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.hash as u64
+    }
+}
+
+impl Default for MMHasher32 {
+    #[inline]
+    fn default() -> MMHasher32 {
+        MMHasher32 { hash: 0 }
+    }
+}
+
+
+
 pub struct MMHasher {
     hash: usize,
 }
@@ -198,7 +237,7 @@ impl Default for MMHasher {
 
 #[derive(Debug, Eq, Hash, Clone)]
 pub struct KmerEnc {
-    pub kmer: KmerBits,
+    pub kmer: u64,
 }
 
 //impl Hash for KmerEnc{
@@ -215,7 +254,7 @@ impl PartialEq for KmerEnc {
 
 impl KmerEnc {
     #[inline]
-    pub fn decode(byte: KmerBits) -> u8 {
+    pub fn decode(byte: u64) -> u8 {
         if byte == 0 {
             return b'A';
         } else if byte == 1 {
@@ -229,7 +268,7 @@ impl KmerEnc {
         }
     }
 
-    pub fn print_string(kmer: KmerBits, k: usize) {
+    pub fn print_string(kmer: u64, k: usize) {
         let mut bytes = vec![];
         let mask = 3;
         for i in 0..k {
@@ -240,7 +279,7 @@ impl KmerEnc {
         dbg!(str::from_utf8(&bytes.into_iter().rev().collect::<Vec<u8>>()).unwrap());
     }
 
-    pub fn print_string_aa(kmer: KmerBits, k: usize, sketch_params: &SketchParams) {
+    pub fn print_string_aa(kmer: u64, k: usize, sketch_params: &SketchParams) {
         let mut bytes = vec![];
         let mask = 63;
         for i in 0..k {
@@ -331,15 +370,15 @@ pub struct Orf{
 
 #[derive(Default, Clone, Debug)]
 pub struct AniEstResult{
-    pub ani: f64,
-    pub align_fraction_query: f64,
-    pub align_fraction_ref: f64,
+    pub ani: f32,
+    pub align_fraction_query: f32,
+    pub align_fraction_ref: f32,
     pub ref_file: String,
     pub query_file: String,
     pub query_contig: String,
     pub ref_contig: String,
-    pub ci_upper: f64,
-    pub ci_lower: f64,
+    pub ci_upper: f32,
+    pub ci_lower: f32,
     pub aai: bool
 
 }

@@ -267,7 +267,7 @@ pub fn write_phyllip_matrix(
             write!(&mut af_file, "\n").unwrap();
         }
 
-        info!("Align fraciton matrix written to skani_matrix.af");
+        info!("Aligned fraction matrix written to skani_matrix.af");
     } else {
         let ani_mat_file = format!("{}", file_name);
         let af_mat_file = format!("{}.af", file_name);
@@ -332,14 +332,12 @@ pub fn write_sparse_matrix(
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                     write!(
                         &mut handle,
-                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                         ani_res.ref_file,
                         ani_res.query_file,
                         ani_res.ani,
                         ani_res.align_fraction_query,
                         ani_res.align_fraction_ref,
-                        ani_res.ci_upper,
-                        ani_res.ci_lower,
                         ani_res.ref_contig,
                         ani_res.query_contig,
                     )
@@ -356,14 +354,12 @@ pub fn write_sparse_matrix(
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                     write!(
                         &mut ani_file,
-                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                         ani_res.ref_file,
                         ani_res.query_file,
                         ani_res.ani,
                         ani_res.align_fraction_query,
                         ani_res.align_fraction_ref,
-                        ani_res.ci_upper,
-                        ani_res.ci_lower,
                         ani_res.ref_contig,
                         ani_res.query_contig,
                     )
@@ -400,7 +396,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
         let stdout = io::stdout();
         let mut handle = stdout.lock();
 
-        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_query\tAlign_fraction_reference\tRef_name\tQuery_name\n", id_str).unwrap();
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
@@ -408,14 +404,12 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
                     anis[i].ani,
                     anis[i].align_fraction_query,
                     anis[i].align_fraction_ref,
-                    anis[i].ci_upper,
-                    anis[i].ci_lower,
                     anis[i].ref_contig,
                     anis[i].query_contig,
                 )
@@ -433,14 +427,12 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
                     anis[i].ani,
                     anis[i].align_fraction_query,
                     anis[i].align_fraction_ref,
-                    anis[i].ci_upper,
-                    anis[i].ci_lower,
                     anis[i].ref_contig,
                     anis[i].query_contig,
                 )

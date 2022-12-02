@@ -61,9 +61,9 @@ pub fn get_nonoverlap_orf(sorted_orfs: Vec<Orf>) -> Vec<Orf> {
 pub fn get_orfs(string: &[u8], sketch_params: &SketchParams) -> Vec<Orf> {
     let mut orfs = vec![];
     let mut phase = 0;
-    let mut rolling_3mer_f: KmerBits = 0;
-    let num_bits = std::mem::size_of::<KmerBits>() * 8;
-    let mut rolling_3mer_r: KmerBits = 0;
+    let mut rolling_3mer_f: MarkerBits= 0;
+    let num_bits = std::mem::size_of::<MarkerBits>() * 8;
+    let mut rolling_3mer_r: MarkerBits= 0;
     let reverse_shift_dist = num_bits - 2;
     let forward_shift_dist = num_bits - 6;
 
@@ -133,7 +133,7 @@ pub fn fmh_seeds_aa_with_orf(
     let k = sketch_params.k;
     let c = sketch_params.c;
     let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
-    if k > marker_k {
+    if k > 6 {
         panic!("Value of k > {} for AA; not allowed.", marker_k);
     }
     let marker_k = K_MARKER_AA;
@@ -141,16 +141,16 @@ pub fn fmh_seeds_aa_with_orf(
         return;
     }
 
-    let num_bits = std::mem::size_of::<KmerBits>() * 8;
+    let num_bits = std::mem::size_of::<MarkerBits>() * 8;
 
     let marker_reverse_shift_dist_aa = 5 * (marker_k - 1);
-    let marker_max_mask_aa = KmerBits::MAX >> (num_bits - 5 * marker_k);
+    let marker_max_mask_aa = MarkerBits::MAX >> (num_bits - 5 * marker_k);
 
     let reverse_shift_dist = 3 * 2 * marker_k - 2;
-    let reverse_shift_dist_aa = 5 * (marker_k - 1);
+    let reverse_shift_dist_aa = 5 * (k - 1);
     let forward_shift_rc = marker_k * 3 * 2 - 6;
-    let max_mask = KmerBits::MAX >> (num_bits - 3 * 2 * marker_k);
-    let max_mask_aa = KmerBits::MAX >> (num_bits - 5 * marker_k);
+    let max_mask = MarkerBits::MAX >> (num_bits - 3 * 2 * marker_k);
+    let max_mask_aa = MarkerBits::MAX >> (num_bits - 5 * k);
     let max_rev_mask = !(0 | (3 << (3 * 2 * marker_k - 2)));
     //    let max_rev_mask_aa = !(0 | (31 << (5 * (marker_k - 1))));
     let three_mer_mask = 63;
@@ -163,7 +163,7 @@ pub fn fmh_seeds_aa_with_orf(
         let start = orf.start;
         let end = orf.end + 3;
         let range = start..end;
-        let mut rolling_kmer: KmerBits = 0;
+        let mut rolling_kmer: MarkerBits = 0;
         let mut rolling_aa_kmer = 0;
         let mut marker_rolling_aa_kmer = 0;
 
@@ -205,9 +205,10 @@ pub fn fmh_seeds_aa_with_orf(
                     let hash = mm_hash64(rolling_aa_kmer as u64);
                     if hash < threshold {
                         if seed {
+                            //dbg!(rolling_aa_kmer, rolling_aa_kmer as SeedBits);
                             let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                             let kmer_positions = kmer_seeds
-                                .entry(rolling_aa_kmer)
+                                .entry(rolling_aa_kmer as SeedBits)
                                 .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                             //                            .or_insert(vec![]);
 
@@ -233,124 +234,6 @@ pub fn fmh_seeds_aa_with_orf(
     //kmer_seeds_k].shrink_to_fit();
 }
 
-//pub fn fmh_seeds_aa(
-//    string: &[u8],
-//    sketch_params: &SketchParams,
-//    contig_index: ContigIndex,
-//    kmer_seeds_k: &mut Vec<KmerSeeds>,
-//) {
-//    let ks_aa = &sketch_params.ks;
-//    let cs = &sketch_params.cs;
-//    let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
-//    let max_k_aa = *ks_aa.iter().max().unwrap();
-//    if string.len() < 2 * max_k_aa {
-//        return;
-//    }
-//    for i in 0..ks_aa.len() - 1 {
-//        assert!(ks_aa[i + 1] >= ks_aa[i]);
-//        assert!(cs[i + 1] >= cs[i]);
-//    }
-//    let num_bits = std::mem::size_of::<KmerBits>() * 8;
-//    let mut rolling_kmer_f: KmerBits = 0;
-//    let mut rolling_kmer_r: KmerBits = 0;
-//    let mut rolling_aa_kmers_f = [0; 3];
-//    let mut rolling_aa_kmers_r = [0; 3];
-//    let reverse_shift_dist = 3 * 2 * max_k_aa - 2;
-//    let reverse_shift_dist_aa = 5 * (max_k_aa - 1);
-//    let forward_shift_rc = max_k_aa * 3 * 2 - 6;
-//    let max_mask = KmerBits::MAX >> (num_bits - 3 * 2 * max_k_aa);
-//    let max_mask_aa = KmerBits::MAX >> (num_bits - 5 * max_k_aa);
-//    let max_rev_mask = !(0 | (3 << (3 * 2 * max_k_aa - 2)));
-//    //    let max_rev_mask_aa = !(0 | (31 << (5 * (max_k_aa - 1))));
-//    let num_ks = ks_aa.len();
-//    let three_mer_mask = 63;
-//    let masks: Vec<KmerBits> = ks_aa
-//        .iter()
-//        .map(|x| KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 3 * 2 * x))
-//        .collect();
-//    let len = string.len();
-//    let mut thresholds: Vec<u64> = vec![u64::MAX / (cs[0] as u64)];
-//    for i in 1..cs.len() {
-//        thresholds.push(u64::MAX / (cs[i] / cs[i - 1]) as u64);
-//    }
-//    let rev_partial_shift: Vec<KmerBits> = ks_aa
-//        .iter()
-//        .map(|x| 3 * 2 * (max_k_aa - *x) as KmerBits)
-//        .collect();
-//
-//    let mut phase = 0;
-//
-//    for i in 0..len {
-//        let nuc_f = BYTE_TO_SEQ[string[i] as usize];
-//        let nuc_r = 3 - nuc_f;
-//        rolling_kmer_f <<= 2;
-//        rolling_kmer_f |= nuc_f;
-//        rolling_kmer_f &= max_mask;
-//        rolling_kmer_r >>= 2;
-//        rolling_kmer_r &= max_rev_mask;
-//        rolling_kmer_r |= nuc_r << reverse_shift_dist;
-//        rolling_kmer_r &= max_mask;
-//
-//        if i >= 2 {
-//            rolling_aa_kmers_f[phase] <<= 5;
-//            rolling_aa_kmers_f[phase] |=
-//                kmer_to_aa_table[(rolling_kmer_f & three_mer_mask) as usize];
-//            rolling_aa_kmers_f[phase] &= max_mask_aa;
-//            rolling_aa_kmers_r[phase] >>= 5;
-//            //            rolling_aa_kmers_r[phase] &= max_rev_mask_aa;
-//            //            let x = rolling_kmer_r >> forward_shift_rc;
-//            rolling_aa_kmers_r[phase] |= kmer_to_aa_table
-//                [(rolling_kmer_r >> forward_shift_rc) as usize]
-//                << reverse_shift_dist_aa;
-//            //            rolling_aa_kmers_r[phase] &= max_mask_aa;
-//            //            println!("{:#064b}, {}", rolling_aa_kmers_f[phase]);
-//            //            println!("{:#064b}, {}", rolling_aa_kmers_r[phase]);
-//            //
-//            //
-//            if num_ks == 1 && i >= max_k_aa * 3 - 1 {
-//                //                KmerEnc::print_string(rolling_kmer_f, 3 * max_k_aa);
-//                //                KmerEnc::print_string(rolling_kmer_r, 3 * max_k_aa);
-//                //                KmerEnc::print_string_aa(rolling_kmer_f, max_k_aa, &sketch_params);
-//                //                KmerEnc::print_string_aa(rolling_kmer_r, max_k_aa, &sketch_params);
-//
-//                let hash_f = mm_hash64(rolling_aa_kmers_f[phase] as u64);
-//                let hash_r = mm_hash64(rolling_aa_kmers_r[phase] as u64);
-//                if hash_f < thresholds[0] {
-//                    let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
-//                    let kmer_positions = kmer_seeds
-//                        .entry(rolling_aa_kmers_f[phase])
-//                        .or_insert(SmallVec::<[SeedPosition;SMALL_VEC_SIZE]>::new());
-//
-//                    kmer_positions.push(SeedPosition {
-//                        pos: i as GnPosition,
-//                        canonical: true,
-//                        contig_index,
-//                        phase: phase as u8,
-//                    });
-//                }
-//
-//                if hash_r < thresholds[0] {
-//                    let kmer_seeds = &mut kmer_seeds_k[ks_aa[0]];
-//                    let kmer_positions = kmer_seeds
-//                        .entry(rolling_aa_kmers_r[phase])
-//                        .or_insert(SmallVec::<[SeedPosition;SMALL_VEC_SIZE]>::new());
-//
-//                    kmer_positions.push(SeedPosition {
-//                        pos: i as GnPosition,
-//                        canonical: false,
-//                        contig_index,
-//                        phase: phase as u8 + 3,
-//                    });
-//                }
-//            }
-//        }
-//        phase += 1;
-//        if phase == 3 {
-//            phase = 0;
-//        }
-//    }
-//}
-
 pub fn fmh_seeds(
     string: &[u8],
     sketch_params: &SketchParams,
@@ -366,20 +249,20 @@ pub fn fmh_seeds(
     let marker_seeds = &mut new_sketch.marker_seeds;
     let k = sketch_params.k;
     let c = sketch_params.c;
-    if k > marker_k {
+    if k > 16 {
         panic!("Value of k > {} for DNA; not allowed.", marker_k);
     }
     if string.len() < 2 * marker_k {
         return;
     }
-    let mut rolling_kmer_f_marker: KmerBits = 0;
-    let mut rolling_kmer_f_seed: KmerBits;
-    let mut rolling_kmer_r_marker: KmerBits = 0;
-    let mut rolling_kmer_r_seed: KmerBits;
-    let seed_mask = KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 2 * k);
+    let mut rolling_kmer_f_marker: MarkerBits= 0;
+    let mut rolling_kmer_f_seed: MarkerBits;
+    let mut rolling_kmer_r_marker: MarkerBits= 0;
+    let mut rolling_kmer_r_seed: MarkerBits;
+    let seed_mask = MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * k);
 
     let marker_reverse_shift_dist = 2 * (marker_k - 1);
-    let marker_mask = KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 2 * marker_k);
+    let marker_mask = MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * marker_k);
     let marker_rev_mask = !(0 | (3 << 2 * marker_k - 2));
     let len = string.len();
     let threshold = i64::MIN + (u64::MAX / (c as u64)) as i64;
@@ -426,7 +309,8 @@ pub fn fmh_seeds(
             if seed {
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_kmer_seed)
+                    //Since we fix k = 15,can represent seeds as 32bits
+                    .entry(canonical_kmer_seed as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
@@ -546,10 +430,10 @@ pub unsafe fn avx2_fmh_seeds(
         rolling_kmer_r_marker = _mm256_or_si256(rolling_kmer_r_marker, shift_nuc_r);
     }
 
-    let seed_mask = (KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 2 * k)) as i64;
+    let seed_mask = (MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * k)) as i64;
     let mm256_seed_mask = _mm256_set_epi64x(seed_mask, seed_mask, seed_mask, seed_mask);
     let marker_mask =
-        (KmerBits::MAX >> (std::mem::size_of::<KmerBits>() * 8 - 2 * marker_k)) as i64;
+        (MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * marker_k)) as i64;
     let rev_marker_mask: u64 = !(0 | (3 << 2 * marker_k - 2));
     let rev_marker_mask = i64::from_le_bytes(rev_marker_mask.to_le_bytes());
     //    dbg!(u64::MAX / (c as u64));
@@ -617,7 +501,7 @@ pub unsafe fn avx2_fmh_seeds(
                 const ind: i32 = 0;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as u64)
+                    .entry(canonical_seeds[ind as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
@@ -641,7 +525,7 @@ pub unsafe fn avx2_fmh_seeds(
                 const ind: i32 = 1;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as u64)
+                    .entry(canonical_seeds[ind as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
@@ -665,7 +549,7 @@ pub unsafe fn avx2_fmh_seeds(
                 const ind: i32 = 2;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as u64)
+                    .entry(canonical_seeds[ind as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
@@ -689,7 +573,7 @@ pub unsafe fn avx2_fmh_seeds(
                 const ind: i32 = 3;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as u64)
+                    .entry(canonical_seeds[ind as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
