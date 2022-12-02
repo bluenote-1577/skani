@@ -108,7 +108,7 @@ see [skani advanced usage information](https://github.com/bluenote-1577/skani/wi
 
 If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the `--min-aligned-fraction` option.
 
-**In practice, this means that only genomes with > ~82% ANI and > ~60% AAI are output** with default parameters. 
+**In practice, this means that only results with > ~82% ANI and > ~65% AAI are reliably output** (with default parameters). 
 
 The default output for `search` and `dist` looks like
 ```
