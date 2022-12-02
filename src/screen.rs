@@ -5,6 +5,7 @@ use smallvec::SmallVec;
 use crate::types::*;
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
+use log::*;
 
 pub fn screen_refs_filenames<'a>(
     identity: f64,
@@ -30,14 +31,15 @@ pub fn screen_refs_filenames<'a>(
         K_MARKER_DNA
     };
     let cutoff = identity.powi(k as i32);
+    debug!("cutoff screening val {}",cutoff);
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > ((cutoff 
+            *x.1 > usize::max(((cutoff 
                 * usize::min(
                     ref_sketches[**x.0].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize)
+                ) as f64) as usize),1)
         })
         .map(|x| &ref_sketches[**x.0].file_name)
         .collect();
@@ -72,11 +74,11 @@ pub fn screen_refs(
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > ((cutoff 
+            *x.1 > usize::max(((cutoff 
                 * usize::min(
                     ref_sketches[**x.0].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize)
+                ) as f64) as usize),1)
         })
         .map(|x| **x.0)
         .collect();

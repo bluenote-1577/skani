@@ -385,7 +385,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             format!("{}", anis[i].ani)
         };
         let results = query_file_result_map
-            .entry(&anis[i].query_file)
+            .entry(&anis[i].query_contig)
             .or_insert(vec![]);
         results.push(&anis[i]);
     }

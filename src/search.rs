@@ -3,10 +3,12 @@ use crate::file_io;
 use crate::params::*;
 use crate::screen;
 use crate::types::*;
+use fxhash::FxHashMap;
 use log::*;
 use rayon::prelude::*;
 use std::path::Path;
 use std::sync::Mutex;
+use std::sync::RwLock;
 use std::time::Instant;
 
 pub fn search(command_params: CommandParams) {
@@ -54,12 +56,15 @@ pub fn search(command_params: CommandParams) {
     } else {
         kmer_to_sketch = KmerToSketch::default();
     }
+    let keep_refs = true;
+    let ref_sketches_used: RwLock<FxHashMap<_, _>> = RwLock::new(FxHashMap::default());
 
     let now = Instant::now();
     //assert!(ref_sketches.len() == ref_marker_files.len());
     let anis: Mutex<Vec<AniEstResult>> = Mutex::new(vec![]);
+    let counter: Mutex<usize> = Mutex::new(0);
     let folder = Path::new(&ref_marker_file).parent().unwrap();
-    for (count, query_file) in command_params.query_files.iter().enumerate() {
+    for query_file in command_params.query_files.iter() {
         let query_params;
         let query_sketches;
         if command_params.queries_are_sketch {
@@ -82,63 +87,137 @@ pub fn search(command_params: CommandParams) {
         }
 
         if !query_sketches.is_empty() {
-            let query_sketch = &query_sketches[0];
-            let js = 0..ref_sketches.len();
-            let refs_to_try;
-            if !command_params.screen {
-                let refs_to_try_mutex: Mutex<Vec<&String>> = Mutex::new(vec![]);
+            let is = 0..query_sketches.len();
+            is.into_par_iter().for_each(|i| {
+                let query_sketch = &query_sketches[i];
+                let refs_to_try;
+                if !command_params.screen {
+                    let refs_to_try_mutex: Mutex<Vec<&String>> = Mutex::new(vec![]);
+                    let js = 0..ref_sketches.len();
+                    js.into_par_iter().for_each(|j| {
+                        let ref_sketch = &ref_sketches[j];
+                        if chain::check_markers_quickly(&query_sketch, ref_sketch, screen_val) {
+                            let mut lock = refs_to_try_mutex.lock().unwrap();
+                            lock.push(&ref_sketches[j].file_name);
+                        }
+                    });
+                    refs_to_try = refs_to_try_mutex.into_inner().unwrap();
+                } else {
+                    refs_to_try = screen::screen_refs_filenames(
+                        screen_val,
+                        &kmer_to_sketch,
+                        query_sketch,
+                        &sketch_params,
+                        &ref_sketches,
+                    );
+                }
+                debug!("Refs to try {}", refs_to_try.len());
+                let js = 0..refs_to_try.len();
                 js.into_par_iter().for_each(|j| {
-                    let ref_sketch = &ref_sketches[j];
-                    if chain::check_markers_quickly(&query_sketch, ref_sketch, screen_val) {
-                        let mut lock = refs_to_try_mutex.lock().unwrap();
-                        lock.push(&ref_sketches[j].file_name);
+                    let original_file = &refs_to_try[j];
+                    let ref_sketch;
+                    if !keep_refs {
+                        let sketch_file = folder.join(
+                            Path::new(&format!("{}.sketch", original_file))
+                                .file_name()
+                                .unwrap(),
+                        );
+                        let (_sketch_params_ref, ref_sketch_new) = file_io::sketches_from_sketch(
+                            &vec![sketch_file.to_str().unwrap().to_string()],
+                            false,
+                        );
+                        ref_sketch = ref_sketch_new;
+                        let map_params = chain::map_params_from_sketch(
+                            &ref_sketch[0],
+                            sketch_params.use_aa,
+                            &command_params,
+                        );
+                        let ani_res;
+                        if map_params != MapParams::default() {
+                            ani_res = chain::chain_seeds(&ref_sketch[0], &query_sketch, map_params);
+                        } else {
+                            ani_res = AniEstResult::default();
+                        }
+                        if ani_res.ani > 0.5 {
+                            let mut locked = anis.lock().unwrap();
+                            locked.push(ani_res);
+                        }
+                    } else {
+                        let mut contains = false;
+                        {
+                            let read_table = ref_sketches_used.read().unwrap();
+                            if read_table.contains_key(original_file) {
+                                contains = true;
+                            }
+                        }
+                        if contains {
+                            let read_table = ref_sketches_used.read().unwrap();
+                            let ref_sketch: &Vec<_> = &read_table[original_file];
+                            let map_params = chain::map_params_from_sketch(
+                                &ref_sketch[0],
+                                sketch_params.use_aa,
+                                &command_params,
+                            );
+                            let ani_res;
+                            if map_params != MapParams::default() {
+                                ani_res =
+                                    chain::chain_seeds(&ref_sketch[0], &query_sketch, map_params);
+                            } else {
+                                ani_res = AniEstResult::default();
+                            }
+                            if ani_res.ani > 0.5 {
+                                let mut locked = anis.lock().unwrap();
+                                locked.push(ani_res);
+                            }
+                        } else {
+                            let sketch_file = folder.join(
+                                Path::new(&format!("{}.sketch", original_file))
+                                    .file_name()
+                                    .unwrap(),
+                            );
+                            let (_sketch_params_ref, ref_sketch) = file_io::sketches_from_sketch(
+                                &vec![sketch_file.to_str().unwrap().to_string()],
+                                false,
+                            );
+
+                            let map_params = chain::map_params_from_sketch(
+                                &ref_sketch[0],
+                                sketch_params.use_aa,
+                                &command_params,
+                            );
+                            let ani_res;
+                            if map_params != MapParams::default() {
+                                ani_res =
+                                    chain::chain_seeds(&ref_sketch[0], &query_sketch, map_params);
+                            } else {
+                                ani_res = AniEstResult::default();
+                            }
+                            let mut write_table = ref_sketches_used.write().unwrap();
+                            write_table.insert(original_file.clone(), ref_sketch);
+
+                            if ani_res.ani > 0.5 {
+                                {
+                                    let mut locked = anis.lock().unwrap();
+                                    locked.push(ani_res);
+                                }
+                            }
+                        }
                     }
                 });
-                refs_to_try = refs_to_try_mutex.into_inner().unwrap();
-            } else {
-                refs_to_try = screen::screen_refs_filenames(
-                    screen_val,
-                    &kmer_to_sketch,
-                    query_sketch,
-                    &sketch_params,
-                    &ref_sketches,
-                );
-            }
-            debug!("Refs to try {}", refs_to_try.len());
-            let js = 0..refs_to_try.len();
-            js.into_par_iter().for_each(|j| {
-                let original_file = &refs_to_try[j];
-                let sketch_file = folder.join(
-                    Path::new(&format!("{}.sketch", original_file))
-                        .file_name()
-                        .unwrap(),
-                );
-                let (sketch_params_ref, ref_sketch) = file_io::sketches_from_sketch(
-                    &vec![sketch_file.to_str().unwrap().to_string()],
-                    false,
-                );
-                let map_params = chain::map_params_from_sketch(
-                    &ref_sketch[0],
-                    sketch_params_ref.use_aa,
-                    &command_params,
-                );
-                let ani_res;
-                if map_params != MapParams::default() {
-                    ani_res = chain::chain_seeds(&ref_sketch[0], &query_sketch, map_params);
-                } else {
-                    ani_res = AniEstResult::default();
+
+                let c;
+                {
+                    let mut locked = counter.lock().unwrap();
+                    *locked += 1;
+                    c = *locked
                 }
-                if ani_res.ani > 0.5 {
-                    let mut locked = anis.lock().unwrap();
-                    locked.push(ani_res);
+                if c % 100 == 0 && c != 0 {
+                    info!("{} query sequences processed.", c);
                 }
             });
         }
-
-        if count % 100 == 0 && count != 0 {
-            info!("{} query sequences processed.", count);
-        }
     }
+    dbg!(ref_sketches_used.read().unwrap().len());
     let anis = anis.into_inner().unwrap();
     file_io::write_query_ref_list(
         &anis,
