@@ -116,13 +116,13 @@ fn test_search() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.98);
@@ -169,13 +169,13 @@ fn test_search() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.70);
@@ -207,13 +207,13 @@ fn test_dist() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    let aai = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let aai = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     assert!(aai > 0.98);
@@ -227,13 +227,13 @@ fn test_dist() {
         .arg("./test_files/e.coli-K12.fasta")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.992);
@@ -255,13 +255,15 @@ fn test_dist() {
         .arg("-a")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    let aai = out_line.split('\t').collect::<Vec<&str>>()[10]
+    println!("{:?}",out_line.split('\t').collect::<Vec<&str>>());
+
+    let aai = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     println!("AAI E.coli-klebsiella test");
@@ -285,13 +287,13 @@ fn test_dist() {
         .arg("30")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[11]
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[12]
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     println!("ANI E.coli-klebsiella test");
