@@ -56,7 +56,6 @@ pub fn search(command_params: CommandParams) {
     } else {
         kmer_to_sketch = KmerToSketch::default();
     }
-    let keep_refs = true;
     let ref_sketches_used: RwLock<FxHashMap<_, _>> = RwLock::new(FxHashMap::default());
 
     let now = Instant::now();
@@ -116,7 +115,7 @@ pub fn search(command_params: CommandParams) {
                 js.into_par_iter().for_each(|j| {
                     let original_file = &refs_to_try[j];
                     let ref_sketch;
-                    if !keep_refs {
+                    if !command_params.keep_refs {
                         let sketch_file = folder.join(
                             Path::new(&format!("{}.sketch", original_file))
                                 .file_name()

@@ -262,6 +262,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
+        keep_refs: false
     };
 
     return (sketch_params, command_params);
@@ -332,6 +333,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     }
 
     let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-1.0").parse::<f64>().unwrap();
+    let keep_refs = matches_subc.is_present(KEEP_REFS);
 
     let command_params = CommandParams {
         screen,
@@ -349,7 +351,8 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         max_results,
         individual_contig_q,
         individual_contig_r: false,
-        min_aligned_frac ,
+        min_aligned_frac,
+        keep_refs,
     };
 
     if command_params.ref_files.len() == 0 {

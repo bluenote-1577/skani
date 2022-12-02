@@ -404,6 +404,11 @@ fn main() {
                 )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
+                    Arg::new(KEEP_REFS)
+                        .long(CMD_KEEP_REFS)
+                        .help(H_KEEP_REFS),
+                )
+                .arg(
                     Arg::new(FULL_INDEX)
                         .long(CMD_FULL_INDEX)
                         .help(H_FULL_INDEX),

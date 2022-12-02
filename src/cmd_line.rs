@@ -21,3 +21,7 @@ pub const H_ROBUST: &str = "Robust ani estimation; estimate mean after trim off 
 pub const FULL_MAT: &str = "full-matrix";
 pub const CMD_FULL_MAT: &str = "full-matrix";
 pub const H_FULL_MAT: &str = "Output full matrix instead of lower-triangular matrix.";
+
+pub const KEEP_REFS: &str = "keep-refs";
+pub const CMD_KEEP_REFS: &str = "keep-refs";
+pub const H_KEEP_REFS: &str = "Keep reference sketches in memory if the sketch passes the marker filter. Takes more memory but is much faster when querying many similar sequences.";
