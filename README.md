@@ -112,14 +112,13 @@ If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for
 
 The default output for `search` and `dist` looks like
 ```
-Ref_file	Query_file	ANI	Align_fraction_query	Align_fraction_reference	ANI_95_percentile	ANI_5_percentile	Ref_name	Query_name
-data/e.coli-K12.fasta	data/e.coli-EC590.fasta	0.9939	0.9400	0.9342	0.9960	0.9919	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome
+Ref_file	Query_file	ANI	Align_fraction_query	Align_fraction_reference	Ref_name	Query_name
+e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome
 ```
 - Ref_file: the filename of the reference.
 - Query_file: the filename of the query.
 - ANI/AAI: the ANI or AAI estimate.
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
-- ANI_95/5_percentile: heuristic 95% and 5% confidence intervals. IThey are relatively accurate for ANI calculations between 95-99.9% on prokaryotic MAGs/genomes, but not for AAI or small genomes. 
 - Ref/Query_name: the id of the first contig in the reference/query file.
 
 ## Citation
