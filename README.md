@@ -8,7 +8,7 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
-2. **Fast computations**. Indexing/sketching is ~ 2.5x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
+2. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
 3. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~4.5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour. 
 
