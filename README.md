@@ -119,7 +119,7 @@ e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichi
 - Query_file: the filename of the query.
 - ANI/AAI: the ANI or AAI estimate.
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
-- Ref/Query_name: the id of the first contig in the reference/query file.
+- Ref/Query_name: the id of the first record in the reference/query file.
 
 ## Citation
 
