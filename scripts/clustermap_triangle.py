@@ -6,6 +6,8 @@ import sys
 sys.setrecursionlimit(100000)
 from scipy.cluster import hierarchy
 import scipy
+if 'mash' in file:
+    print("ANI matrix obtained from Mash detected. If this matrix is not a mash matrix, remove 'mash' from the file name")
 file = sys.argv[1]
 counter = 0
 items = 0
