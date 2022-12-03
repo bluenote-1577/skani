@@ -88,11 +88,10 @@ python scripts/clustermap_triangle.py distance_matrix.txt
 
 ### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
 
-See [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide) for an explanation of each of skani's subcommands, and which one to use for your situation.
-
 ### skani tutorials
 
 1. #### [Tutorial: setting up a 65000 bacterial genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
+2. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
@@ -101,8 +100,6 @@ For more information about topics such as:
 * using skani for long-reads
 * making skani for memory efficient for huge data sets
 * optimizing skani for speed/memory tradeoffs
-
-see [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide).
 
 ## Output
 
