@@ -64,9 +64,11 @@ else:
  
 #print(cg.dendrogram_row.reordered_ind)
 re = [labels[x] for x in cg.dendrogram_row.reordered_ind]
-xticks = [x for x in range(len(labels))]
-cg.ax_heatmap.set_xticks(xticks)
-cg.ax_heatmap.set_xticklabels(re, rotation=90)
+
+if len(labels) < 50:
+    xticks = [x for x in range(len(labels))]
+    cg.ax_heatmap.set_xticks(xticks)
+    cg.ax_heatmap.set_xticklabels(re, rotation=90)
 #cg.ax_heatmap.set_yticklabels(re, rotation=0)
 plt.tight_layout()
 plt.show()
