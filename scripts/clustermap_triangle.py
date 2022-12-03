@@ -39,14 +39,14 @@ for line in open(file, 'r'):
     endpoints = range(1,counter)
     for i in endpoints:
         if not 'mash' in file:
-            matrix[i-1].append(float(spl[i]))
+            matrix[i-1].append(100 * float(spl[i]))
         else:
             matrix[i-1].append(100 - 100 * float(spl[i]))
     counter += 1
 
 for vec in matrix:
     for score in vec:
-        condensed.append(1 - score)
+        condensed.append(100 - score)
 
 
 cmap = seaborn.cm.rocket_r
