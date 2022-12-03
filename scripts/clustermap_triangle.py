@@ -23,7 +23,7 @@ for line in open(file, 'r'):
             items = len(spl)
         else:
             items = int(line.split(delim)[-1])
-        print(items)
+        #print(items)
         matrix = [[] for x in range(items)]
         counter += 1
         continue
@@ -31,11 +31,14 @@ for line in open(file, 'r'):
         spl = line.split(delim);
     else:
         spl = line.split();
-    print(spl[0].split('/')[-1])
+    #print(spl[0].split('/')[-1])
     labels.append(spl[0].split('/')[-1])
     endpoints = range(1,counter)
     for i in endpoints:
-        matrix[i-1].append(float(spl[i]))
+        if not 'mash' in file:
+            matrix[i-1].append(float(spl[i]))
+        else:
+            matrix[i-1].append(100 - 100 * float(spl[i]))
     counter += 1
 
 for vec in matrix:
@@ -56,7 +59,7 @@ else:
     cg = seaborn.clustermap(square_mat, row_linkage = Z, col_linkage = Z, cmap = cmap)
 
  
-print(cg.dendrogram_row.reordered_ind)
+#print(cg.dendrogram_row.reordered_ind)
 re = [labels[x] for x in cg.dendrogram_row.reordered_ind]
 xticks = [x for x in range(len(labels))]
 cg.ax_heatmap.set_xticks(xticks)
