@@ -50,7 +50,7 @@ chmod +x skani
 ./skani -h
 ```
 
-Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). The binary may also be not as updated as the source files. 
+Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). This seems to be not a huge issue from brief testing. 
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
@@ -78,15 +78,19 @@ skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
 
 # construct distance matrix for all genomes in folder
-skani triangle genome_folder/* > distance_matrix.txt
+skani triangle genome_folder/* > skani_ani_matrix.txt
 
 # we provide a script in this repository for clustering/visualizing distance matrices.
 # requires python3, seaborn, scipy/numpy, and matplotlib.
-python scripts/clustermap_triangle.py distance_matrix.txt 
+python scripts/clustermap_triangle.py skani_ani_matrix.txt 
 
 ```
 
+## Tutorials and manuals
+
 ### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands. 
 
 ### skani tutorials
 
