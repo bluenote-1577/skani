@@ -26,7 +26,6 @@ pub type ContigIndex = u32;
 pub type MarkerBits = u64;
 pub type SeedBits = u32;
 pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[usize; 1]>>;
-pub const USE_SMALLVEC: bool = false;
 pub type KmerSeeds = MMHashMap32<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 //pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
 

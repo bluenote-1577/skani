@@ -191,8 +191,11 @@ pub fn search(command_params: CommandParams) {
                             } else {
                                 ani_res = AniEstResult::default();
                             }
-                            let mut write_table = ref_sketches_used.write().unwrap();
-                            write_table.insert(original_file.clone(), ref_sketch);
+
+                            {
+                                let mut write_table = ref_sketches_used.write().unwrap();
+                                write_table.insert(original_file.clone(), ref_sketch);
+                            }
 
                             if ani_res.ani > 0.5 {
                                 {
@@ -216,7 +219,9 @@ pub fn search(command_params: CommandParams) {
             });
         }
     }
-    dbg!(ref_sketches_used.read().unwrap().len());
+    if command_params.keep_refs{
+        info!("{} references kept in memory for --keep-refs", ref_sketches_used.read().unwrap().len());
+    }
     let anis = anis.into_inner().unwrap();
     file_io::write_query_ref_list(
         &anis,
