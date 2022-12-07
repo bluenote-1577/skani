@@ -1,5 +1,6 @@
 use crate::types::*;
 pub const SMALL_VEC_SIZE: usize = 1;
+pub const KMER_SK_SMALL_VEC_SIZE: usize = 3;
 use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
