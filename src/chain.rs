@@ -718,7 +718,7 @@ fn get_anchors(
         curr_anchor_chunk.push(anchor);
     }
     if curr_anchor_chunk.len() > 0 {
-        let mut num_seeds_in_block = 0;
+        let mut _num_seeds_in_block = 0;
         let mut seed_pos_in_block = vec![];
         loop {
             if query_positions_all[last_query_contig as usize].is_empty() {
@@ -736,7 +736,7 @@ fn get_anchors(
                 seed_pos_in_block
                     .push(query_positions_all[last_query_contig as usize][running_counter]);
                 running_counter += 1;
-                num_seeds_in_block += 1;
+                _num_seeds_in_block += 1;
             } else {
                 break;
             }

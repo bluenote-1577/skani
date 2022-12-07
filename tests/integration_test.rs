@@ -85,7 +85,7 @@ fn test_search() {
         .arg("-l")
         .arg("./test_files/list.txt")
         .arg("-o")
-        .arg("./tests/results/test_sketch_dir")
+        .arg("./tests/results/test_sketch_dir_aai")
         .arg("-a")
         .assert();
     assert.success().code(0);
@@ -126,8 +126,9 @@ fn test_search() {
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.98);
-    //assert!(af_q > 0.80);
     assert!(af_r > 0.80);
+
+
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
@@ -158,7 +159,7 @@ fn test_search() {
     let out = cmd
         .arg("search")
         .arg("-d")
-        .arg("./tests/results/test_sketch_dir/")
+        .arg("./tests/results/test_sketch_dir_aai/")
         .arg("./test_files/MN-03.fa")
         .arg("--marker-index")
         .arg("-n")
@@ -236,10 +237,37 @@ fn test_dist() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
+    assert!(ani > 0.990);
+    assert!(ani < 1.00);
+    assert!(af_q > 0.90);
+    assert!(af_r > 0.90);
+
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("--marker-index")
+        .arg("-n")
+        .arg("3")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
     assert!(ani > 0.992);
     assert!(ani < 1.00);
     assert!(af_q > 0.90);
     assert!(af_r > 0.90);
+
+
 
     println!("ANI E.coli test");
     println!(
@@ -467,4 +495,17 @@ fn test_triangle() {
         .arg("0.03")
         .assert();
     assert.success().code(0);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("./test_files/query_list.txt")
+        .arg("--full-matrix")
+        .output();
+
+    println!(
+        "{}",
+        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
+    );
 }

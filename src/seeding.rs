@@ -498,98 +498,98 @@ pub unsafe fn avx2_fmh_seeds(
 
         if true {
             if m1 != 0 {
-                const ind: i32 = 0;
+                const IND: i32 = 0;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as SeedBits)
+                    .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
                     pos: i as GnPosition,
-                    canonical: canonical[ind as usize],
+                    canonical: canonical[IND as usize],
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker, ind) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, ind) < threshold_marker {
+                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             if m2 != 0 {
-                const ind: i32 = 1;
+                const IND: i32 = 1;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as SeedBits)
+                    .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition + (len as i32 * ind) as GnPosition,
-                    canonical: canonical[ind as usize],
+                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
+                    canonical: canonical[IND as usize],
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker, ind) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, ind) < threshold_marker {
+                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             if m3 != 0 {
-                const ind: i32 = 2;
+                const IND: i32 = 2;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as SeedBits)
+                    .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
-                    canonical: canonical[ind as usize],
-                    pos: i as GnPosition + (len as i32 * ind) as GnPosition,
+                    canonical: canonical[IND as usize],
+                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker,  ind) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker,  IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, ind) < threshold_marker {
+                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             if m4 != 0 {
-                const ind: i32 = 3;
+                const IND: i32 = 3;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[ind as usize] as SeedBits)
+                    .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
                 kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition + (len as i32 * ind) as GnPosition,
-                    canonical: canonical[ind as usize],
+                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
+                    canonical: canonical[IND as usize],
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker,  ind) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker,  IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
-                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, ind);
+                    canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, ind) < threshold_marker {
+                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }

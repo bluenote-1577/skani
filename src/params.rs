@@ -40,6 +40,7 @@ pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
 pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
 pub const FULL_INDEX_THRESH: usize = 50;
 
+
 #[derive(PartialEq)]
 pub enum Mode {
     Sketch,
@@ -114,9 +115,7 @@ pub struct SketchParams {
 impl SketchParams {
     pub fn new(marker_c: usize, c: usize, k: usize, use_syncs: bool, use_aa: bool) -> SketchParams {
         let mut acgt_to_aa_encoding = vec![0;64];
-        let DNA_TO_AA: [u8; 64] =
-            *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
-        let letter_to_int_aa: FxHashMap<u8, MarkerBits> = [
+                let letter_to_int_aa: FxHashMap<u8, MarkerBits> = [
             (b'A', 0),
             (b'R', 1),
             (b'N', 2),

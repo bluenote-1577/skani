@@ -35,11 +35,11 @@ pub fn screen_refs_filenames<'a>(
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > usize::max(((cutoff 
+            *x.1 > usize::max((cutoff 
                 * usize::min(
                     ref_sketches[**x.0].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize),1)
+                ) as f64) as usize,1)
         })
         .map(|x| &ref_sketches[**x.0].file_name)
         .collect();
@@ -74,11 +74,11 @@ pub fn screen_refs(
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > usize::max(((cutoff 
+            *x.1 > usize::max((cutoff 
                 * usize::min(
                     ref_sketches[**x.0].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize),1)
+                ) as f64) as usize,1)
         })
         .map(|x| **x.0)
         .collect();
