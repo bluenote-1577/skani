@@ -1,9 +1,14 @@
 use assert_cmd::prelude::*; // Add methods on commands
 use predicates::prelude::*; // Used for writing assertions
+use serial_test::serial;
 use std::process::Command; // Run programs
-
+#[serial]
 #[test]
-fn test_sketch() {
+fn a_test_sketch() {
+    Command::new("rm")
+        .arg("-r")
+        .args(["./tests/results/test_sketch_dir2", "./tests/results/test_sketch_dir1","./tests/results/test_sketch_dir3", "./tests/results/test_sketch_dir", "./tests/results/test_sketch_dir_aai"])
+        .spawn();
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("sketch")
@@ -13,22 +18,6 @@ fn test_sketch() {
         .arg("./test_files/e.coli-W.fasta.gz")
         .arg("-o")
         .arg("./tests/results/test_sketch_dir1")
-        .arg("-c")
-        .arg("50")
-        .arg("-k")
-        .arg("13")
-        .assert();
-    assert.success().code(0);
-
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("sketch")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/e.coli-K12.fasta")
-        .arg("./test_files/o157_reads.fastq")
-        .arg("./test_files/e.coli-W.fasta.gz")
-        .arg("-o")
-        .arg("./tests/results/test_sketch_dir2")
         .assert();
     assert.success().code(0);
 
@@ -45,32 +34,6 @@ fn test_sketch() {
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("sketch")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/e.coli-K12.fasta")
-        .arg("./test_files/o157_reads.fastq")
-        .arg("-o")
-        .arg("./tests/results/test_sketch_dir_aai")
-        .arg("-a")
-        .assert();
-    assert.success().code(0);
-
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("search")
-        .arg("-d")
-        .arg("./tests/results/test_sketch_dir1/")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/e.coli-K12.fasta")
-        .arg("./test_files/o157_reads.fastq")
-        .assert();
-    assert.success().code(0);
-}
-
-#[test]
-fn test_search() {
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("sketch")
         .arg("-l")
         .arg("./test_files/list.txt")
         .arg("-o")
@@ -78,7 +41,6 @@ fn test_search() {
         .assert();
     assert.success().code(0);
 
-
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("sketch")
@@ -89,7 +51,11 @@ fn test_search() {
         .arg("-a")
         .assert();
     assert.success().code(0);
+}
 
+#[test]
+#[serial]
+fn test_search() {
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("search")
@@ -109,7 +75,8 @@ fn test_search() {
         .arg("./test_files/e.coli-o157.fasta")
         .arg("--median")
         .arg("-n")
-        .arg("5").output();
+        .arg("5")
+        .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
     println!("ANI search test");
     println!(
@@ -127,8 +94,6 @@ fn test_search() {
         .unwrap();
     assert!(ani > 0.98);
     assert!(af_q > 0.80);
-
-
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
@@ -163,7 +128,8 @@ fn test_search() {
         .arg("./test_files/MN-03.fa")
         .arg("--marker-index")
         .arg("-n")
-        .arg("5").output();
+        .arg("5")
+        .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
     println!("AAI search test");
     println!(
@@ -184,17 +150,8 @@ fn test_search() {
     assert!(af_r > 0.50);
 }
 #[test]
+#[serial]
 fn test_dist() {
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("sketch")
-        .arg("-l")
-        .arg("./test_files/list.txt")
-        .arg("-o")
-        .arg("./tests/results/test_sketch_dir")
-        .assert();
-    assert.success().code(0);
-
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("dist")
@@ -242,7 +199,6 @@ fn test_dist() {
     assert!(af_q > 0.90);
     assert!(af_r > 0.90);
 
-
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("dist")
@@ -267,8 +223,6 @@ fn test_dist() {
     assert!(af_q > 0.90);
     assert!(af_r > 0.90);
 
-
-
     println!("ANI E.coli test");
     println!(
         "{}",
@@ -283,7 +237,7 @@ fn test_dist() {
         .arg("-a")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    println!("{:?}",out_line.split('\t').collect::<Vec<&str>>());
+    println!("{:?}", out_line.split('\t').collect::<Vec<&str>>());
 
     let aai = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
@@ -395,17 +349,6 @@ fn test_dist() {
     assert.success().code(0);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("sketch")
-        .arg("-l")
-        .arg("./test_files/list.txt")
-        .arg("-o")
-        .arg("./tests/results/test_sketch_dir_aai/")
-        .arg("-a")
-        .assert();
-    assert.success().code(0);
-
-    let mut cmd = Command::cargo_bin("skani").unwrap();
     let cmd = cmd
         .arg("dist")
         .arg("-r")
@@ -433,6 +376,7 @@ fn test_dist() {
 }
 
 #[test]
+#[serial]
 fn test_triangle() {
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
