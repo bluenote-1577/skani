@@ -61,9 +61,9 @@ pub fn get_nonoverlap_orf(sorted_orfs: Vec<Orf>) -> Vec<Orf> {
 pub fn get_orfs(string: &[u8], sketch_params: &SketchParams) -> Vec<Orf> {
     let mut orfs = vec![];
     let mut phase = 0;
-    let mut rolling_3mer_f: MarkerBits= 0;
+    let mut rolling_3mer_f: MarkerBits = 0;
     let num_bits = std::mem::size_of::<MarkerBits>() * 8;
-    let mut rolling_3mer_r: MarkerBits= 0;
+    let mut rolling_3mer_r: MarkerBits = 0;
     let reverse_shift_dist = num_bits - 2;
     let forward_shift_dist = num_bits - 6;
 
@@ -255,9 +255,9 @@ pub fn fmh_seeds(
     if string.len() < 2 * marker_k {
         return;
     }
-    let mut rolling_kmer_f_marker: MarkerBits= 0;
+    let mut rolling_kmer_f_marker: MarkerBits = 0;
     let mut rolling_kmer_f_seed: MarkerBits;
-    let mut rolling_kmer_r_marker: MarkerBits= 0;
+    let mut rolling_kmer_r_marker: MarkerBits = 0;
     let mut rolling_kmer_r_seed: MarkerBits;
     let seed_mask = MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * k);
 
@@ -265,11 +265,11 @@ pub fn fmh_seeds(
     let marker_mask = MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * marker_k);
     let marker_rev_mask = !(0 | (3 << 2 * marker_k - 2));
     let len = string.len();
-    let threshold = i64::MIN + (u64::MAX / (c as u64)) as i64;
-    let threshold_marker = i64::MIN + (u64::MAX / sketch_params.marker_c as u64) as i64;
+    //    let threshold = i64::MIN + (u64::MAX / (c as u64)) as i64;
+    //    let threshold_marker = i64::MIN + (u64::MAX / sketch_params.marker_c as u64) as i64;
 
-    //    let threshold = u64::MAX / (c as u64);
-    //    let threshold_marker = u64::MAX / (sketch_params.marker_c as u64);
+    let threshold = u64::MAX / (c as u64);
+    let threshold_marker = u64::MAX / (sketch_params.marker_c as u64);
     for i in 0..marker_k - 1 {
         let nuc_f = BYTE_TO_SEQ[string[i] as usize];
         //        let nuc_f = KmerEnc::encode(string[i]
@@ -304,7 +304,8 @@ pub fn fmh_seeds(
             rolling_kmer_r_seed
         };
 
-        let hash_seed = mm_hashi64(canonical_kmer_seed as i64);
+//        let hash_seed = mm_hashi64(canonical_kmer_seed as i64);
+        let hash_seed = mm_hash64(canonical_kmer_seed);
         if hash_seed < threshold {
             if seed {
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
@@ -439,8 +440,10 @@ pub unsafe fn avx2_fmh_seeds(
     //    dbg!(u64::MAX / (c as u64));
     //    dbg!((u64::MAX / (c as u64)) as i64);
     let threshold = i64::MIN + (u64::MAX / (c as u64)) as i64;
-    let threshold_marker = i64::MIN + (u64::MAX / marker_c as u64) as i64;
-    let cmp_thresh = _mm256_set_epi64x(threshold, threshold, threshold, threshold);
+    let _threshold_marker = i64::MIN + (u64::MAX / marker_c as u64) as i64;
+    let threshold_unsigned = u64::MAX / c as u64;
+    let threshold_marker_unsigned = u64::MAX / marker_c as u64;
+    let _cmp_thresh = _mm256_set_epi64x(threshold, threshold, threshold, threshold);
 
     let mm256_marker_mask = _mm256_set_epi64x(marker_mask, marker_mask, marker_mask, marker_mask);
     let mm256_rev_marker_mask = _mm256_set_epi64x(
@@ -490,14 +493,19 @@ pub unsafe fn avx2_fmh_seeds(
         ];
 
         let hash_256 = mm_hash256(canonical_seeds_256);
-        let threshold_256 = _mm256_cmpgt_epi64(cmp_thresh, hash_256);
-        let m1 = _mm256_extract_epi64(threshold_256, 0);
-        let m2 = _mm256_extract_epi64(threshold_256, 1);
-        let m3 = _mm256_extract_epi64(threshold_256, 2);
-        let m4 = _mm256_extract_epi64(threshold_256, 3);
+        let v1 = _mm256_extract_epi64(hash_256, 0) as u64;
+        let v2 = _mm256_extract_epi64(hash_256, 1) as u64;
+        let v3 = _mm256_extract_epi64(hash_256, 2) as u64;
+        let v4 = _mm256_extract_epi64(hash_256, 3) as u64;
+        //        let threshold_256 = _mm256_cmpgt_epi64(cmp_thresh, hash_256);
+        //        let m1 = _mm256_extract_epi64(threshold_256, 0);
+        //        let m2 = _mm256_extract_epi64(threshold_256, 1);
+        //        let m3 = _mm256_extract_epi64(threshold_256, 2);
+        //        let m4 = _mm256_extract_epi64(threshold_256, 3);
 
         if true {
-            if m1 != 0 {
+            //            if m1 !={
+            if v1 < threshold_unsigned {
                 const IND: i32 = 0;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -517,11 +525,13 @@ pub unsafe fn avx2_fmh_seeds(
                 } else {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                if v1 < threshold_marker_unsigned {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
-            if m2 != 0 {
+            //            if m2 != 0 {
+            if v2 < threshold_unsigned {
                 const IND: i32 = 1;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -541,11 +551,13 @@ pub unsafe fn avx2_fmh_seeds(
                 } else {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                if v2 < threshold_marker_unsigned {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
-            if m3 != 0 {
+            //            if m3 != 0 {
+            if v3 < threshold_unsigned {
                 const IND: i32 = 2;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -558,18 +570,20 @@ pub unsafe fn avx2_fmh_seeds(
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker,  IND) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                if v3 < threshold_marker_unsigned {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
-            if m4 != 0 {
+            //            if m4 != 0 {
+            if v4 < threshold_unsigned {
                 const IND: i32 = 3;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -582,14 +596,15 @@ pub unsafe fn avx2_fmh_seeds(
                     contig_index,
                     phase: 0,
                 });
-                let canonical_marker = _mm256_extract_epi64(compare_marker,  IND) != 0;
+                let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_f_marker, IND);
                 } else {
                     canonical_kmer_marker = _mm256_extract_epi64(rolling_kmer_r_marker, IND);
                 };
-                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
+                if v4 < threshold_marker_unsigned {
                     marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }

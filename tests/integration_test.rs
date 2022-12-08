@@ -126,7 +126,7 @@ fn test_search() {
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.98);
-    assert!(af_r > 0.80);
+    assert!(af_q > 0.80);
 
 
 
@@ -415,6 +415,11 @@ fn test_dist() {
         .arg("--qi")
         .arg("--robust")
         .arg("--marker-index");
+    println!(
+        "{}",
+        std::str::from_utf8(&cmd.output().as_ref().unwrap().stdout).unwrap()
+    );
+
     let std_bytes = &cmd.output().as_ref().unwrap().stdout.clone()[0..500];
     let ste_bytes = cmd.output().as_ref().unwrap().stderr.clone();
     let stdout = std::str::from_utf8(&std_bytes).unwrap();

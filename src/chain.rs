@@ -12,12 +12,12 @@ use interval::interval_set::*;
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
-    let score_query = (q_sk_len as f64)
+    let score_query = (q_sk_len as f64).sqrt()
         * med_ctg_len_q;
-//        * (f64::min(med_ctg_len_q, 60000.));
-    let score_ref = (r_sk_len as f64)
+//        * (f64::min(med_ctg_len_q, 200000.));
+    let score_ref = (r_sk_len as f64).sqrt()
         * med_ctg_len_r;
-//        * (f64::min(med_ctg_len_r, 60000.));
+//        * (f64::min(med_ctg_len_r, 200000.));
     return score_query > score_ref;
 
 
@@ -288,10 +288,10 @@ fn calculate_ani(
         if putative_ani > 0.950
 //            && total_bases_contained_query > ref_sketch.c as GnPosition * 20
             //&& total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
-            && total_bases_contained_query > c * 5
+            && total_bases_contained_query > c * 4
             && !map_params.amino_acid
             && total_range_query.1 - total_range_query.0 < (CHUNK_SIZE_DNA * 9 / 10) as GnPosition 
-            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64
+            && anchors_in_chunk_considered as f64 > 1.05 * upper_lower_seeds as f64 
         {
             //                        anchors_in_chunk_considered = num_seeds_in_intervals;
             trace!("putative ani filter {} -> {}", anchors_in_chunk_considered, upper_lower_seeds);
