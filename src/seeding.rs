@@ -133,7 +133,7 @@ pub fn fmh_seeds_aa_with_orf(
     let k = sketch_params.k;
     let c = sketch_params.c;
     let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
-    if k > 6 {
+    if k > marker_k {
         panic!("Value of k > {} for AA; not allowed.", marker_k);
     }
     let marker_k = K_MARKER_AA;

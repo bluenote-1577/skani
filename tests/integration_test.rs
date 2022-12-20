@@ -92,7 +92,7 @@ fn test_search() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(ani > 0.98);
+    assert!(ani > 0.97);
     assert!(af_q > 0.80);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();

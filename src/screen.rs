@@ -31,7 +31,7 @@ pub fn screen_refs_filenames<'a>(
         K_MARKER_DNA
     };
     let cutoff = identity.powi(k as i32);
-    debug!("cutoff screening val {}",cutoff);
+    trace!("cutoff screening val {}",cutoff);
     let ret = count_hash_map
         .iter()
         .filter(|x| {

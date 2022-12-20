@@ -68,11 +68,11 @@ pub fn map_params_from_sketch(
     amino_acid: bool,
     command_params: &CommandParams,
 ) -> MapParams {
-    let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let max_gap_length = if amino_acid{D_MAX_GAP_LENGTH_AAI} else {D_MAX_GAP_LENGTH};
     let anchor_score = if amino_acid{D_ANCHOR_SCORE_AAI} else {D_ANCHOR_SCORE_ANI};
     let min_anchors = if amino_acid{D_MIN_ANCHORS_AAI} else {D_MIN_ANCHORS_ANI};
     let min_length_cover = if amino_acid{MIN_LENGTH_COVER_AAI} else {MIN_LENGTH_COVER};
+    let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let length_cutoff = fragment_length;
     trace!("Fragment length is {}.", fragment_length);
     let mut frac_cover_cutoff = command_params.min_aligned_frac;
@@ -84,9 +84,10 @@ pub fn map_params_from_sketch(
         }
     }
     let length_cover_cutoff = 5000000;
-    let chain_band = if amino_acid {D_CHAIN_BAND_AAI} else {D_CHAIN_BAND};
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
-    let min_score = min_anchors as f64 * anchor_score;
+    let chain_band = bp_chain_band/ref_sketch.c;
+    let min_score = min_anchors as f64 * anchor_score * 0.75;
+//    let min_score = 0.;
     let k = ref_sketch.k;
     return MapParams {
         fragment_length,
@@ -375,7 +376,7 @@ fn calculate_ani(
     if map_params.median{
         lower = 0.499;
         upper = 0.501;
-    } else if map_params.robust || map_params.amino_acid{
+    } else if map_params.robust{
         lower = 0.10;
         upper = 0.90;
     } else {
@@ -548,7 +549,7 @@ pub fn check_markers_quickly(
             return true;
         }
     }
-    debug!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
+    trace!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
     return false;
 }
 

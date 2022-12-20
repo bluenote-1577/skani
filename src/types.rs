@@ -56,7 +56,7 @@ pub type SeedBits = u32;
 pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[u32; KMER_SK_SMALL_VEC_SIZE]>>;
 //pub type KmerToSketch = MMHashMap<MarkerBits, Vec<usize>>;
 pub type KmerSeeds = MMHashMap32<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
-//pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
+//pub type KmerSeeds = MMHashMap<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -95,7 +95,7 @@ pub fn mm_hash64(kmer: u64) -> u64 {
 
 #[inline]
 pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
-    let mut key = (u32::from_be_bytes(bytes.try_into().unwrap())) as usize;
+    let mut key = (u32::from_ne_bytes(bytes.try_into().unwrap())) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
@@ -108,7 +108,7 @@ pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
 
 #[inline]
 pub fn mm_hash(bytes: &[u8]) -> usize {
-    let mut key = usize::from_be_bytes(bytes.try_into().unwrap()) as usize;
+    let mut key = usize::from_ne_bytes(bytes.try_into().unwrap()) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
