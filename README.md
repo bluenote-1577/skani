@@ -2,9 +2,9 @@
 
 ## Introduction
 
-**skani** is a program for calculating average nucleotide identity (ANI) or average amino acid identity (AAI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80% and AAI > ~65%. 
+**skani** is a program for calculating average nucleotide identity (ANI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
 
-skani uses an approximate mapping method to get orthology without base-level alignment to estimate ANI/AAI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method to get orthology without base-level alignment to estimate ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs) as opposed to sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
@@ -12,9 +12,7 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour. 
-
-5. **Efficient AAI calculation on DNA sequences**. skani can setimate AAI between two DNA sequences (i.e. no gene prediction needed). AAI calculation for two genomes takes at most 1 second. Querying against a database can take a few minutes.
+4. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
 ##  Install
 
@@ -69,9 +67,6 @@ All skani modes take the argument `-t` as number of threads (default: 3).
 # all options take -t for multi-threading.
 skani dist genome1.fa genome2.fa -t 5
 
-# use -a or --aai for all commands to calculate AAI instead of ANI
-skani dist -a genome1.fa genome2.fa > aai_results.txt
-
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
 
@@ -109,9 +104,9 @@ For more information about topics such as:
 
 ## Output
 
-If the resulting aligned fraction for the two genomes is < 15% for ANI or 5% for AAI, no output is given. This can be changed, see the `--min-aligned-fraction` option.
+If the resulting aligned fraction for the two genomes is < 15%, no output is given. This can be changed, see the `--min-aligned-fraction` option.
 
-**In practice, this means that only results with > ~82% ANI and > ~65% AAI are reliably output** (with default parameters). 
+**In practice, this means that only results with > ~82% ANI are reliably output** (with default parameters). 
 
 The default output for `search` and `dist` looks like
 ```
@@ -120,7 +115,7 @@ e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichi
 ```
 - Ref_file: the filename of the reference.
 - Query_file: the filename of the query.
-- ANI/AAI: the ANI or AAI estimate.
+- ANI: the ANI.
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - Ref/Query_name: the id of the first record in the reference/query file.
 
