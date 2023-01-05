@@ -455,7 +455,7 @@ pub unsafe fn avx2_fmh_seeds(
 
     //dbg!(KmerEnc::print_string(u64::from_le_bytes(_mm256_extract_epi64(rolling_kmer_f_marker,0).to_le_bytes()), 21));
 
-    for i in marker_k..(len + marker_k - 1) {
+    for i in marker_k-1..(len + marker_k - 1) {
         let nuc_f1 = BYTE_TO_SEQ[string1[i] as usize] as i64;
         let nuc_f2 = BYTE_TO_SEQ[string2[i] as usize] as i64;
         let nuc_f3 = BYTE_TO_SEQ[string3[i] as usize] as i64;
