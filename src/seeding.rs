@@ -280,7 +280,7 @@ pub fn fmh_seeds(
         rolling_kmer_r_marker >>= 2;
         rolling_kmer_r_marker |= nuc_r << marker_reverse_shift_dist;
     }
-    for i in marker_k..len {
+    for i in marker_k-1..len {
         let nuc_byte = string[i] as usize;
         let nuc_f = BYTE_TO_SEQ[nuc_byte];
         let nuc_r = 3 - nuc_f;

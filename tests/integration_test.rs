@@ -194,10 +194,10 @@ fn test_dist() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(ani > 0.990);
-    assert!(ani < 1.00);
-    assert!(af_q > 0.90);
-    assert!(af_r > 0.90);
+    assert!(ani > 99.0);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -218,10 +218,10 @@ fn test_dist() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(ani > 0.992);
-    assert!(ani < 1.00);
-    assert!(af_q > 0.90);
-    assert!(af_r > 0.90);
+    assert!(ani > 99.2);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
 
     println!("ANI E.coli test");
     println!(
@@ -253,12 +253,12 @@ fn test_dist() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    assert!(aai > 0.70);
-    assert!(aai < 0.85);
-    assert!(af_q > 0.40);
-    assert!(af_r > 0.40);
-    assert!(af_q < 0.90);
-    assert!(af_r < 0.90);
+    assert!(aai > 70.);
+    assert!(aai < 85.);
+    assert!(af_q > 40.);
+    assert!(af_r > 40.);
+    assert!(af_q < 90.);
+    assert!(af_r < 90.);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -283,12 +283,12 @@ fn test_dist() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    assert!(aai > 0.70);
-    assert!(aai < 0.85);
-    assert!(af_q > 0.20);
-    assert!(af_r > 0.20);
-    assert!(af_q < 0.70);
-    assert!(af_r < 0.70);
+    assert!(aai > 70.);
+    assert!(aai < 85.);
+    assert!(af_q > 20.);
+    assert!(af_r > 20.);
+    assert!(af_q < 70.);
+    assert!(af_r < 70.);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd

@@ -30,4 +30,4 @@ pub const C_FACTOR: &str = "c";
 pub const CMD_C_FACTOR: &str = "c";
 pub const H_C_FACTOR: &str = "Compression factor. Memory usage and runtime is inversely proportional to c. Lower c allows for ANI comparison of more distant genomes.\t[default: 120]";
 
-pub const H_SCREEN: &str = "Screen out pairs with < % identity using a hash table in constant time.\t[default: 0.80]";
+pub const H_SCREEN: &str = "Screen out pairs with < % identity using a hash table in constant time.\t[default: 80]";

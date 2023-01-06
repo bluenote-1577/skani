@@ -224,13 +224,13 @@ pub fn write_phyllip_matrix(
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
                 if i == j {
-                    write!(&mut handle, "\t{:.4}", 1.).unwrap();
+                    write!(&mut handle, "\t{:.2}", 100.).unwrap();
                 } else if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
-                    write!(&mut handle, "\t{:.4}", 0.).unwrap();
+                    write!(&mut handle, "\t{:.2}", 0.).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
-                    write!(&mut handle, "\t{:.4}", 0.).unwrap();
+                    write!(&mut handle, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(&mut handle, "\t{:.4}", anis[&x][&y].ani).unwrap();
+                    write!(&mut handle, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
                 }
             }
             write!(&mut handle, "\n").unwrap();
@@ -257,11 +257,11 @@ pub fn write_phyllip_matrix(
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
                 if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
-                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
-                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(&mut af_file, "\t{:.4}", anis[&x][&y].align_fraction_query).unwrap();
+                    write!(&mut af_file, "\t{:.2}", anis[&x][&y].align_fraction_query * 100.).unwrap();
                 }
             }
             write!(&mut af_file, "\n").unwrap();
@@ -295,14 +295,14 @@ pub fn write_phyllip_matrix(
                 let y = usize::max(i, j);
 
                 if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
-                    write!(&mut ani_file, "\t{:.4}", 0.).unwrap();
-                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
+                    write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
-                    write!(&mut ani_file, "\t{:.4}", 0.).unwrap();
-                    write!(&mut af_file, "\t{:.4}", 0.).unwrap();
+                    write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(&mut ani_file, "\t{:.4}", anis[&x][&y].ani).unwrap();
-                    write!(&mut af_file, "\t{:.4}", anis[&x][&y].align_fraction_query).unwrap();
+                    write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", anis[&x][&y].align_fraction_query * 100.).unwrap();
                 }
             }
             write!(&mut ani_file, "\n").unwrap();
@@ -332,12 +332,12 @@ pub fn write_sparse_matrix(
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                     write!(
                         &mut handle,
-                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
                         ani_res.ref_file,
                         ani_res.query_file,
-                        ani_res.ani,
-                        ani_res.align_fraction_ref,
-                        ani_res.align_fraction_query,
+                        ani_res.ani * 100.,
+                        ani_res.align_fraction_ref * 100.,
+                        ani_res.align_fraction_query * 100.,
                         ani_res.ref_contig,
                         ani_res.query_contig,
                     )
@@ -354,12 +354,12 @@ pub fn write_sparse_matrix(
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                     write!(
                         &mut ani_file,
-                        "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                        "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
                         ani_res.ref_file,
                         ani_res.query_file,
-                        ani_res.ani,
-                        ani_res.align_fraction_ref,
-                        ani_res.align_fraction_query,
+                        ani_res.ani * 100.,
+                        ani_res.align_fraction_ref * 100.,
+                        ani_res.align_fraction_query * 100.,
                         ani_res.ref_contig,
                         ani_res.query_contig,
                     )
@@ -404,12 +404,12 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                    "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
-                    anis[i].ani,
-                    anis[i].align_fraction_ref,
-                    anis[i].align_fraction_query,
+                    anis[i].ani * 100.,
+                    anis[i].align_fraction_ref * 100.,
+                    anis[i].align_fraction_query * 100.,
                     anis[i].ref_contig,
                     anis[i].query_contig,
                 )
@@ -427,12 +427,12 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
             for i in 0..usize::min(n, anis.len()) {
                 write!(
                     &mut handle,
-                    "{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\n",
+                    "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
                     anis[i].ref_file,
                     anis[i].query_file,
-                    anis[i].ani,
-                    anis[i].align_fraction_ref,
-                    anis[i].align_fraction_query,
+                    anis[i].ani * 100.,
+                    anis[i].align_fraction_ref * 100.,
+                    anis[i].align_fraction_query * 100.,
                     anis[i].ref_contig,
                     anis[i].query_contig,
                 )

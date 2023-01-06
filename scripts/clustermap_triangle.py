@@ -46,7 +46,10 @@ for line in open(file, 'r'):
         elif 'fastani' in file:
             matrix[i-1].append(float(spl[i]))
         else:
-            matrix[i-1].append(100 * float(spl[i]))
+            if float(spl[i]) <= 1:
+                matrix[i-1].append(float(spl[i]) * 100)
+            else:
+                matrix[i-1].append(float(spl[i]))
     counter += 1
 
 for vec in matrix:

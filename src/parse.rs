@@ -173,7 +173,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mut robust = false;
     let mut median = false;
     if mode == Mode::Triangle || mode == Mode::Dist {
-        screen_val = matches_subc.value_of("s").unwrap_or("0.00").parse::<f64>().unwrap();
+        screen_val = matches_subc.value_of("s").unwrap_or("0.00").parse::<f64>().unwrap() / 100.;
     }
     if mode == Mode::Triangle || mode == Mode::Search || mode == Mode::Dist {
         robust = matches_subc.is_present("robust");
