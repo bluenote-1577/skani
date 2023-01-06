@@ -110,8 +110,8 @@ If the resulting aligned fraction for the two genomes is < 15%, no output is giv
 
 The default output for `search` and `dist` looks like
 ```
-Ref_file	Query_file	ANI	Align_fraction_query	Align_fraction_reference	Ref_name	Query_name
-e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome
+Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
+refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence
 ```
 - Ref_file: the filename of the reference.
 - Query_file: the filename of the query.
