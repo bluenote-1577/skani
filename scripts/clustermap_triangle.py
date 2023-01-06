@@ -39,7 +39,7 @@ for line in open(file, 'r'):
     endpoints = range(1,counter)
     for i in endpoints:
         if not 'mash' in file:
-            matrix[i-1].append(float(spl[i]))
+            matrix[i-1].append(100 * float(spl[i]))
         else:
             matrix[i-1].append(100 - 100 * float(spl[i]))
     counter += 1

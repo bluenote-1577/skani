@@ -18,7 +18,7 @@ fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version("1.0")
-        .about("fast, robust ANI/AAI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI (AAI) calculation:\nskani dist genome1.fa genome2.fa (--aai)\n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
+        .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
         )
@@ -56,19 +56,20 @@ fn main() {
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
+                        .hidden(true)
                         .help("Use amino acid to calculate AAI instead.\t[default: ANI]"),
                 )
                 .arg(
                     Arg::new("k")
                         .short('k')
-                        .help("k-mer size.\t[default: ANI 15, AAI 6]")
+                        .help("k-mer size.\t[default: 15]")
                         .takes_value(true)
                         .hidden(true)
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes.\t[default: ANI 120, AAI 15] ")
+                        .help(H_C_FACTOR)
                         .takes_value(true),
                 )
                 .arg(
@@ -91,7 +92,7 @@ fn main() {
             )
         .subcommand(
             SubCommand::with_name(params::DIST_STRING)
-            .about("Compute ANI/AAI for queries against references fasta files or pre-computed sketch files. Usage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
+            .about("Compute ANI for queries against references fasta files or pre-computed sketch files. Usage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -104,6 +105,7 @@ fn main() {
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
+                        .hidden(true)
                         .help("Use amino acid to calculate AAI instead.\t[default: ANI]"),
                 )
                 .arg(
@@ -186,14 +188,14 @@ fn main() {
                 .arg(
                     Arg::new("k")
                         .short('k')
-                        .help("k-mer size.\t[default: ANI 15, AAI 6].")
+                        .help("k-mer size.\t[default: 15].")
                         .takes_value(true)
                         .hidden(true)
                 )
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes.\t[default: ANI 120, AAI 15] ")
+                        .help(H_C_FACTOR)
                         .takes_value(true),
                 )
 
@@ -211,7 +213,7 @@ fn main() {
                         .arg("query list file")
                         .required(true),
                 )
-                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time.\t[default: ANI 0.75, AAI 0.50]"))
+                .arg(Arg::new("s").short('s').takes_value(true).help(H_SCREEN))
                 .arg(
                     Arg::new(ROBUST)
                         .long(CMD_ROBUST)
@@ -233,7 +235,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::TRIANGLE_STRING)
-            .about("Compute a lower triangular distance ANI/AAI matrix. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
+            .about("Compute a lower triangular distance ANI/AF matrix. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -289,7 +291,7 @@ fn main() {
                     Arg::new("sparse")
                         .long("sparse")
                         .short('E')
-                        .help("Output sparse matrix for only non-zero ANI/AAI in the same form as `skani dist`."),
+                        .help("Output sparse matrix for only valid ANI in the same form as `skani dist`."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
@@ -298,7 +300,7 @@ fn main() {
                         .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
                         .takes_value(true),
                 )
-                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity using a hash table in constant time.\t[default: ANI 0.75, AAI 0.50]"))
+                .arg(Arg::new("s").short('s').takes_value(true).help(H_SCREEN))
                 .arg(
                     Arg::new("k")
                         .short('k')
@@ -309,7 +311,7 @@ fn main() {
                 .arg(
                     Arg::new("c")
                         .short('c')
-                        .help("Compression factor. Memory usage and ANI/AAI calculation runtime is inversely proportional to c. Lower c allows for ANI/AAI comparison of more distant genomes.\t[default: ANI 120, AAI 15] ")
+                        .help(H_C_FACTOR)
                         .takes_value(true),
                 )
                 .group(
@@ -413,7 +415,7 @@ fn main() {
                         .long(CMD_FULL_INDEX)
                         .help(H_FULL_INDEX),
                 )
-                .arg(Arg::new("s").short('s').takes_value(true).help("Screen out pairs with < % identity.\t[default: ANI 0.75, AAI 0.5]"))
+                .arg(Arg::new("s").short('s').takes_value(true).help(H_SCREEN))
                 .arg(
                     Arg::new(ROBUST)
                         .long(CMD_ROBUST)

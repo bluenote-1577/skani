@@ -25,3 +25,9 @@ pub const H_FULL_MAT: &str = "Output full matrix instead of lower-triangular mat
 pub const KEEP_REFS: &str = "keep-refs";
 pub const CMD_KEEP_REFS: &str = "keep-refs";
 pub const H_KEEP_REFS: &str = "Keep reference sketches in memory if the sketch passes the marker filter. Takes more memory but is much faster when querying many similar sequences.";
+
+pub const C_FACTOR: &str = "c";
+pub const CMD_C_FACTOR: &str = "c";
+pub const H_C_FACTOR: &str = "Compression factor. Memory usage and runtime is inversely proportional to c. Lower c allows for ANI comparison of more distant genomes.\t[default: 120]";
+
+pub const H_SCREEN: &str = "Screen out pairs with < % identity using a hash table in constant time.\t[default: 0.80]";
