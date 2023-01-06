@@ -19,7 +19,6 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         info!("Sketches detected.");
         (new_sketch_params, ref_sketches) = file_io::sketches_from_sketch(
             &command_params.ref_files,
-            command_params.mode == Mode::Search,
         );
         if new_sketch_params != sketch_params {
             warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
@@ -39,7 +38,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     }
     if command_params.queries_are_sketch {
         (query_params, query_sketches) =
-            file_io::sketches_from_sketch(&command_params.query_files, false);
+            file_io::sketches_from_sketch(&command_params.query_files);
         if sketch_params != query_params && command_params.refs_are_sketch {
             panic!(
                 "Query sketch parameters were not equal to reference sketch parameters. Exiting."

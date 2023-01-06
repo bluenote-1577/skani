@@ -1,11 +1,39 @@
+//Various DNA lookup tables and hashing methods are taken from miniprot by Heng Li. Attached below is their license:
+//The MIT License
+
+// **** miniprot LICENSE ***
+//Copyright (c) 2022-     Dana-Farber Cancer Institute
+//
+//Permission is hereby granted, free of charge, to any person obtaining
+//a copy of this software and associated documentation files (the
+//"Software"), to deal in the Software without restriction, including
+//without limitation the rights to use, copy, modify, merge, publish,
+//distribute, sublicense, and/or sell copies of the Software, and to
+//permit persons to whom the Software is furnished to do so, subject to
+//the following conditions:
+//
+//The above copyright notice and this permission notice shall be
+//included in all copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+//EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+//MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+//NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+//BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+//ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+//CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+//******************************
+pub const  DNA_TO_AA: [u8; 64] =
+            *b"KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVV*Y*YSSSS*CWCLFLF";
+
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
 use crate::params::*;
-use fxhash::{FxHashSet};
 use partitions::*;
-use std::collections::{HashMap};
+use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
 pub const BYTE_TO_SEQ: [MarkerBits; 256] = [
@@ -25,10 +53,10 @@ pub type ContigIndex = u32;
 //pub type KmerBits = u128;
 pub type MarkerBits = u64;
 pub type SeedBits = u32;
-pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[usize; 1]>>;
-pub const USE_SMALLVEC: bool = false;
+pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[u32; KMER_SK_SMALL_VEC_SIZE]>>;
+//pub type KmerToSketch = MMHashMap<MarkerBits, Vec<usize>>;
 pub type KmerSeeds = MMHashMap32<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
-//pub type KmerSeeds = MMHashMap<KmerBits, Vec<SeedPosition>>;
+//pub type KmerSeeds = MMHashMap<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -36,9 +64,9 @@ pub type MMBuildHasher = BuildHasherDefault<MMHasher>;
 pub type MMBuildHasher32 = BuildHasherDefault<MMHasher32>;
 pub type MMHashMap<K, V> = HashMap<K, V, MMBuildHasher>;
 pub type MMHashMap32<K, V> = HashMap<K, V, MMBuildHasher32>;
+pub type MMHashSet<K> = HashSet<K, MMBuildHasher>;
 
 //Thomas Wang's hash function taken from minimap2
-
 #[inline]
 pub fn mm_hashi64(kmer: i64) -> i64 {
     let mut key = kmer as u64;
@@ -67,7 +95,7 @@ pub fn mm_hash64(kmer: u64) -> u64 {
 
 #[inline]
 pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
-    let mut key = (u32::from_be_bytes(bytes.try_into().unwrap())) as usize;
+    let mut key = (u32::from_ne_bytes(bytes.try_into().unwrap())) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
@@ -80,7 +108,7 @@ pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
 
 #[inline]
 pub fn mm_hash(bytes: &[u8]) -> usize {
-    let mut key = usize::from_be_bytes(bytes.try_into().unwrap()) as usize;
+    let mut key = usize::from_ne_bytes(bytes.try_into().unwrap()) as usize;
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
@@ -113,7 +141,7 @@ pub struct Sketch {
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
     pub repetitive_kmers: usize,
-    pub marker_seeds: FxHashSet<MarkerBits>,
+    pub marker_seeds: MMHashSet<MarkerBits>,
     pub marker_c: usize,
     pub c: usize,
     pub k: usize,
@@ -179,7 +207,7 @@ impl Default for Sketch {
             total_sequence_length: 0,
             contig_lengths: vec![],
             repetitive_kmers: usize::MAX,
-            marker_seeds: FxHashSet::default(),
+            marker_seeds: MMHashSet::default(),
             marker_c: 0,
             c: 0,
             k: 0,

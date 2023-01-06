@@ -16,7 +16,6 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         info!("Sketches detected.");
         (sketch_params, ref_sketches) = file_io::sketches_from_sketch(
             &command_params.ref_files,
-            command_params.mode == Mode::Search,
         );
     } else {
         if command_params.individual_contig_r {

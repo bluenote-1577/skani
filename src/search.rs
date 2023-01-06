@@ -68,7 +68,7 @@ pub fn search(command_params: CommandParams) {
         let query_sketches;
         if command_params.queries_are_sketch {
             (query_params, query_sketches) =
-                file_io::sketches_from_sketch(&vec![query_file.clone()], false);
+                file_io::sketches_from_sketch(&vec![query_file.clone()]);
             if query_params != sketch_params {
                 panic!("Query sketch parameters not equal to reference sketch parameters. Exiting");
             }
@@ -123,7 +123,6 @@ pub fn search(command_params: CommandParams) {
                         );
                         let (_sketch_params_ref, ref_sketch_new) = file_io::sketches_from_sketch(
                             &vec![sketch_file.to_str().unwrap().to_string()],
-                            false,
                         );
                         ref_sketch = ref_sketch_new;
                         let map_params = chain::map_params_from_sketch(
@@ -176,7 +175,6 @@ pub fn search(command_params: CommandParams) {
                             );
                             let (_sketch_params_ref, ref_sketch) = file_io::sketches_from_sketch(
                                 &vec![sketch_file.to_str().unwrap().to_string()],
-                                false,
                             );
 
                             let map_params = chain::map_params_from_sketch(
@@ -191,8 +189,11 @@ pub fn search(command_params: CommandParams) {
                             } else {
                                 ani_res = AniEstResult::default();
                             }
-                            let mut write_table = ref_sketches_used.write().unwrap();
-                            write_table.insert(original_file.clone(), ref_sketch);
+
+                            {
+                                let mut write_table = ref_sketches_used.write().unwrap();
+                                write_table.insert(original_file.clone(), ref_sketch);
+                            }
 
                             if ani_res.ani > 0.5 {
                                 {
@@ -216,7 +217,9 @@ pub fn search(command_params: CommandParams) {
             });
         }
     }
-    dbg!(ref_sketches_used.read().unwrap().len());
+    if command_params.keep_refs{
+        info!("{} references kept in memory for --keep-refs", ref_sketches_used.read().unwrap().len());
+    }
     let anis = anis.into_inner().unwrap();
     file_io::write_query_ref_list(
         &anis,

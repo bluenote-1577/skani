@@ -16,6 +16,10 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     let now = Instant::now();
     info!("Sketching files...");
     let p = format!("{}", command_params.out_file_name);
+    if Path::new(&p).exists() {
+        error!("Output directory exists; output directory must not be an existing directory. Exiting.");
+        std::process::exit(1);
+    }
     std::fs::create_dir_all(p).unwrap();
 
     let num_iters = command_params.ref_files.len();

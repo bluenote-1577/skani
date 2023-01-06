@@ -8,7 +8,10 @@ from scipy.cluster import hierarchy
 import scipy
 file = sys.argv[1]
 if 'mash' in file:
-    print("ANI matrix obtained from Mash detected. If this matrix is not a mash matrix, remove 'mash' from the file name")
+    print("ANI matrix obtained from Mash detected.")
+if 'fastani' in file:
+    print("ANI matrix obtained from FastANI detected.")
+
 
 counter = 0
 items = 0
@@ -38,15 +41,17 @@ for line in open(file, 'r'):
     labels.append(spl[0].split('/')[-1])
     endpoints = range(1,counter)
     for i in endpoints:
-        if not 'mash' in file:
-            matrix[i-1].append(100 * float(spl[i]))
-        else:
+        if 'mash' in file:
             matrix[i-1].append(100 - 100 * float(spl[i]))
+        elif 'fastani' in file:
+            matrix[i-1].append(float(spl[i]))
+        else:
+            matrix[i-1].append(100 * float(spl[i]))
     counter += 1
 
 for vec in matrix:
     for score in vec:
-        condensed.append(1 - score)
+        condensed.append(100 - score)
 
 
 cmap = seaborn.cm.rocket_r
@@ -64,9 +69,11 @@ else:
  
 #print(cg.dendrogram_row.reordered_ind)
 re = [labels[x] for x in cg.dendrogram_row.reordered_ind]
-xticks = [x for x in range(len(labels))]
-cg.ax_heatmap.set_xticks(xticks)
-cg.ax_heatmap.set_xticklabels(re, rotation=90)
+
+if len(labels) < 50:
+    xticks = [x for x in range(len(labels))]
+    cg.ax_heatmap.set_xticks(xticks)
+    cg.ax_heatmap.set_xticklabels(re, rotation=90)
 #cg.ax_heatmap.set_yticklabels(re, rotation=0)
 plt.tight_layout()
 plt.show()

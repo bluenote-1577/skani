@@ -31,17 +31,17 @@ pub fn screen_refs_filenames<'a>(
         K_MARKER_DNA
     };
     let cutoff = identity.powi(k as i32);
-    debug!("cutoff screening val {}",cutoff);
+    trace!("cutoff screening val {}",cutoff);
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > usize::max(((cutoff 
+            *x.1 > usize::max((cutoff 
                 * usize::min(
-                    ref_sketches[**x.0].marker_seeds.len(),
+                    ref_sketches[**x.0 as usize].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize),1)
+                ) as f64) as usize,1)
         })
-        .map(|x| &ref_sketches[**x.0].file_name)
+        .map(|x| &ref_sketches[**x.0 as usize].file_name)
         .collect();
     return ret;
 
@@ -74,25 +74,34 @@ pub fn screen_refs(
     let ret = count_hash_map
         .iter()
         .filter(|x| {
-            *x.1 > usize::max(((cutoff 
+            *x.1 > usize::max((cutoff 
                 * usize::min(
-                    ref_sketches[**x.0].marker_seeds.len(),
+                    ref_sketches[**x.0 as usize].marker_seeds.len(),
                     query_sketch.marker_seeds.len(),
-                ) as f64) as usize),1)
+                ) as f64) as usize,1)
         })
-        .map(|x| **x.0)
+        .map(|x| **x.0 as usize)
         .collect();
     return ret;
 }
 pub fn kmer_to_sketch_from_refs(ref_sketches: &Vec<Sketch>) -> KmerToSketch {
+    let max_size: usize = ref_sketches.iter().map(|x| x.marker_seeds.len()).sum();
     let mut ret = KmerToSketch::default();
+    ret.reserve(max_size);
     for (i, ref_sketch) in ref_sketches.iter().enumerate() {
         for kmer in ref_sketch.marker_seeds.iter() {
-            let sketch_set = ret.entry(*kmer).or_insert(SmallVec::<[usize; 1]>::new());
-            if !sketch_set.contains(&i){
-                sketch_set.push(i);
-            }
+            let sketch_set = ret.entry(*kmer).or_insert(SmallVec::<[u32; KMER_SK_SMALL_VEC_SIZE]>::new());
+            sketch_set.push(i as u32);
         }
     }
+
+//    debug!("{} unique marker k-mers found", ret.len());
+//    let mut kmer_stats = vec![];
+//    for kmer in ret.keys(){
+//        kmer_stats.push(ret[kmer].len());
+//    }
+//    kmer_stats.sort_unstable();
+//    let l = kmer_stats.len();
+//    debug!("{} - 10, {} - 50, {} - MAX", kmer_stats[l*1/10], kmer_stats[l/2], kmer_stats[l-1]);
     return ret;
 }

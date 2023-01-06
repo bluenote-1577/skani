@@ -1,6 +1,6 @@
 pub const MIN_ALIGN_FRAC: &str = "min aligned frac";
 pub const CMD_MIN_ALIGN_FRAC: &str = "min-aligned-fraction";
-pub const H_MIN_ALIGN_FRAC: &str = "Only output ANI/AAi values with aligned fraction > than this value. [default: ANI 0.15, AAI 0.05]";
+pub const H_MIN_ALIGN_FRAC: &str = "Only output ANI/AAi values with aligned fraction > than this value.\t[default: ANI 0.15, AAI 0.05]";
 
 pub const IND_CTG_QRY: &str = "individual contig query";
 pub const CMD_IND_CTG_QRY: &str = "qi";
@@ -12,7 +12,7 @@ pub const H_IND_CTG_REF: &str = "Use individual sequences for the REFERENCE in a
 
 pub const FULL_INDEX: &str = "marker index";
 pub const CMD_FULL_INDEX: &str = "marker-index";
-pub const H_FULL_INDEX: &str = "Loads a larger index for faster filtering. Uses more memory and takes longer to load, but faster for many all-to-all comparisons. [default: load index if > 100 query files, don't load otherwise]";
+pub const H_FULL_INDEX: &str = "Loads a larger index for faster filtering. Uses more memory and takes longer to load, but faster for many all-to-all comparisons.\t[default: load index if > 50 query files, don't load otherwise]";
 
 pub const ROBUST: &str = "robust";
 pub const CMD_ROBUST: &str = "robust";

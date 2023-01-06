@@ -12,12 +12,12 @@ use interval::interval_set::*;
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
-    let score_query = (q_sk_len as f64)
+    let score_query = (q_sk_len as f64).sqrt()
         * med_ctg_len_q;
-//        * (f64::min(med_ctg_len_q, 60000.));
-    let score_ref = (r_sk_len as f64)
+//        * (f64::min(med_ctg_len_q, 200000.));
+    let score_ref = (r_sk_len as f64).sqrt()
         * med_ctg_len_r;
-//        * (f64::min(med_ctg_len_r, 60000.));
+//        * (f64::min(med_ctg_len_r, 200000.));
     return score_query > score_ref;
 
 
@@ -68,11 +68,11 @@ pub fn map_params_from_sketch(
     amino_acid: bool,
     command_params: &CommandParams,
 ) -> MapParams {
-    let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let max_gap_length = if amino_acid{D_MAX_GAP_LENGTH_AAI} else {D_MAX_GAP_LENGTH};
     let anchor_score = if amino_acid{D_ANCHOR_SCORE_AAI} else {D_ANCHOR_SCORE_ANI};
     let min_anchors = if amino_acid{D_MIN_ANCHORS_AAI} else {D_MIN_ANCHORS_ANI};
     let min_length_cover = if amino_acid{MIN_LENGTH_COVER_AAI} else {MIN_LENGTH_COVER};
+    let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let length_cutoff = fragment_length;
     trace!("Fragment length is {}.", fragment_length);
     let mut frac_cover_cutoff = command_params.min_aligned_frac;
@@ -84,9 +84,10 @@ pub fn map_params_from_sketch(
         }
     }
     let length_cover_cutoff = 5000000;
-    let chain_band = if amino_acid {D_CHAIN_BAND_AAI} else {D_CHAIN_BAND};
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
-    let min_score = min_anchors as f64 * anchor_score;
+    let chain_band = bp_chain_band/ref_sketch.c;
+    let min_score = min_anchors as f64 * anchor_score * 0.75;
+//    let min_score = 0.;
     let k = ref_sketch.k;
     return MapParams {
         fragment_length,
@@ -288,10 +289,10 @@ fn calculate_ani(
         if putative_ani > 0.950
 //            && total_bases_contained_query > ref_sketch.c as GnPosition * 20
             //&& total_bases_contained_query > c  * 3 * (upper_lower_seeds / total_anchors) as GnPosition
-            && total_bases_contained_query > c * 5
+            && total_bases_contained_query > c * 4
             && !map_params.amino_acid
             && total_range_query.1 - total_range_query.0 < (CHUNK_SIZE_DNA * 9 / 10) as GnPosition 
-            && anchors_in_chunk_considered as f64 > 1.1 * upper_lower_seeds as f64
+            && anchors_in_chunk_considered as f64 > 1.05 * upper_lower_seeds as f64 
         {
             //                        anchors_in_chunk_considered = num_seeds_in_intervals;
             trace!("putative ani filter {} -> {}", anchors_in_chunk_considered, upper_lower_seeds);
@@ -375,7 +376,7 @@ fn calculate_ani(
     if map_params.median{
         lower = 0.499;
         upper = 0.501;
-    } else if map_params.robust || map_params.amino_acid{
+    } else if map_params.robust{
         lower = 0.10;
         upper = 0.90;
     } else {
@@ -548,7 +549,7 @@ pub fn check_markers_quickly(
             return true;
         }
     }
-    debug!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
+    trace!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
     return false;
 }
 
@@ -718,7 +719,7 @@ fn get_anchors(
         curr_anchor_chunk.push(anchor);
     }
     if curr_anchor_chunk.len() > 0 {
-        let mut num_seeds_in_block = 0;
+        let mut _num_seeds_in_block = 0;
         let mut seed_pos_in_block = vec![];
         loop {
             if query_positions_all[last_query_contig as usize].is_empty() {
@@ -736,7 +737,7 @@ fn get_anchors(
                 seed_pos_in_block
                     .push(query_positions_all[last_query_contig as usize][running_counter]);
                 running_counter += 1;
-                num_seeds_in_block += 1;
+                _num_seeds_in_block += 1;
             } else {
                 break;
             }

@@ -32,6 +32,8 @@ tikv-jemallocator = "*"
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1"
+serial_test = "*"
+
 
 
 [profile.release]
