@@ -110,8 +110,8 @@ If the resulting aligned fraction for the two genomes is < 15%, no output is giv
 
 The default output for `search` and `dist` looks like
 ```
-Ref_file	Query_file	ANI	Align_fraction_query	Align_fraction_reference	Ref_name	Query_name
-e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome
+Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
+refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence
 ```
 - Ref_file: the filename of the reference.
 - Query_file: the filename of the query.
@@ -122,3 +122,7 @@ e.coli-K12.fasta  e.coli-EC590.fasta	0.9945	0.9361	0.9304	NC_007779.1 Escherichi
 ## Citation
 
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani (2022). Submitted.
+
+## Feature requests, issues
+
+skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accomodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
