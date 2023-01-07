@@ -192,7 +192,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let mut queries_are_sketch = query_files.len() > 0;
     for query_file in query_files.iter() {
-        if !query_file.contains(".sketch") && !query_file.contains(".marker") {
+        if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
             queries_are_sketch = false;
             break;
         }
@@ -308,7 +308,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
 
     let mut queries_are_sketch = query_files.len() > 0;
     for query_file in query_files.iter() {
-        if !query_file.contains(".sketch") {
+        if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
             queries_are_sketch = false;
             break;
         }

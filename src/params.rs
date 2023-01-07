@@ -101,7 +101,7 @@ pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 3;
 }
 
-#[derive(Default,  PartialEq, Serialize, Deserialize)]
+#[derive(Default,  PartialEq, Serialize, Deserialize, Debug)]
 pub struct SketchParams {
     pub c: usize,
     pub k: usize,

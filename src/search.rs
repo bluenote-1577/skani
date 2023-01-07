@@ -70,7 +70,9 @@ pub fn search(command_params: CommandParams) {
             (query_params, query_sketches) =
                 file_io::sketches_from_sketch(&vec![query_file.clone()]);
             if query_params != sketch_params {
-                panic!("Query sketch parameters not equal to reference sketch parameters. Exiting");
+                if !query_file.contains("markers.bin"){
+                    warn!("Query sketch parameters for {} not equal to reference sketch parameters; no ANI calculated", query_file);
+                }
             }
         } else {
             if command_params.individual_contig_q {

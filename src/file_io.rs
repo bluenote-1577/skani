@@ -31,7 +31,12 @@ pub fn fastx_to_sketches(
         );
         let reader = parse_fastx_file(&ref_file);
         if !reader.is_ok() {
-            warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
+            if ref_file.contains(".sketch"){
+                warn!("{} is not a valid fasta/fastq file but has the .sketch extension. Not all inputs have .sketch extension, so fasta/fastq is assumed.", ref_file);
+            }
+            else{
+                warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
+            }
         } else {
             let mut j = 0;
             let mut is_valid = false;
@@ -451,7 +456,7 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
         .into_par_iter()
         .for_each(|i| {
             let sketch_file = &ref_files[i];
-            if !sketch_file.contains("markers")
+            if !sketch_file.contains("markers.bin")
             {
                 let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
                 let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
