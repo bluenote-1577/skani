@@ -15,7 +15,7 @@ use std::time::Instant;
 pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     let now = Instant::now();
     info!("Sketching files...");
-    let p = format!("{}", command_params.out_file_name);
+    let p = command_params.out_file_name.to_string();
     if Path::new(&p).exists() {
         error!("Output directory exists; output directory must not be an existing directory. Exiting.");
         std::process::exit(1);
@@ -36,9 +36,9 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
         );
         let mut marker_ref_sketches = ref_sketches
             .iter()
-            .map(|x| Sketch::get_markers_only(x))
+            .map(Sketch::get_markers_only)
             .collect::<Vec<Sketch>>();
-        if ref_sketches.len() > 0 {
+        if !ref_sketches.is_empty() {
             let sketch = &ref_sketches[0];
             let marker_sketch = &mut marker_ref_sketches[0];
             let path = Path::new(&sketch.file_name);
@@ -75,5 +75,5 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     let markers = marker_sketches.into_inner().unwrap();
     bincode::serialize_into(&mut file_bin_marker, &(&sketch_params, markers)).unwrap();
     info!("Sketching time: {}", now.elapsed().as_secs_f32());
-    return;
+    
 }

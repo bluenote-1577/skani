@@ -1,5 +1,5 @@
 use assert_cmd::prelude::*; // Add methods on commands
-use predicates::prelude::*; // Used for writing assertions
+ // Used for writing assertions
 use serial_test::serial;
 use std::process::Command; // Run programs
 #[serial]
@@ -89,7 +89,7 @@ fn test_search() {
     let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+    let _af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
     assert!(ani > 0.97);
@@ -156,7 +156,7 @@ fn test_search() {
     let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+    let _af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
         .parse::<f64>()
         .unwrap();
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
@@ -292,7 +292,7 @@ fn test_dist() {
         .arg("30")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+    let _ani = out_line.split('\t').collect::<Vec<&str>>()[8]
         .parse::<f64>()
         .unwrap();
     let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
@@ -389,7 +389,7 @@ fn test_dist() {
 
     let std_bytes = &cmd.output().as_ref().unwrap().stdout.clone()[0..500];
     let ste_bytes = cmd.output().as_ref().unwrap().stderr.clone();
-    let stdout = std::str::from_utf8(&std_bytes).unwrap();
+    let stdout = std::str::from_utf8(std_bytes).unwrap();
     let stderr = std::str::from_utf8(&ste_bytes).unwrap();
     println!("read test");
     println!("{}", stdout);

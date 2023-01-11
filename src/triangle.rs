@@ -17,17 +17,15 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         (sketch_params, ref_sketches) = file_io::sketches_from_sketch(
             &command_params.ref_files,
         );
+    } else if command_params.individual_contig_r {
+        ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+            &command_params.ref_files,
+            &sketch_params,
+            true,
+        );
     } else {
-        if command_params.individual_contig_r {
-            ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
-                &command_params.ref_files,
-                &sketch_params,
-                true,
-            );
-        } else {
-            ref_sketches =
-                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
-        }
+        ref_sketches =
+            file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
     }
     let screen_val;
     if command_params.screen_val == 0. {
@@ -42,7 +40,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let anis: Mutex<FxHashMap<usize, FxHashMap<usize, AniEstResult>>> =
         Mutex::new(FxHashMap::default());
 
-    if ref_sketches.len() == 0 {
+    if ref_sketches.is_empty() {
         error!("No genomes/sketches found.");
         std::process::exit(1)
     }
@@ -53,13 +51,13 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         .collect::<Vec<usize>>()
         .into_par_iter()
         .for_each(|i| {
-            let screened_refs;
+            
             let ref_sketch_i = &ref_sketches[i];
             //if command_params.screen {
-            screened_refs = screen::screen_refs(
+            let screened_refs = screen::screen_refs(
                 screen_val,
                 &kmer_to_sketch,
-                &ref_sketch_i,
+                ref_sketch_i,
                 &sketch_params,
                 &ref_sketches,
             );

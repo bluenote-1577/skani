@@ -91,7 +91,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         panic!("PATH TODO");
     }
 
-    if !ref_file_list.is_none() {
+    if ref_file_list.is_some() {
         let ref_file_list = ref_file_list.unwrap();
         let file = File::open(ref_file_list).unwrap();
         let reader = BufReader::new(file);
@@ -121,7 +121,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
     }
 
-    if !query_file_list.is_none() {
+    if query_file_list.is_some() {
         let query_file_list = query_file_list.unwrap();
         let file = File::open(query_file_list).unwrap();
         let reader = BufReader::new(file);
@@ -140,9 +140,9 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap_or(def_k)
         .parse::<usize>()
         .unwrap();
-    let c;
+    
     let use_syncs = false;
-    c = matches_subc
+    let c = matches_subc
         .value_of("c")
         .unwrap_or(def_c)
         .parse::<usize>()
@@ -186,7 +186,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let sketch_params = SketchParams::new(marker_c, c, k, use_syncs, amino_acid);
 
-    let mut refs_are_sketch = ref_files.len() > 0;
+    let mut refs_are_sketch = !ref_files.is_empty();
     for ref_file in ref_files.iter() {
         if !ref_file.contains(".sketch") && !ref_file.contains(".marker") && !ref_file.contains("markers.bin"){
             refs_are_sketch = false;
@@ -194,7 +194,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
     }
 
-    let mut queries_are_sketch = query_files.len() > 0;
+    let mut queries_are_sketch = !query_files.is_empty();
     for query_file in query_files.iter() {
         if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
             queries_are_sketch = false;
@@ -270,7 +270,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         est_ci
     };
 
-    return (sketch_params, command_params);
+    (sketch_params, command_params)
 }
 
 pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandParams) {
@@ -291,7 +291,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     } else if let Some(values) = matches_subc.value_of("query list file") {
         query_file_list = Some(values);
     }
-    if !query_file_list.is_none() {
+    if query_file_list.is_some() {
         let query_file_list = query_file_list.unwrap();
         let file = File::open(query_file_list).unwrap();
         let reader = BufReader::new(file);
@@ -311,7 +311,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .collect();
     let refs_are_sketch = true;
 
-    let mut queries_are_sketch = query_files.len() > 0;
+    let mut queries_are_sketch = !query_files.is_empty();
     for query_file in query_files.iter() {
         if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
             queries_are_sketch = false;
@@ -362,10 +362,10 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         est_ci,
     };
 
-    if command_params.ref_files.len() == 0 {
+    if command_params.ref_files.is_empty() {
         error!("No valid reference fastas or sketches found.");
         std::process::exit(1)
     }
 
-    return (SketchParams::default(), command_params);
+    (SketchParams::default(), command_params)
 }

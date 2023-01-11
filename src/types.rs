@@ -77,7 +77,7 @@ pub fn mm_hashi64(kmer: i64) -> i64 {
     key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
-    return key as i64;
+    key as i64
 }
 
 #[inline]
@@ -90,7 +90,7 @@ pub fn mm_hash64(kmer: u64) -> u64 {
     key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
-    return key;
+    key
 }
 
 #[inline]
@@ -103,12 +103,12 @@ pub fn mm_hash_bytes_32(bytes: &[u8]) -> usize {
     key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
-    return key;
+    key
 }
 
 #[inline]
 pub fn mm_hash(bytes: &[u8]) -> usize {
-    let mut key = usize::from_ne_bytes(bytes.try_into().unwrap()) as usize;
+    let mut key = usize::from_ne_bytes(bytes.try_into().unwrap());
     key = !key.wrapping_add(key << 21); // key = (key << 21) - key - 1;
     key = key ^ key >> 24;
     key = (key.wrapping_add(key << 3)).wrapping_add(key << 8); // key * 265
@@ -116,7 +116,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     key = (key.wrapping_add(key << 2)).wrapping_add(key << 4); // key * 21
     key = key ^ key >> 28;
     key = key.wrapping_add(key << 31);
-    return key;
+    key
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize)]
@@ -127,11 +127,11 @@ pub struct SeedPosition{
     pub phase: u8
 }
 
-impl Hash for SeedPosition{
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.pos.hash(state);
-    }
-}
+//impl Hash for SeedPosition{
+//    fn hash<H: Hasher>(&self, state: &mut H) {
+//        self.pos.hash(state);
+//    }
+//}
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Sketch {
@@ -151,7 +151,8 @@ pub struct Sketch {
 
 impl Sketch{
     pub fn get_markers_only(sketch: &Sketch) -> Sketch{
-        let ret_sketch = Sketch{
+        
+        Sketch{
             file_name : sketch.file_name.clone(),
             kmer_seeds_k : None,
             contigs: sketch.contigs.clone(),
@@ -164,8 +165,7 @@ impl Sketch{
             k : sketch.k,
             contig_order: sketch.contig_order,
             amino_acid: sketch.amino_acid
-        };
-        return ret_sketch;
+        }
     }
     
     pub fn new(marker_c: usize, c: usize, k: usize, file_name: String, amino_acid: bool) -> Sketch{
@@ -176,7 +176,7 @@ impl Sketch{
         new_sketch.marker_c = c;
         new_sketch.file_name = file_name;
         new_sketch.amino_acid = amino_acid;
-        return new_sketch;
+        new_sketch
     }
 }
 
@@ -200,7 +200,7 @@ impl Hash for Sketch{
 }
 impl Default for Sketch {
     fn default() -> Self {
-        return Sketch {
+        Sketch {
             file_name: String::new(),
             kmer_seeds_k: None,
             contigs: vec![],
@@ -213,10 +213,11 @@ impl Default for Sketch {
             k: 0,
             contig_order:0,
             amino_acid: false,
-        };
+        }
     }
 }
 
+#[derive(Default)]
 pub struct MMHasher32 {
     hash: usize,
 }
@@ -232,15 +233,11 @@ impl Hasher for MMHasher32 {
     }
 }
 
-impl Default for MMHasher32 {
-    #[inline]
-    fn default() -> MMHasher32 {
-        MMHasher32 { hash: 0 }
-    }
-}
 
 
 
+
+#[derive(Default)]
 pub struct MMHasher {
     hash: usize,
 }
@@ -256,12 +253,7 @@ impl Hasher for MMHasher {
     }
 }
 
-impl Default for MMHasher {
-    #[inline]
-    fn default() -> MMHasher {
-        MMHasher { hash: 0 }
-    }
-}
+
 
 #[derive(Debug, Eq, Hash, Clone)]
 pub struct KmerEnc {
@@ -284,7 +276,7 @@ impl KmerEnc {
     #[inline]
     pub fn decode(byte: u64) -> u8 {
         if byte == 0 {
-            return b'A';
+            b'A'
         } else if byte == 1 {
             return b'C';
         } else if byte == 2 {
@@ -300,7 +292,7 @@ impl KmerEnc {
         let mut bytes = vec![];
         let mask = 3;
         for i in 0..k {
-            let val = kmer >> 2 * i;
+            let val = kmer >> (2 * i);
             let val = val & mask;
             bytes.push(KmerEnc::decode(val));
         }
@@ -311,10 +303,10 @@ impl KmerEnc {
         let mut bytes = vec![];
         let mask = 63;
         for i in 0..k {
-            let val = kmer >> 6 * i;
+            let val = kmer >> (6 * i);
             let val = val & mask;
 //            bytes.push(KmerEnc::decode(val));
-            bytes.push(sketch_params.acgt_to_aa_letters[val as usize] as u8);
+            bytes.push(sketch_params.acgt_to_aa_letters[val as usize]);
         }
         dbg!(str::from_utf8(&bytes.into_iter().rev().collect::<Vec<u8>>()).unwrap());
     }
@@ -355,10 +347,10 @@ pub struct ChainInterval {
 }
 impl ChainInterval {
     pub fn query_range_len(&self) -> GnPosition {
-        return self.interval_on_query.1 - self.interval_on_query.0;
+        self.interval_on_query.1 - self.interval_on_query.0
     }
     pub fn ref_range_len(&self) -> GnPosition {
-        return self.interval_on_ref.1 - self.interval_on_ref.0;
+        self.interval_on_ref.1 - self.interval_on_ref.0
     }
 }
 

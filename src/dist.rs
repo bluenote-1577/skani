@@ -24,17 +24,15 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
         }
         sketch_params = new_sketch_params;
+    } else if command_params.individual_contig_r {
+        ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+            &command_params.ref_files,
+            &sketch_params,
+            true,
+        );
     } else {
-        if command_params.individual_contig_r {
-            ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
-                &command_params.ref_files,
-                &sketch_params,
-                true,
-            );
-        } else {
-            ref_sketches =
-                file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
-        }
+        ref_sketches =
+            file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
     }
     if command_params.queries_are_sketch {
         (query_params, query_sketches) =
@@ -43,22 +41,18 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             panic!(
                 "Query sketch parameters were not equal to reference sketch parameters. Exiting."
             );
-        } else {
-            if sketch_params != query_params {
-                warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
-            }
+        } else if sketch_params != query_params {
+            warn!("Parameters from .sketch files not equal to the input parameters. Using parameters from .sketch files.")
         }
+    } else if command_params.individual_contig_q {
+        query_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+            &command_params.query_files,
+            &sketch_params,
+            true,
+        );
     } else {
-        if command_params.individual_contig_q {
-            query_sketches = file_io::fastx_to_multiple_sketch_rewrite(
-                &command_params.query_files,
-                &sketch_params,
-                true,
-            );
-        } else {
-            query_sketches =
-                file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
-        }
+        query_sketches =
+            file_io::fastx_to_sketches(&command_params.query_files, &sketch_params, true);
     }
     if query_sketches.is_empty() || ref_sketches.is_empty() {
         error!("No reference sketches/genomes or query sketches/genomes found.");
@@ -101,7 +95,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             is.into_par_iter().for_each(|i| {
                 let ref_sketch = &ref_sketches[i];
                 let passed_screen =
-                    chain::check_markers_quickly(&query_sketch, &ref_sketch, screen_val);
+                    chain::check_markers_quickly(query_sketch, ref_sketch, screen_val);
                 if passed_screen {
                     let map_params = chain::map_params_from_sketch(
                         ref_sketch,
@@ -110,7 +104,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                     );
                     let ani_res;
                     if map_params != MapParams::default() {
-                        ani_res = chain::chain_seeds(ref_sketch, &query_sketch, map_params);
+                        ani_res = chain::chain_seeds(ref_sketch, query_sketch, map_params);
                     } else {
                         ani_res = AniEstResult::default();
                     }
@@ -124,7 +118,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             let refs_passing_screen_table = screen::screen_refs(
                 screen_val,
                 &kmer_to_sketch,
-                &query_sketch,
+                query_sketch,
                 &sketch_params,
                 &ref_sketches,
             );
@@ -135,7 +129,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                     sketch_params.use_aa,
                     &command_params,
                 );
-                let ani_res = chain::chain_seeds(&ref_sketch, &query_sketch, map_params);
+                let ani_res = chain::chain_seeds(ref_sketch, query_sketch, map_params);
                 let mut locked = anis.lock().unwrap();
                 locked.push(ani_res);
             });

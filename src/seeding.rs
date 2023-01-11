@@ -30,15 +30,13 @@ pub fn get_nonoverlap_orf(sorted_orfs: Vec<Orf>) -> Vec<Orf> {
                 };
                 laps_rc.insert(iv);
             }
-        } else {
-            if laps_f.find(orf.start, orf.end).count() == 0 {
-                let iv = Iv {
-                    start: orf.start,
-                    stop: orf.end,
-                    val: orf.phase,
-                };
-                laps_f.insert(iv);
-            }
+        } else if laps_f.find(orf.start, orf.end).count() == 0 {
+            let iv = Iv {
+                start: orf.start,
+                stop: orf.end,
+                val: orf.phase,
+            };
+            laps_f.insert(iv);
         }
     }
     for orf in laps_rc {
@@ -55,7 +53,7 @@ pub fn get_nonoverlap_orf(sorted_orfs: Vec<Orf>) -> Vec<Orf> {
             phase: orf.val,
         });
     }
-    return ret;
+    ret
 }
 
 pub fn get_orfs(string: &[u8], sketch_params: &SketchParams) -> Vec<Orf> {
@@ -111,7 +109,7 @@ pub fn get_orfs(string: &[u8], sketch_params: &SketchParams) -> Vec<Orf> {
     }
 
     orfs.sort_by(|x, y| (y.end - y.start).cmp(&(x.end - x.start)));
-    return orfs;
+    orfs
     //    let non_ol_orfs = get_nonoverlap_orf(orfs);
     //    dbg!(non_ol_orfs.len());
     //    return non_ol_orfs;
@@ -151,7 +149,7 @@ pub fn fmh_seeds_aa_with_orf(
     let forward_shift_rc = marker_k * 3 * 2 - 6;
     let max_mask = MarkerBits::MAX >> (num_bits - 3 * 2 * marker_k);
     let max_mask_aa = MarkerBits::MAX >> (num_bits - 5 * k);
-    let max_rev_mask = !(0 | (3 << (3 * 2 * marker_k - 2)));
+    let max_rev_mask = !(3 << (3 * 2 * marker_k - 2));
     //    let max_rev_mask_aa = !(0 | (31 << (5 * (marker_k - 1))));
     let three_mer_mask = 63;
     let threshold = u64::MAX / (c as u64);
@@ -202,7 +200,7 @@ pub fn fmh_seeds_aa_with_orf(
                 }
 
                 if j >= marker_k * 3 - 1 {
-                    let hash = mm_hash64(rolling_aa_kmer as u64);
+                    let hash = mm_hash64(rolling_aa_kmer);
                     if hash < threshold {
                         if seed {
                             //dbg!(rolling_aa_kmer, rolling_aa_kmer as SeedBits);
@@ -216,13 +214,11 @@ pub fn fmh_seeds_aa_with_orf(
                                 pos: i as GnPosition,
                                 canonical: !rc,
                                 contig_index,
-                                phase: phase as u8,
+                                phase,
                             });
                         }
-                        if hash < marker_threshold {
-                            if j >= marker_k * 3 - 1 {
-                                new_sketch.marker_seeds.insert(marker_rolling_aa_kmer);
-                            }
+                        if hash < marker_threshold && j >= marker_k * 3 - 1 {
+                            new_sketch.marker_seeds.insert(marker_rolling_aa_kmer);
                         }
                     }
                 }
@@ -263,7 +259,7 @@ pub fn fmh_seeds(
 
     let marker_reverse_shift_dist = 2 * (marker_k - 1);
     let marker_mask = MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * marker_k);
-    let marker_rev_mask = !(0 | (3 << 2 * marker_k - 2));
+    let marker_rev_mask = !(3 << (2 * marker_k - 2));
     let len = string.len();
     //    let threshold = i64::MIN + (u64::MAX / (c as u64)) as i64;
     //    let threshold_marker = i64::MIN + (u64::MAX / sketch_params.marker_c as u64) as i64;
@@ -337,7 +333,7 @@ pub fn fmh_seeds(
 
 pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>) -> usize {
     if kmer_seeds.is_none() {
-        return usize::MAX;
+        usize::MAX
     } else {
         let kmer_seeds = kmer_seeds.as_ref().unwrap();
         let mut count_vec = vec![];
@@ -350,7 +346,7 @@ pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>) -> usize {
         if max_repet_cutoff < 30 {
             max_repet_cutoff = usize::MAX;
         }
-        return max_repet_cutoff;
+        max_repet_cutoff
     }
 }
 
@@ -378,7 +374,7 @@ pub unsafe fn mm_hash256(kmer: __m256i) -> __m256i {
     let s6 = _mm256_slli_epi64(key, 31);
     key = _mm256_add_epi64(key, s6);
 
-    return key;
+    key
 }
 //use bio::data_structures::interval_tree::IntervalTree;
 //use fxhash::{hash, FxHashMap, FxHashSet};
@@ -435,7 +431,7 @@ pub unsafe fn avx2_fmh_seeds(
     let mm256_seed_mask = _mm256_set_epi64x(seed_mask, seed_mask, seed_mask, seed_mask);
     let marker_mask =
         (MarkerBits::MAX >> (std::mem::size_of::<MarkerBits>() * 8 - 2 * marker_k)) as i64;
-    let rev_marker_mask: u64 = !(0 | (3 << 2 * marker_k - 2));
+    let rev_marker_mask: u64 = !(3 << (2 * marker_k - 2));
     let rev_marker_mask = i64::from_le_bytes(rev_marker_mask.to_le_bytes());
     //    dbg!(u64::MAX / (c as u64));
     //    dbg!((u64::MAX / (c as u64)) as i64);

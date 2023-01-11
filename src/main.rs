@@ -451,7 +451,7 @@ fn main() {
 
     let (sketch_params, command_params) = parse::parse_params(&matches);
 
-    let cmd_txt = env::args().into_iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" ");
+    let cmd_txt = env::args().into_iter().collect::<Vec<String>>().join(" ");
     log::info!("{}", cmd_txt);
 
     //SKETCHING

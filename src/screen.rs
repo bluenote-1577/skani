@@ -43,7 +43,7 @@ pub fn screen_refs_filenames<'a>(
         })
         .map(|x| &ref_sketches[**x.0 as usize].file_name)
         .collect();
-    return ret;
+    ret
 
 }
 
@@ -82,7 +82,7 @@ pub fn screen_refs(
         })
         .map(|x| **x.0 as usize)
         .collect();
-    return ret;
+    ret
 }
 pub fn kmer_to_sketch_from_refs(ref_sketches: &Vec<Sketch>) -> KmerToSketch {
     let max_size: usize = ref_sketches.iter().map(|x| x.marker_seeds.len()).sum();
@@ -103,5 +103,5 @@ pub fn kmer_to_sketch_from_refs(ref_sketches: &Vec<Sketch>) -> KmerToSketch {
 //    kmer_stats.sort_unstable();
 //    let l = kmer_stats.len();
 //    debug!("{} - 10, {} - 50, {} - MAX", kmer_stats[l*1/10], kmer_stats[l/2], kmer_stats[l-1]);
-    return ret;
+    ret
 }

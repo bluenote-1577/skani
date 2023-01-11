@@ -94,10 +94,10 @@ pub struct CommandParams{
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 10;
     if aa{
-        return CHUNK_SIZE_AA;
+        CHUNK_SIZE_AA
     }
     else{
-        return CHUNK_SIZE_DNA;
+        CHUNK_SIZE_DNA
     }
 //    return (n as f64).sqrt() as usize * 3;
 }
@@ -152,7 +152,7 @@ impl SketchParams {
         if c > marker_c{
             panic!("We currently don't allow c > {}", marker_c);
         }
-        return SketchParams {
+        SketchParams {
             c,
             k,
             marker_c,
@@ -161,6 +161,6 @@ impl SketchParams {
             acgt_to_aa_encoding,
             acgt_to_aa_letters: DNA_TO_AA.to_vec(),
             orf_size,
-        };
+        }
     }
 }

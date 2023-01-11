@@ -14,17 +14,17 @@ use std::sync::Mutex;
 
 fn write_header(writer: &mut impl Write, id_str: &str, ci: bool) {
     if !ci {
-        write!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\n", id_str).unwrap();
+        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name", id_str).unwrap();
     } else {
-        write!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile\n", id_str, id_str, id_str).unwrap();
+        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile", id_str, id_str, id_str).unwrap();
     }
 }
 
 fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
     if !ci{
-        write!(
+        writeln!(
             writer,
-            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}",
             ani_res.ref_file,
             ani_res.query_file,
             ani_res.ani * 100.,
@@ -36,9 +36,9 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
         .unwrap();
     }
     else{
-        write!(
+        writeln!(
             writer,
-            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}\n",
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}",
             ani_res.ref_file,
             ani_res.query_file,
             ani_res.ani * 100.,
@@ -70,8 +70,8 @@ pub fn fastx_to_sketches(
             ref_file.to_string(),
             sketch_params.use_aa,
         );
-        let reader = parse_fastx_file(&ref_file);
-        if !reader.is_ok() {
+        let reader = parse_fastx_file(ref_file);
+        if reader.is_err() {
             if ref_file.contains(".sketch"){
                 warn!("{} is not a valid fasta/fastq file but has the .sketch extension. Not all inputs have .sketch extension, so fasta/fastq is assumed.", ref_file);
             }
@@ -85,7 +85,7 @@ pub fn fastx_to_sketches(
             trace!("Sketching {} {}", new_sketch.file_name, i);
             while let Some(record) = reader.next() {
                 if record.is_ok() {
-                    let record = record.expect(&format!("Invalid record for file {}", ref_file));
+                    let record = record.unwrap_or_else(|_| panic!("Invalid record for file {}", ref_file));
                     let contig = record.id();
                     let seq = record.seq();
                     if seq.len() >= MIN_LENGTH_CONTIG {
@@ -111,7 +111,7 @@ pub fn fastx_to_sketches(
                                 unsafe {
                                     seeding::avx2_fmh_seeds(
                                         &seq,
-                                        &sketch_params,
+                                        sketch_params,
                                         j as u32,
                                         &mut new_sketch,
                                         seed,
@@ -120,7 +120,7 @@ pub fn fastx_to_sketches(
                             } else {
                                 seeding::fmh_seeds(
                                     &seq,
-                                    &sketch_params,
+                                    sketch_params,
                                     j as u32,
                                     &mut new_sketch,
                                     seed,
@@ -152,7 +152,7 @@ pub fn fastx_to_sketches(
     });
     let mut ref_sketches = ref_sketches.into_inner().unwrap();
     ref_sketches.sort();
-    return ref_sketches;
+    ref_sketches
 }
 pub fn fastx_to_multiple_sketch_rewrite(
     ref_files: &Vec<String>,
@@ -164,8 +164,8 @@ pub fn fastx_to_multiple_sketch_rewrite(
     index_vec.shuffle(&mut thread_rng());
     index_vec.into_par_iter().for_each(|i| {
         let ref_file = &ref_files[i];
-        let reader = parse_fastx_file(&ref_file);
-        if !reader.is_ok() {
+        let reader = parse_fastx_file(ref_file);
+        if reader.is_err() {
             warn!("{} is not a valid fasta/fastq file; skipping.", ref_file);
         } else {
             let mut j = 0;
@@ -173,7 +173,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
             trace!("Sketching {} {}", ref_file, i);
             while let Some(record) = reader.next() {
                 if record.is_ok() {
-                    let record = record.expect(&format!("Invalid record for file {}", ref_file));
+                    let record = record.unwrap_or_else(|_| panic!("Invalid record for file {}", ref_file));
                     let contig = record.id();
                     let seq = record.seq();
                     if seq.len() >= MIN_LENGTH_CONTIG {
@@ -195,7 +195,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
                             seeding::fmh_seeds_aa_with_orf(
                                 &seq,
                                 sketch_params,
-                                0 as u32,
+                                0_u32,
                                 &mut new_sketch,
                                 orfs,
                                 seed,
@@ -206,8 +206,8 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                 unsafe {
                                     seeding::avx2_fmh_seeds(
                                         &seq,
-                                        &sketch_params,
-                                        0 as u32,
+                                        sketch_params,
+                                        0_u32,
                                         &mut new_sketch,
                                         seed,
                                     );
@@ -215,8 +215,8 @@ pub fn fastx_to_multiple_sketch_rewrite(
                             } else {
                                 seeding::fmh_seeds(
                                     &seq,
-                                    &sketch_params,
-                                    0 as u32,
+                                    sketch_params,
+                                    0_u32,
                                     &mut new_sketch,
                                     seed,
                                 );
@@ -236,7 +236,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
     });
     let mut ref_sketches = ref_sketches.into_inner().unwrap();
     ref_sketches.sort();
-    return ref_sketches;
+    ref_sketches
 }
 
 pub fn write_phyllip_matrix(
@@ -248,10 +248,10 @@ pub fn write_phyllip_matrix(
     aai: bool,
 ) {
     let _id_str = if aai { "AAI" } else { "ANI" };
-    if file_name == "" {
+    if file_name.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write!(&mut handle, "{}\n", sketches.len()).unwrap();
+        writeln!(&mut handle, "{}", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -279,12 +279,12 @@ pub fn write_phyllip_matrix(
                     write!(&mut handle, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
                 }
             }
-            write!(&mut handle, "\n").unwrap();
+            writeln!(&mut handle).unwrap();
         }
 
-        let af_mat_file = format!("skani_matrix.af");
+        let af_mat_file = "skani_matrix.af".to_string();
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(&mut af_file, "{}\n", sketches.len()).unwrap();
+        writeln!(&mut af_file, "{}", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -315,17 +315,17 @@ pub fn write_phyllip_matrix(
                     .unwrap();
                 }
             }
-            write!(&mut af_file, "\n").unwrap();
+            writeln!(&mut af_file).unwrap();
         }
 
         info!("Aligned fraction matrix written to skani_matrix.af");
     } else {
-        let ani_mat_file = format!("{}", file_name);
+        let ani_mat_file = file_name.to_string();
         let af_mat_file = format!("{}.af", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         let mut af_file = BufWriter::new(File::create(af_mat_file).unwrap());
-        write!(&mut ani_file, "{}\n", sketches.len()).unwrap();
-        write!(&mut af_file, "{}\n", sketches.len()).unwrap();
+        writeln!(&mut ani_file, "{}", sketches.len()).unwrap();
+        writeln!(&mut af_file, "{}", sketches.len()).unwrap();
         for i in 0..sketches.len() {
             let name;
             if use_contig_names {
@@ -361,8 +361,8 @@ pub fn write_phyllip_matrix(
                     .unwrap();
                 }
             }
-            write!(&mut ani_file, "\n").unwrap();
-            write!(&mut af_file, "\n").unwrap();
+            writeln!(&mut ani_file).unwrap();
+            writeln!(&mut af_file).unwrap();
         }
 
         info!(
@@ -380,7 +380,7 @@ pub fn write_sparse_matrix(
     est_ci: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
-    if file_name == "" {
+    if file_name.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
         write_header(&mut handle, id_str, est_ci);
@@ -393,7 +393,7 @@ pub fn write_sparse_matrix(
             }
         }
     } else {
-        let ani_mat_file = format!("{}", file_name);
+        let ani_mat_file = file_name.to_string();
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
         write_header(&mut ani_file, id_str, est_ci);
         for i in anis.keys() {
@@ -409,7 +409,7 @@ pub fn write_sparse_matrix(
 pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai: bool, est_ci: bool) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
-    let out_file = format!("{}", file_name);
+    let out_file = file_name.to_string();
 
     for i in 0..anis.len() {
         if anis[i].ani < 0. || anis[i].ani.is_nan() {
@@ -428,7 +428,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
     let mut sorted_keys = query_file_result_map.keys().collect::<Vec<&&String>>();
     sorted_keys.sort();
 
-    if out_file == "" {
+    if out_file.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
         write_header(&mut handle, id_str, est_ci);
@@ -437,7 +437,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, &anis[i], est_ci);
+                write_ani_res(&mut handle, anis[i], est_ci);
             }
         }
     } else {
@@ -449,7 +449,7 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, &anis[i], est_ci);
+                write_ani_res(&mut handle, anis[i], est_ci);
             }
         }
     }
@@ -473,13 +473,11 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
                     *locked = temp_sketch_param;
                     let mut locked = ret_ref_sketches.lock().unwrap();
                     locked.push(temp_ref_sketch);
-                } else {
-                    if sketch_file != "markers.bin" {
-                        error!(
-                            "{} is not a valid .sketch file or is corrupted.",
-                            sketch_file
-                        );
-                    }
+                } else if sketch_file != "markers.bin" {
+                    error!(
+                        "{} is not a valid .sketch file or is corrupted.",
+                        sketch_file
+                    );
                 }
             }
         });
@@ -488,14 +486,14 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
     let mut ret_ref_sketches = ret_ref_sketches.into_inner().unwrap();
 
     ret_ref_sketches.sort_by(|x, y| x.file_name.cmp(&y.file_name));
-    return (ret_sketch_params, ret_ref_sketches);
+    (ret_sketch_params, ret_ref_sketches)
 }
 
 pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec<Sketch>) {
     let reader = BufReader::new(File::open(marker_file).unwrap());
     let res: Result<(SketchParams, Vec<Sketch>), _> = bincode::deserialize_from(reader);
     if res.is_ok() {
-        return res.unwrap();
+        res.unwrap()
     } else {
         error!("Problem reading {}. Exiting. ", marker_file);
         std::process::exit(1)
