@@ -87,7 +87,7 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 
 ### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
 
-For more information about using the specific skani subcommands. 
+For more information about using the specific skani subcommands, see the guide linked above. 
 
 ### skani tutorials
 
@@ -96,7 +96,7 @@ For more information about using the specific skani subcommands.
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
-For more information about topics such as:
+See the advanced usage guide linked above for more information about topics such as:
 
 * using skani for long-reads
 * making skani for memory efficient for huge data sets
