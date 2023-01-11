@@ -28,6 +28,7 @@ rust-lapper = "*"
 gcollections = "*"
 statrs = "*"
 tikv-jemallocator = "*"
+fastrand="*"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"

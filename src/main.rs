@@ -179,6 +179,11 @@ fn main() {
                         .help("Max number of results to show for each query.\t[default: unlimited]")
                         .takes_value(true)
                 )
+                .arg(
+                    Arg::new(CONF_INTERVAL)
+                        .long(CMD_CONF_INTERVAL)
+                        .help(H_CONF_INTERVAL)
+                )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new("marker_c")
@@ -289,10 +294,15 @@ fn main() {
                         .takes_value(true)
                 )
                 .arg(
+                    Arg::new(CONF_INTERVAL)
+                        .long(CMD_CONF_INTERVAL)
+                        .help(H_CONF_INTERVAL_TRI)
+                )
+                .arg(
                     Arg::new("sparse")
                         .long("sparse")
                         .short('E')
-                        .help("Output sparse matrix for only valid ANI in the same form as `skani dist`."),
+                        .help("Output sparse matrix in the same form as `skani dist`. Only pairs with aligned fraction > --min-aligned-fraction are output."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
@@ -305,7 +315,7 @@ fn main() {
                 .arg(
                     Arg::new("k")
                         .short('k')
-                        .help("k-mer size.\t[default: ANI 15, AAI 6]")
+                        .help("k-mer size.\t[default: 15]")
                         .takes_value(true)
                         .hidden(true)
                 )
@@ -385,6 +395,11 @@ fn main() {
                         .help("Output file name; rewrites file by default\t[default: output to stdout].")
                         .takes_value(true)
                         .display_order(1)
+                )
+                .arg(
+                    Arg::new(CONF_INTERVAL)
+                        .long(CMD_CONF_INTERVAL)
+                        .help(H_CONF_INTERVAL)
                 )
                 .arg(
                     Arg::new(MIN_ALIGN_FRAC)

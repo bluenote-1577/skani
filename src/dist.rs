@@ -152,6 +152,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         &command_params.out_file_name,
         command_params.max_results,
         sketch_params.use_aa,
+        command_params.est_ci,
     );
     info!("ANI/AAI calculation time: {}", now.elapsed().as_secs_f32());
 }

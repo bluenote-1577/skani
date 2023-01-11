@@ -1,6 +1,7 @@
 use crate::params::*;
 use crate::types::*;
 use bio::data_structures::interval_tree::IntervalTree;
+use fastrand::*;
 use fxhash::FxHashMap;
 use log::*;
 use partitions::*;
@@ -12,12 +13,12 @@ use interval::interval_set::*;
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
 fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
-    let score_query = (q_sk_len as f64).sqrt()
-        * med_ctg_len_q;
-//        * (f64::min(med_ctg_len_q, 200000.));
-    let score_ref = (r_sk_len as f64).sqrt()
-        * med_ctg_len_r;
-//        * (f64::min(med_ctg_len_r, 200000.));
+    let score_query = (q_sk_len as f64)
+//        * med_ctg_len_q;
+        * (f64::min(med_ctg_len_q, 300000.));
+    let score_ref = (r_sk_len as f64)
+//        * med_ctg_len_r;
+        * (f64::min(med_ctg_len_r, 300000.));
     return score_query > score_ref;
 
 
@@ -34,6 +35,35 @@ fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64
 //    else{
 //        return norm_len_q > norm_len_r
 //    }
+}
+
+fn bootstrap_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64){
+    let mut res = vec![];
+    let mut mult_ani_ests = vec![];
+    fastrand::seed(7);
+    let num_samp = ani_ests.len();
+    //Return no confidence interval if number of samples is too small. 
+    if num_samp < 10 {
+        return (0.,1.);
+    }
+    for (ani,mult) in ani_ests.iter(){
+        for _ in 0..*mult{
+            mult_ani_ests.push(ani);
+        }
+    }
+    let iters = 100;
+    for _ in 0..iters{
+        let mut rand_vec = vec![];
+        rand_vec.reserve(num_samp);
+        for _ in 0..num_samp{
+            rand_vec.push(fastrand::usize(..mult_ani_ests.len()));
+        }
+        let sum = rand_vec.into_iter().map(|x| mult_ani_ests[x]).sum::<f64>();
+        res.push(sum/(num_samp as f64));
+    }
+    res.sort_by(|x,y| x.partial_cmp(&y).unwrap());
+    return (res[iters * 5 / 100 - 1],res[iters * 95 / 100 - 1]);
+
 }
 
 fn z_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64) {
@@ -415,7 +445,8 @@ fn calculate_ani(
     //    let mut final_ani = weighted_avg / total_weight_interval as f64;
     let mut final_ani = weighted_avg / total_multiplicitiy as f64;
 
-    let (upper, lower) = z_interval(&ani_ests);
+//    let (upper, lower) = z_interval(&ani_ests);
+    let ci = bootstrap_interval(&ani_ests);
     let covered_query = f64::min(
         1.,
         total_query_bases as f64 / query_sketch.total_sequence_length as f64,
@@ -427,8 +458,6 @@ fn calculate_ani(
     let q_string;
     q_string = &query_sketch.file_name;
     let id_string = if map_params.amino_acid { "AAI" } else { "ANI" };
-    let ci =(f64::min(final_ani + upper,1.0),
-        f64::max(final_ani - lower,0.));
     debug!(
         "Query {} Ref {} - {} {}, +/- = {}/{}. Covered {}",
         q_string,

@@ -55,6 +55,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let amino_acid;
     if matches_subc.is_present("aai") {
+        warn!("Amino acid mode (AAI) detected. This mode is not stable.");
         amino_acid = true;
     } else {
         amino_acid = false;
@@ -148,12 +149,15 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap();
 
     let min_aligned_frac;
+    let est_ci;
     if mode != Mode::Sketch{
         let def_maf = if amino_acid{ D_FRAC_COVER_CUTOFF_AA} else {D_FRAC_COVER_CUTOFF};
         min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or(def_maf).parse::<f64>().unwrap();
+        est_ci = matches_subc.is_present(CONF_INTERVAL);
     }
     else{
         min_aligned_frac = 0.;
+        est_ci = false;
     }
 
     let marker_c = matches_subc.value_of("marker_c").unwrap_or(MARKER_C).parse::<usize>().unwrap();
@@ -262,7 +266,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
-        keep_refs: false
+        keep_refs: false,
+        est_ci
     };
 
     return (sketch_params, command_params);
@@ -334,6 +339,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
 
     let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-1.0").parse::<f64>().unwrap();
     let keep_refs = matches_subc.is_present(KEEP_REFS);
+    let est_ci = matches_subc.is_present(CONF_INTERVAL);
 
     let command_params = CommandParams {
         screen,
@@ -353,6 +359,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         individual_contig_r: false,
         min_aligned_frac,
         keep_refs,
+        est_ci,
     };
 
     if command_params.ref_files.len() == 0 {

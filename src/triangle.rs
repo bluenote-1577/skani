@@ -91,7 +91,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         });
     let anis = anis.into_inner().unwrap();
     if command_params.sparse {
-        file_io::write_sparse_matrix(&anis, &ref_sketches, &command_params.out_file_name, sketch_params.use_aa);
+        file_io::write_sparse_matrix(&anis, &ref_sketches, &command_params.out_file_name, sketch_params.use_aa, command_params.est_ci);
     } else {
         file_io::write_phyllip_matrix(
             &anis,

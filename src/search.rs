@@ -228,6 +228,7 @@ pub fn search(command_params: CommandParams) {
         &command_params.out_file_name,
         command_params.max_results,
         sketch_params.use_aa,
+        command_params.est_ci
     );
     info!("Searching time: {}", now.elapsed().as_secs_f32());
 }

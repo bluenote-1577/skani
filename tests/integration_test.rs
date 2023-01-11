@@ -119,6 +119,20 @@ fn test_search() {
         .arg("./test_files/query_list.txt")
         .assert();
     assert.success().code(0);
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_sketch_dir/")
+        .arg("./tests/results/test_sketch_dir/markers.bin")
+        .arg("./tests/results/test_sketch_dir/e.coli-EC590.fasta.sketch")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    println!("{}",out_line);
+    assert!(!out_line.contains("WARN"));
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -131,6 +145,9 @@ fn test_search() {
         .arg("5")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
     println!("AAI search test");
     println!(
         "{}",
@@ -148,6 +165,9 @@ fn test_search() {
     assert!(ani > 0.70);
     //assert!(af_q > 0.80);
     assert!(af_r > 0.50);
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
 }
 #[test]
 #[serial]
@@ -222,6 +242,9 @@ fn test_dist() {
     assert!(ani < 100.);
     assert!(af_q > 90.);
     assert!(af_r > 90.);
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
 
     println!("ANI E.coli test");
     println!(
@@ -326,7 +349,7 @@ fn test_dist() {
         .arg("-r")
         .arg("./test_files/o157_reads.fastq")
         .arg("./test_files/o157_plasmid.fasta")
-        .arg("-a")
+        .arg("--ci")
         .assert();
     assert.success().code(0);
 
@@ -353,6 +376,7 @@ fn test_dist() {
         .arg("dist")
         .arg("-r")
         .arg("./tests/results/test_sketch_dir1/e.coli-EC590.fasta.sketch")
+        .arg("./tests/results/test_sketch_dir1/markers.bin")
         .arg("-q")
         .arg("./test_files/o157_reads.fastq")
         .arg("--qi")
@@ -366,10 +390,11 @@ fn test_dist() {
     let std_bytes = &cmd.output().as_ref().unwrap().stdout.clone()[0..500];
     let ste_bytes = cmd.output().as_ref().unwrap().stderr.clone();
     let stdout = std::str::from_utf8(&std_bytes).unwrap();
-    let stderr = std::str::from_utf8(&std_bytes).unwrap();
+    let stderr = std::str::from_utf8(&ste_bytes).unwrap();
     println!("read test");
     println!("{}", stdout);
     assert!(stdout.split('\t').collect::<Vec<&str>>().len() > 10);
+    assert!(!stderr.contains("WARN") && !stderr.contains("ERROR"));
     cmd.assert().success().code(0);
 
     //println!("{}", std::str::from_utf8(&cmd.output().as_ref().unwrap().stderr).unwrap());
@@ -392,7 +417,7 @@ fn test_triangle() {
     assert.success().code(0);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
+    let out = cmd
         .arg("triangle")
         .arg("-l")
         .arg("./test_files/query_list.txt")
@@ -400,9 +425,8 @@ fn test_triangle() {
         .arg("0.9")
         .arg("--robust")
         .arg("-k")
-        .arg("13")
-        .assert();
-    assert.success().code(0);
+        .arg("13");
+    out.assert().success().code(0);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -419,6 +443,9 @@ fn test_triangle() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap()
     );
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -431,6 +458,8 @@ fn test_triangle() {
     //    assert
     //        .success()
     //        .code(0);
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
@@ -457,4 +486,7 @@ fn test_triangle() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
+    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
+    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
 }

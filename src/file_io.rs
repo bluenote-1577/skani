@@ -12,6 +12,47 @@ use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
 use std::sync::Mutex;
 
+fn write_header(writer: &mut impl Write, id_str: &str, ci: bool) {
+    if !ci {
+        write!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\n", id_str).unwrap();
+    } else {
+        write!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile\n", id_str, id_str, id_str).unwrap();
+    }
+}
+
+fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
+    if !ci{
+        write!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
+            ani_res.ref_file,
+            ani_res.query_file,
+            ani_res.ani * 100.,
+            ani_res.align_fraction_ref * 100.,
+            ani_res.align_fraction_query * 100.,
+            ani_res.ref_contig,
+            ani_res.query_contig,
+        )
+        .unwrap();
+    }
+    else{
+        write!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}\n",
+            ani_res.ref_file,
+            ani_res.query_file,
+            ani_res.ani * 100.,
+            ani_res.align_fraction_ref * 100.,
+            ani_res.align_fraction_query * 100.,
+            ani_res.ref_contig,
+            ani_res.query_contig,
+            ani_res.ci_lower * 100.,
+            ani_res.ci_upper * 100.,
+        )
+        .unwrap();
+    }
+}
+
 pub fn fastx_to_sketches(
     ref_files: &Vec<String>,
     sketch_params: &SketchParams,
@@ -266,7 +307,12 @@ pub fn write_phyllip_matrix(
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(&mut af_file, "\t{:.2}", anis[&x][&y].align_fraction_query * 100.).unwrap();
+                    write!(
+                        &mut af_file,
+                        "\t{:.2}",
+                        anis[&x][&y].align_fraction_query * 100.
+                    )
+                    .unwrap();
                 }
             }
             write!(&mut af_file, "\n").unwrap();
@@ -307,7 +353,12 @@ pub fn write_phyllip_matrix(
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
                     write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
-                    write!(&mut af_file, "\t{:.2}", anis[&x][&y].align_fraction_query * 100.).unwrap();
+                    write!(
+                        &mut af_file,
+                        "\t{:.2}",
+                        anis[&x][&y].align_fraction_query * 100.
+                    )
+                    .unwrap();
                 }
             }
             write!(&mut ani_file, "\n").unwrap();
@@ -326,56 +377,36 @@ pub fn write_sparse_matrix(
     _sketches: &Vec<Sketch>,
     file_name: &str,
     aai: bool,
+    est_ci: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     if file_name == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        write_header(&mut handle, id_str, est_ci);
+        //        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write!(
-                        &mut handle,
-                        "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
-                        ani_res.ref_file,
-                        ani_res.query_file,
-                        ani_res.ani * 100.,
-                        ani_res.align_fraction_ref * 100.,
-                        ani_res.align_fraction_query * 100.,
-                        ani_res.ref_contig,
-                        ani_res.query_contig,
-                    )
-                    .unwrap();
+                    write_ani_res(&mut handle, ani_res, est_ci);
                 }
             }
         }
     } else {
         let ani_mat_file = format!("{}", file_name);
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
-        write!(&mut ani_file,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        write_header(&mut ani_file, id_str, est_ci);
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write!(
-                        &mut ani_file,
-                        "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
-                        ani_res.ref_file,
-                        ani_res.query_file,
-                        ani_res.ani * 100.,
-                        ani_res.align_fraction_ref * 100.,
-                        ani_res.align_fraction_query * 100.,
-                        ani_res.ref_contig,
-                        ani_res.query_contig,
-                    )
-                    .unwrap();
+                    write_ani_res(&mut ani_file, ani_res, est_ci);
                 }
             }
         }
     }
 }
 
-pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai: bool) {
+pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai: bool, est_ci: bool) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
     let out_file = format!("{}", file_name);
@@ -400,48 +431,25 @@ pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize,
     if out_file == "" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-
-        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\n", id_str).unwrap();
+        write_header(&mut handle, id_str, est_ci);
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write!(
-                    &mut handle,
-                    "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
-                    anis[i].ref_file,
-                    anis[i].query_file,
-                    anis[i].ani * 100.,
-                    anis[i].align_fraction_ref * 100.,
-                    anis[i].align_fraction_query * 100.,
-                    anis[i].ref_contig,
-                    anis[i].query_contig,
-                )
-                .unwrap();
+                write_ani_res(&mut handle, &anis[i], est_ci);
             }
         }
     } else {
         let mut handle;
         handle = File::create(out_file).expect(file_name);
-        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        write_header(&mut handle, id_str, est_ci);
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write!(
-                    &mut handle,
-                    "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\n",
-                    anis[i].ref_file,
-                    anis[i].query_file,
-                    anis[i].ani * 100.,
-                    anis[i].align_fraction_ref * 100.,
-                    anis[i].align_fraction_query * 100.,
-                    anis[i].ref_contig,
-                    anis[i].query_contig,
-                )
-                .unwrap();
+                write_ani_res(&mut handle, &anis[i], est_ci);
             }
         }
     }
@@ -456,8 +464,7 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
         .into_par_iter()
         .for_each(|i| {
             let sketch_file = &ref_files[i];
-            if !sketch_file.contains("markers.bin")
-            {
+            if !sketch_file.contains("markers.bin") {
                 let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
                 let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
                 if res.is_ok() {
