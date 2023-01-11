@@ -12,7 +12,7 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 bacterial genomes takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
 ##  Install
 
