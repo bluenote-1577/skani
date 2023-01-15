@@ -104,9 +104,9 @@ See the advanced usage guide linked above for more information about topics such
 
 ## Output
 
-If the resulting aligned fraction for the two genomes is < 15%, no output is given. This can be changed, see the `--min-aligned-fraction` option.
+If the resulting aligned fraction for the two genomes is < 15%, no output is given. 
 
-**In practice, this means that only results with > ~82% ANI are reliably output** (with default parameters). 
+**In practice, this means that only results with > ~82% ANI are reliably output** (with default parameters). See the [skani advanced usage guide](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide) for information on how to compare lower ANI genomes. 
 
 The default output for `search` and `dist` looks like
 ```
