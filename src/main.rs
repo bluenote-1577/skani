@@ -302,7 +302,7 @@ fn main() {
                     Arg::new("sparse")
                         .long("sparse")
                         .short('E')
-                        .help("Output sparse matrix in the same form as `skani dist`. Only pairs with aligned fraction > --min-aligned-fraction are output."),
+                        .help("Output comparisons in a row-by-row form (i.e. sparse matrix) in the same form as `skani dist`. Only pairs with aligned fraction > --min-af are output."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(

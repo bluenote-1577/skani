@@ -21,7 +21,7 @@ fn write_header(writer: &mut impl Write, id_str: &str, ci: bool) {
 }
 
 fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
-    if !ci{
+    if !ci {
         writeln!(
             writer,
             "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}",
@@ -34,8 +34,7 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
             ani_res.query_contig,
         )
         .unwrap();
-    }
-    else{
+    } else {
         writeln!(
             writer,
             "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}",
@@ -173,7 +172,8 @@ pub fn fastx_to_multiple_sketch_rewrite(
             trace!("Sketching {} {}", ref_file, i);
             while let Some(record) = reader.next() {
                 if record.is_ok() {
-                    let record = record.unwrap_or_else(|_| panic!("Invalid record for file {}", ref_file));
+                    let record =
+                        record.unwrap_or_else(|_| panic!("Invalid record for file {}", ref_file));
                     let contig = record.id();
                     let seq = record.seq();
                     if seq.len() >= MIN_LENGTH_CONTIG {
@@ -300,6 +300,10 @@ pub fn write_phyllip_matrix(
                 end = i;
             }
             for j in 0..end {
+                if i == j {
+                    write!(&mut af_file, "\t{:.2}", 100.).unwrap();
+                    continue
+                }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
                 if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
@@ -307,12 +311,21 @@ pub fn write_phyllip_matrix(
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(
-                        &mut af_file,
-                        "\t{:.2}",
-                        anis[&x][&y].align_fraction_query * 100.
-                    )
-                    .unwrap();
+                    if j > i {
+                        write!(
+                            &mut af_file,
+                            "\t{:.2}",
+                            anis[&x][&y].align_fraction_ref * 100.
+                        )
+                        .unwrap();
+                    } else {
+                        write!(
+                            &mut af_file,
+                            "\t{:.2}",
+                            anis[&x][&y].align_fraction_query * 100.
+                        )
+                        .unwrap();
+                    }
                 }
             }
             writeln!(&mut af_file).unwrap();
@@ -342,6 +355,11 @@ pub fn write_phyllip_matrix(
                 end = i;
             }
             for j in 0..end {
+                if i == j{
+                    write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
+                    write!(&mut af_file, "\t{:.2}", 100.).unwrap();
+                    continue
+                }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
 
@@ -353,12 +371,21 @@ pub fn write_phyllip_matrix(
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
                     write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
-                    write!(
-                        &mut af_file,
-                        "\t{:.2}",
-                        anis[&x][&y].align_fraction_query * 100.
-                    )
-                    .unwrap();
+                    if j > i {
+                        write!(
+                            &mut af_file,
+                            "\t{:.2}",
+                            anis[&x][&y].align_fraction_ref * 100.
+                        )
+                        .unwrap();
+                    } else {
+                        write!(
+                            &mut af_file,
+                            "\t{:.2}",
+                            anis[&x][&y].align_fraction_query * 100.
+                        )
+                        .unwrap();
+                    }
                 }
             }
             writeln!(&mut ani_file).unwrap();
@@ -406,7 +433,13 @@ pub fn write_sparse_matrix(
     }
 }
 
-pub fn write_query_ref_list(anis: &Vec<AniEstResult>, file_name: &str, n: usize, aai: bool, est_ci: bool) {
+pub fn write_query_ref_list(
+    anis: &Vec<AniEstResult>,
+    file_name: &str,
+    n: usize,
+    aai: bool,
+    est_ci: bool,
+) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
     let out_file = file_name.to_string();

@@ -80,9 +80,9 @@ pub fn map_params_from_sketch(
     let mut frac_cover_cutoff = command_params.min_aligned_frac;
     if frac_cover_cutoff < 0.{
         if amino_acid {
-            frac_cover_cutoff = D_FRAC_COVER_CUTOFF_AA.parse::<f64>().unwrap();
+            frac_cover_cutoff = D_FRAC_COVER_CUTOFF_AA.parse::<f64>().unwrap()/100.;
         } else {
-            frac_cover_cutoff = D_FRAC_COVER_CUTOFF.parse::<f64>().unwrap();
+            frac_cover_cutoff = D_FRAC_COVER_CUTOFF.parse::<f64>().unwrap()/100.;
         }
     }
     let length_cover_cutoff = 5000000;

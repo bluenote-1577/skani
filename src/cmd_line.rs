@@ -1,6 +1,6 @@
 pub const MIN_ALIGN_FRAC: &str = "min aligned frac";
-pub const CMD_MIN_ALIGN_FRAC: &str = "min-aligned-fraction";
-pub const H_MIN_ALIGN_FRAC: &str = "Only output ANI values where one genome has aligned fraction > than this value.\t[default: 0.15]";
+pub const CMD_MIN_ALIGN_FRAC: &str = "min-af";
+pub const H_MIN_ALIGN_FRAC: &str = "Only output ANI values where one genome has aligned fraction > than this value.\t[default: 15]";
 
 pub const IND_CTG_QRY: &str = "individual contig query";
 pub const CMD_IND_CTG_QRY: &str = "qi";

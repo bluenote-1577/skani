@@ -469,8 +469,8 @@ fn test_triangle() {
         .arg("-o")
         .arg("./tests/results/output")
         .arg("-E")
-        .arg("--min-aligned-fraction")
-        .arg("0.03")
+        .arg("--min-af")
+        .arg("3")
         .assert();
     assert.success().code(0);
 

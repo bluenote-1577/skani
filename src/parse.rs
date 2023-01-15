@@ -152,7 +152,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let est_ci;
     if mode != Mode::Sketch{
         let def_maf = if amino_acid{ D_FRAC_COVER_CUTOFF_AA} else {D_FRAC_COVER_CUTOFF};
-        min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or(def_maf).parse::<f64>().unwrap();
+        min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or(def_maf).parse::<f64>().unwrap()/100.;
         est_ci = matches_subc.is_present(CONF_INTERVAL);
     }
     else{
@@ -327,7 +327,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .value_of("s")
         .unwrap_or("0.00")
         .parse::<f64>()
-        .unwrap();
+        .unwrap()/100.;
     let screen;
     let individual_contig_q = matches_subc.is_present("individual contig query");
     if query_files.len() > FULL_INDEX_THRESH || individual_contig_q{
@@ -337,7 +337,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         screen = matches_subc.is_present(FULL_INDEX);
     }
 
-    let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-1.0").parse::<f64>().unwrap();
+    let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-100.0").parse::<f64>().unwrap()/100.;
     let keep_refs = matches_subc.is_present(KEEP_REFS);
     let est_ci = matches_subc.is_present(CONF_INTERVAL);
 
