@@ -12,7 +12,7 @@ skani uses an approximate mapping method to get orthology without base-level ali
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed GTDB database (>65000 genomes) takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 bacterial genomes takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
 ##  Install
 
@@ -104,9 +104,9 @@ See the advanced usage guide linked above for more information about topics such
 
 ## Output
 
-If the resulting aligned fraction for the two genomes is < 15%, no output is given. This can be changed, see the `--min-aligned-fraction` option.
+If the resulting aligned fraction for the two genomes is < 15%, no output is given. 
 
-**In practice, this means that only results with > ~82% ANI are reliably output** (with default parameters). 
+**In practice, this means that only results with > ~82% ANI are reliably output** (with default parameters). See the [skani advanced usage guide](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide) for information on how to compare lower ANI genomes. 
 
 The default output for `search` and `dist` looks like
 ```
