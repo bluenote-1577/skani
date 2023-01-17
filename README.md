@@ -60,6 +60,10 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 
 ## Quick start
 
+### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands, see the guide linked above. 
+
 All skani modes take the argument `-t` as number of threads (default: 3).
 
 ```sh
@@ -84,10 +88,6 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 ```
 
 ## Tutorials and manuals
-
-### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
-
-For more information about using the specific skani subcommands, see the guide linked above. 
 
 ### skani tutorials
 
