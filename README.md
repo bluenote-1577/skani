@@ -50,12 +50,18 @@ chmod +x skani
 ./skani -h
 ```
 
-Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). This seems to be not a huge issue from brief testing. 
+Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). Probably not a huge deal. 
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
+#### Option 3: Conda (Pending bioconda pull-request...)
 
+```sh
+conda install -c bioconda skani
+```
+
+Note: skani installed from bioconda may not be guaranteed to be the latest version.
 
 
 ## Quick start
