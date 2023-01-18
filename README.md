@@ -38,7 +38,7 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### Option 2 (Convenient): Pre-built linux statically compiled executable
+#### Option 2: Pre-built linux statically compiled executable
 
 We offer a pre-built statically compiled executable for 64-bit linux systems. That is, if you're on a linux 64-bit system, you can just download the binary and run it without installing anything. 
 
@@ -55,7 +55,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (Pending bioconda pull-request...)
+#### Option 3: Conda (pending bioconda pull-request...)
 
 ```sh
 conda install -c bioconda skani
