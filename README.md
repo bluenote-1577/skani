@@ -60,6 +60,10 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 
 ## Quick start
 
+### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
+
 All skani modes take the argument `-t` as number of threads (default: 3).
 
 ```sh
@@ -84,10 +88,6 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 ```
 
 ## Tutorials and manuals
-
-### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
-
-For more information about using the specific skani subcommands, see the guide linked above. 
 
 ### skani tutorials
 
@@ -125,4 +125,4 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 ## Feature requests, issues
 
-skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accomodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
+skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accommodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
