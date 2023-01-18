@@ -62,7 +62,7 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 
 ### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
 
-For more information about using the specific skani subcommands, see the guide linked above. 
+For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
 
 All skani modes take the argument `-t` as number of threads (default: 3).
 
