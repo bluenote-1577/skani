@@ -55,7 +55,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (pending bioconda pull-request...)
+#### Option 3: Conda (may not be ready yet; [pending bioconda pull-request](https://github.com/bioconda/bioconda-recipes/pull/38886))
 
 ```sh
 conda install -c bioconda skani
