@@ -1,9 +1,9 @@
 use crate::params::*;
-
 use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
+use natord::*;
 use needletail::parse_fastx_file;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -105,18 +105,6 @@ pub fn fastx_to_sketches(
                                 seed,
                             )
                         } else {
-                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") && true{
-                                unsafe {
-                                    seeding::avx2_fmh_seeds(
-                                        &seq,
-                                        sketch_params,
-                                        j as u32,
-                                        &mut new_sketch,
-                                        seed,
-                                    );
-                                }
-                            } else {
                                 seeding::fmh_seeds(
                                     &seq,
                                     sketch_params,
@@ -124,7 +112,6 @@ pub fn fastx_to_sketches(
                                     &mut new_sketch,
                                     seed,
                                 );
-                            }
                         }
                         //new_sketch.contig_order = 0;
                         j += 1;
@@ -150,7 +137,11 @@ pub fn fastx_to_sketches(
         }
     });
     let mut ref_sketches = ref_sketches.into_inner().unwrap();
-    ref_sketches.sort();
+    //Natural sort.
+    ref_sketches
+        .sort_by(|x, y| natord::compare(&x.file_name.to_lowercase(), &y.file_name.to_lowercase()));
+    //Alphabetical sort.
+    //ref_sketches.sort();
     ref_sketches
 }
 pub fn fastx_to_multiple_sketch_rewrite(
@@ -201,26 +192,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                 seed,
                             )
                         } else {
-                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") {
-                                unsafe {
-                                    seeding::avx2_fmh_seeds(
-                                        &seq,
-                                        sketch_params,
-                                        0_u32,
-                                        &mut new_sketch,
-                                        seed,
-                                    );
-                                }
-                            } else {
-                                seeding::fmh_seeds(
-                                    &seq,
-                                    sketch_params,
-                                    0_u32,
-                                    &mut new_sketch,
-                                    seed,
-                                );
-                            }
+                            seeding::fmh_seeds(&seq, sketch_params, 0_u32, &mut new_sketch, seed);
                         }
                         new_sketch.contig_order = j;
                         let mut locked = ref_sketches.lock().unwrap();
@@ -302,7 +274,7 @@ pub fn write_phyllip_matrix(
             for j in 0..end {
                 if i == j {
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
-                    continue
+                    continue;
                 }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
@@ -355,10 +327,10 @@ pub fn write_phyllip_matrix(
                 end = i;
             }
             for j in 0..end {
-                if i == j{
+                if i == j {
                     write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
-                    continue
+                    continue;
                 }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);

@@ -29,6 +29,7 @@ gcollections = "*"
 statrs = "*"
 tikv-jemallocator = "*"
 fastrand="*"
+natord="*"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
