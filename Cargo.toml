@@ -27,7 +27,7 @@ intervallum = "*"
 rust-lapper = "*"
 gcollections = "*"
 statrs = "*"
-tikv-jemallocator = "*"
+#tikv-jemallocator = "*"
 fastrand="*"
 natord="*"
 

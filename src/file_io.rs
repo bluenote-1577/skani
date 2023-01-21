@@ -3,7 +3,6 @@ use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
-use natord::*;
 use needletail::parse_fastx_file;
 use rand::seq::SliceRandom;
 use rand::thread_rng;

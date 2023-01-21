@@ -11,9 +11,9 @@ use skani::triangle;
 //Use this allocator instead of the default
 //because the musl statically compiled binary
 //uses a bad default allocator which makes the
-//binary take 60% longer!!!
-#[global_allocator]
-static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+//binary take 60% longer!!! Not an issue when not using MUSL though. 
+//#[global_allocator]
+//static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 fn main() {
     let matches = Command::new("skani")
