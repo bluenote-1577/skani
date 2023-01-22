@@ -106,9 +106,9 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 
 See the advanced usage guide linked above for more information about topics such as:
 
+* optimizing sensitivity/speed of skani
 * using skani for long-reads
 * making skani for memory efficient for huge data sets
-* optimizing skani for speed/memory tradeoffs
 
 ## Output
 
