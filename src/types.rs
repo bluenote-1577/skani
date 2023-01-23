@@ -399,6 +399,5 @@ pub struct AniEstResult{
     pub ref_contig: String,
     pub ci_upper: f32,
     pub ci_lower: f32,
-    pub aai: bool
-
+    pub aai: bool,
 }
