@@ -386,6 +386,9 @@ fn calculate_ani(
         upper = 1.;
     }
 
+//    for ani_est in ani_ests.iter(){
+//        println!("{},{}", ani_est.0, ani_est.1);
+//    }
 
     let mut lower_i = 0;
     let mut upper_i = ani_ests.len()-1;

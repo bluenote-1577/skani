@@ -260,6 +260,7 @@ fn main() {
                     Arg::new("aai")
                         .short('a')
                         .long("aai")
+                        .hidden(true)
                         .help("Use amino acid to calculate AAI instead.\t[default: ANI]"),
                 )
                 .arg(
