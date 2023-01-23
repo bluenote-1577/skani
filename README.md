@@ -4,7 +4,7 @@
 
 **skani** is a program for calculating average nucleotide identity (ANI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
 
-skani uses an approximate mapping method to get orthology without base-level alignment to estimate ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method without base-level alignment to get orthology in order to estimate ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
@@ -38,7 +38,9 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### Option 2 (Convenient): Pre-built linux statically compiled executable
+Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. 
+
+#### Option 2: Pre-built linux statically compiled executable
 
 We offer a pre-built statically compiled executable for 64-bit linux systems. That is, if you're on a linux 64-bit system, you can just download the binary and run it without installing anything. 
 
@@ -50,12 +52,18 @@ chmod +x skani
 ./skani -h
 ```
 
-Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). This seems to be not a huge issue from brief testing. 
+Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). Probably not a huge deal. 
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
+#### Option 3: Conda (may not be ready yet; [pending bioconda pull-request](https://github.com/bioconda/bioconda-recipes/pull/38886))
 
+```sh
+conda install -c bioconda skani
+```
+
+Note: skani installed from bioconda may not be guaranteed to be the latest version.
 
 
 ## Quick start
@@ -98,9 +106,9 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 
 See the advanced usage guide linked above for more information about topics such as:
 
+* optimizing sensitivity/speed of skani
 * using skani for long-reads
 * making skani for memory efficient for huge data sets
-* optimizing skani for speed/memory tradeoffs
 
 ## Output
 
@@ -121,7 +129,7 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 
 ## Citation
 
-Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani (2022). Submitted.
+Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
 
 ## Feature requests, issues
 
