@@ -36,14 +36,45 @@ fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64
 //    }
 }
 
-fn bootstrap_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64){
+fn mean(data: &[f64]) -> Option<f64> {
+    let sum = data.iter().sum::<f64>() as f64;
+    let count = data.len() as f64;
+    if data.len() > 0{
+        return Some(sum/count);
+    }
+    else{
+        return None;
+    }
+}
+
+fn std_deviation(data: &[f64]) -> f64 {
+    let count = data.len();
+    let data_mean = mean(&data);
+    if data_mean.is_none(){
+        return 0.
+    }
+    else{
+        let data_mean = data_mean.unwrap();
+        let variance = data.iter().map(|value| {
+            let diff = data_mean - (*value);
+
+            diff * diff
+        }).sum::<f64>() / count as f64;
+
+        variance.sqrt()
+    }
+}
+
+fn bootstrap_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64,f64){
+    let ani_est_no_mult = ani_ests.iter().map(|x| x.0).collect::<Vec<f64>>();
+    let std = std_deviation(&ani_est_no_mult);
     let mut res = vec![];
     let mut mult_ani_ests = vec![];
     fastrand::seed(7);
     let num_samp = ani_ests.len();
     //Return no confidence interval if number of samples is too small. 
     if num_samp < 10 {
-        return (0.,1.);
+        return (0.,1., std);
     }
     for (ani,mult) in ani_ests.iter(){
         for _ in 0..*mult{
@@ -61,7 +92,7 @@ fn bootstrap_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64){
         res.push(sum/(num_samp as f64));
     }
     res.sort_by(|x,y| x.partial_cmp(y).unwrap());
-    (res[iters * 5 / 100 - 1],res[iters * 95 / 100 - 1])
+    (res[iters * 5 / 100 - 1],res[iters * 95 / 100 - 1], std)
 
 }
 
@@ -421,7 +452,9 @@ fn calculate_ani(
     let mut final_ani = weighted_avg / total_multiplicitiy as f64;
 
 //    let (upper, lower) = z_interval(&ani_ests);
-    let ci = bootstrap_interval(&ani_ests);
+    let ci_std = bootstrap_interval(&ani_ests);
+    let ci = (ci_std.0, ci_std.1);
+    let std = ci_std.2;
     let covered_query = f64::min(
         1.,
         total_query_bases as f64 / query_sketch.total_sequence_length as f64,
@@ -454,6 +487,20 @@ fn calculate_ani(
     {
         final_ani = -1.;
     }
+
+    let mut sorted_contigs_q = query_sketch.contig_lengths.clone();
+    let mut sorted_contigs_r = ref_sketch.contig_lengths.clone();
+    sorted_contigs_q.sort();
+    sorted_contigs_r.sort();
+    let qs_lens = sorted_contigs_q.len();
+    let rs_lens = sorted_contigs_r.len();
+    let contig_quants_q = [sorted_contigs_q[qs_lens * 10 / 100 ], sorted_contigs_q[qs_lens* 50 / 100], sorted_contigs_q[qs_lens * 90 / 100]];
+    let contig_quants_r = [sorted_contigs_r[rs_lens * 10 / 100 ], sorted_contigs_r[rs_lens* 50 / 100], sorted_contigs_r[rs_lens * 90 / 100]];
+//    let mean_contig_len_q = query_sketch.contig_lengths.iter().map(|x| *x as f64).sum::<f64>()
+//        /(query_sketch.contig_lengths.len() as f64);
+//    let mean_contig_len_r = ref_sketch.contig_lengths.iter().map(|x| *x as f64).sum::<f64>()
+//        /(ref_sketch.contig_lengths.len() as f64);
+
     AniEstResult {
         ani: final_ani as f32,
         align_fraction_query: covered_query as f32,
@@ -464,7 +511,14 @@ fn calculate_ani(
         ref_contig: ref_sketch.contigs[0].clone(),
         ci_upper: ci.1 as f32,
         ci_lower: ci.0 as f32,
-        aai: map_params.amino_acid
+        aai: map_params.amino_acid,
+        quant_90_contig_len_q: contig_quants_q[2] as f32,
+        quant_90_contig_len_r: contig_quants_r[2] as f32,
+        quant_50_contig_len_q: contig_quants_q[1] as f32,
+        quant_50_contig_len_r: contig_quants_r[1] as f32,
+        quant_10_contig_len_q: contig_quants_q[0] as f32,
+        quant_10_contig_len_r: contig_quants_r[0] as f32,
+        std: std as f32,
     }
 }
 

@@ -29,6 +29,8 @@ gcollections = "*"
 statrs = "*"
 tikv-jemallocator = "*"
 fastrand="*"
+gbdt = "*"
+serde_json = "*"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"

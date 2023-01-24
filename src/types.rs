@@ -400,4 +400,11 @@ pub struct AniEstResult{
     pub ci_upper: f32,
     pub ci_lower: f32,
     pub aai: bool,
+    pub quant_90_contig_len_q: f32,
+    pub quant_90_contig_len_r: f32,
+    pub quant_50_contig_len_q: f32,
+    pub quant_50_contig_len_r: f32, 
+    pub quant_10_contig_len_q: f32,
+    pub quant_10_contig_len_r: f32, 
+    pub std: f32,
 }

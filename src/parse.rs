@@ -249,6 +249,14 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         screen = false;
     }
 
+    let learned_ani;
+    if mode == Mode::Triangle || mode == Mode::Dist{
+        learned_ani= matches_subc.is_present(LEARNED_ANI);
+    }
+    else{
+        learned_ani= false;
+    }
+
     let command_params = CommandParams {
         screen,
         screen_val,
@@ -267,7 +275,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_r,
         min_aligned_frac,
         keep_refs: false,
-        est_ci
+        est_ci,
+        learned_ani
     };
 
     (sketch_params, command_params)
@@ -340,6 +349,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-100.0").parse::<f64>().unwrap()/100.;
     let keep_refs = matches_subc.is_present(KEEP_REFS);
     let est_ci = matches_subc.is_present(CONF_INTERVAL);
+    let learned_ani = matches_subc.is_present(LEARNED_ANI);
 
     let command_params = CommandParams {
         screen,
@@ -360,6 +370,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         min_aligned_frac,
         keep_refs,
         est_ci,
+        learned_ani,
     };
 
     if command_params.ref_files.is_empty() {

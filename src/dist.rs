@@ -1,4 +1,6 @@
 use crate::chain;
+use crate::model;
+use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
@@ -7,6 +9,7 @@ use log::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
 use std::time::Instant;
+use gbdt::gradient_boost::GBDT;
 
 pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     //TODO
@@ -140,7 +143,13 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             info!("{} query sequences processed.", locked);
         }
     });
-    let anis = anis.into_inner().unwrap();
+    let mut anis = anis.into_inner().unwrap();
+    if command_params.learned_ani{
+        let model: GBDT = serde_json::from_str(model::MODEL).unwrap();
+        for ani in anis.iter_mut(){
+            regression::predict_from_ani_res(ani, &model);
+        }
+    }
     file_io::write_query_ref_list(
         &anis,
         &command_params.out_file_name,

@@ -36,3 +36,7 @@ pub const CONF_INTERVAL: &str = "ci";
 pub const CMD_CONF_INTERVAL: &str = "ci";
 pub const H_CONF_INTERVAL: &str = "Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution.";
 pub const H_CONF_INTERVAL_TRI: &str = "Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution. Only works with --sparse or -E.";
+
+pub const LEARNED_ANI: &str = "learned-regression-model";
+pub const CMD_LEARNED_ANI : &str = "--learned-ani";
+pub const H_LEARNED_ANI: &str = "More accurate ANI predictio using a regression model trained on MAG data. Makes ANI calculation more accurate in most cases, especially for prokaryotic genomes. \t[default: off]";

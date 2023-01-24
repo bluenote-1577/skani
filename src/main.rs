@@ -32,10 +32,6 @@ fn main() {
                         .help("Number of threads. ")
                         .takes_value(true),
                 )
-            .arg(
-                    Arg::new("avx2")
-                        .long("avx2")
-                )
             .about("Sketch (index) genomes. Usage: skani sketch genome1.fa genome2.fa ... -o new_sketch_folder")
                 .help_heading("INPUT/OUTPUT")
                 .arg(
@@ -183,8 +179,15 @@ fn main() {
                     Arg::new(CONF_INTERVAL)
                         .long(CMD_CONF_INTERVAL)
                         .help(H_CONF_INTERVAL)
+                        .takes_value(false)
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new(LEARNED_ANI)
+                    .long(CMD_LEARNED_ANI)
+                    .help(H_LEARNED_ANI)
+                    .takes_value(false)
+                )
                 .arg(
                     Arg::new("marker_c")
                         .short('m')
@@ -298,6 +301,7 @@ fn main() {
                     Arg::new(CONF_INTERVAL)
                         .long(CMD_CONF_INTERVAL)
                         .help(H_CONF_INTERVAL_TRI)
+                        .takes_value(false)
                 )
                 .arg(
                     Arg::new("sparse")
@@ -306,6 +310,12 @@ fn main() {
                         .help("Output comparisons in a row-by-row form (i.e. sparse matrix) in the same form as `skani dist`. Only pairs with aligned fraction > --min-af are output."),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new(LEARNED_ANI)
+                    .long(CMD_LEARNED_ANI)
+                    .help(H_LEARNED_ANI)
+                    .takes_value(false)
+                )
                 .arg(
                     Arg::new("marker_c")
                         .short('m')
@@ -401,6 +411,7 @@ fn main() {
                     Arg::new(CONF_INTERVAL)
                         .long(CMD_CONF_INTERVAL)
                         .help(H_CONF_INTERVAL)
+                        .takes_value(false)
                 )
                 .arg(
                     Arg::new(MIN_ALIGN_FRAC)
@@ -422,6 +433,12 @@ fn main() {
                         .required(true),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
+                .arg(
+                    Arg::new(LEARNED_ANI)
+                    .long(CMD_LEARNED_ANI)
+                    .help(H_LEARNED_ANI)
+                    .takes_value(false)
+                )
                 .arg(
                     Arg::new(KEEP_REFS)
                         .long(CMD_KEEP_REFS)

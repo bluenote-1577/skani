@@ -1,4 +1,7 @@
 use crate::chain;
+use crate::model;
+use gbdt::gradient_boost::GBDT;
+use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
@@ -218,7 +221,13 @@ pub fn search(command_params: CommandParams) {
     if command_params.keep_refs{
         info!("{} references kept in memory for --keep-refs", ref_sketches_used.read().unwrap().len());
     }
-    let anis = anis.into_inner().unwrap();
+    let mut anis = anis.into_inner().unwrap();
+    if command_params.learned_ani{
+        let model: GBDT = serde_json::from_str(model::MODEL).unwrap();
+        for ani in anis.iter_mut(){
+            regression::predict_from_ani_res(ani, &model);
+        }
+    }
     file_io::write_query_ref_list(
         &anis,
         &command_params.out_file_name,

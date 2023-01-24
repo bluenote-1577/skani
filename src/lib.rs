@@ -10,3 +10,5 @@ pub mod sketch;
 pub mod dist;
 pub mod triangle;
 pub mod cmd_line;
+pub mod model;
+pub mod regression;

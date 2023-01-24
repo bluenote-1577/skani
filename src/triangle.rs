@@ -1,22 +1,24 @@
 use crate::chain;
 use crate::file_io;
+use crate::model;
 use crate::params::*;
 use crate::screen;
+use crate::regression;
 use crate::types::*;
-use fxhash::{FxHashMap};
+use fxhash::FxHashMap;
 use log::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
 use std::time::Instant;
+use gbdt::gradient_boost::GBDT;
 
 pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) {
+    //TODO
     let ref_sketches;
     let now = Instant::now();
     if command_params.refs_are_sketch {
         info!("Sketches detected.");
-        (sketch_params, ref_sketches) = file_io::sketches_from_sketch(
-            &command_params.ref_files,
-        );
+        (sketch_params, ref_sketches) = file_io::sketches_from_sketch(&command_params.ref_files);
     } else if command_params.individual_contig_r {
         ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
             &command_params.ref_files,
@@ -24,8 +26,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             true,
         );
     } else {
-        ref_sketches =
-            file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
+        ref_sketches = file_io::fastx_to_sketches(&command_params.ref_files, &sketch_params, true);
     }
     let screen_val;
     if command_params.screen_val == 0. {
@@ -45,13 +46,12 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         std::process::exit(1)
     }
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
-    let counter : Mutex<usize> = Mutex::new(0);
+    let counter: Mutex<usize> = Mutex::new(0);
 
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
         .into_par_iter()
         .for_each(|i| {
-            
             let ref_sketch_i = &ref_sketches[i];
             //if command_params.screen {
             let screened_refs = screen::screen_refs(
@@ -83,13 +83,31 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             });
             let mut locked = counter.lock().unwrap();
             *locked += 1;
-            if *locked % 100 == 0 && *locked != 0{
+            if *locked % 100 == 0 && *locked != 0 {
                 info!("{} query sequences processed.", locked);
             }
         });
-    let anis = anis.into_inner().unwrap();
+    let mut anis = anis.into_inner().unwrap();
+
+    let now_pred = Instant::now();
+    if command_params.learned_ani {
+        let model: GBDT = serde_json::from_str(model::MODEL).unwrap();
+        for (_, val) in anis.iter_mut() {
+            for (_, ani) in val.iter_mut() {
+               regression::predict_from_ani_res(ani, &model); 
+            }
+        }
+    }
+    debug!("Prediction time: {}", now_pred.elapsed().as_secs_f32());
+
     if command_params.sparse {
-        file_io::write_sparse_matrix(&anis, &ref_sketches, &command_params.out_file_name, sketch_params.use_aa, command_params.est_ci);
+        file_io::write_sparse_matrix(
+            &anis,
+            &ref_sketches,
+            &command_params.out_file_name,
+            sketch_params.use_aa,
+            command_params.est_ci,
+        );
     } else {
         file_io::write_phyllip_matrix(
             &anis,
@@ -97,7 +115,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             &command_params.out_file_name,
             command_params.individual_contig_r,
             command_params.full_matrix,
-            sketch_params.use_aa
+            sketch_params.use_aa,
         );
     }
     info!("ANI triangle time: {}", now.elapsed().as_secs_f32());

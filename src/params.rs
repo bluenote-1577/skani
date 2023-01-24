@@ -88,7 +88,8 @@ pub struct CommandParams{
     pub individual_contig_r: bool,
     pub min_aligned_frac: f64,
     pub keep_refs: bool,
-    pub est_ci: bool
+    pub est_ci: bool,
+    pub learned_ani: bool
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

@@ -13,15 +13,15 @@ use std::io::{self, BufReader, BufWriter, Write};
 use std::sync::Mutex;
 
 fn write_header(writer: &mut impl Write, id_str: &str, ci: bool) {
-    if !ci {
+    if !ci{
         writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name", id_str).unwrap();
     } else {
-        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile", id_str, id_str, id_str).unwrap();
+        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile\tStandard_deviation\tRef_mean_ctg_len\tQuery_mean_ctg_len", id_str, id_str, id_str).unwrap();
     }
 }
 
 fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
-    if !ci {
+    if !ci{
         writeln!(
             writer,
             "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}",
@@ -37,7 +37,7 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
     } else {
         writeln!(
             writer,
-            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}",
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
             ani_res.ref_file,
             ani_res.query_file,
             ani_res.ani * 100.,
@@ -47,6 +47,13 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
             ani_res.query_contig,
             ani_res.ci_lower * 100.,
             ani_res.ci_upper * 100.,
+            ani_res.std * 100.,
+            ani_res.quant_90_contig_len_r,
+            ani_res.quant_50_contig_len_r,
+            ani_res.quant_10_contig_len_r,
+            ani_res.quant_90_contig_len_q,
+            ani_res.quant_50_contig_len_q,
+            ani_res.quant_10_contig_len_q,
         )
         .unwrap();
     }
@@ -137,7 +144,7 @@ pub fn fastx_to_sketches(
                 }
             }
             if is_valid {
-                if new_sketch.total_sequence_length > 20000000 {
+                if new_sketch.total_sequence_length > 20_000_000 {
                     new_sketch.repetitive_kmers =
                         seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
                 }
