@@ -86,7 +86,7 @@ skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_r
 skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
 
-#use sketch output as drop-in replacement
+# use sketch from "skani sketch" output as drop-in replacement
 skani dist database/query.fa.sketch database/ref.fa.sketch
 
 # construct distance matrix for all genomes in folder
