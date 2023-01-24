@@ -12,7 +12,7 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 bacterial genomes takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
 ##  Install
 
@@ -102,7 +102,7 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 
 ### skani tutorials
 
-1. #### [Tutorial: setting up a 65000 bacterial genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
+1. #### [Tutorial: setting up a 65000 prokaryotic genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
 2. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
