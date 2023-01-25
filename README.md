@@ -1,4 +1,4 @@
-# skani - accurate, fast nucleotide/amino acid identity calculation for MAGs and databases
+# skani - accurate, fast nucleotide identity calculation for MAGs and databases
 
 ## Introduction
 
