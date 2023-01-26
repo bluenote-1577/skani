@@ -38,7 +38,7 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. 
+Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. See the issue [here](https://github.com/bluenote-1577/skani/issues/6).
 
 #### Option 2: Pre-built linux statically compiled executable
 
