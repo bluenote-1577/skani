@@ -247,8 +247,8 @@ fn calculate_ani(
             continue;
         }
 
-        total_query_bases += total_range_query.1 - total_range_query.0;
-        total_ref_range += total_range_query.1 - total_range_query.0;
+        total_query_bases += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
+        total_ref_range += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
 
         let mut num_seeds_in_intervals = 0;
         let mut upper_lower_seeds = 0;
