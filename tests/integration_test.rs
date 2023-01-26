@@ -96,6 +96,37 @@ fn test_search() {
     assert!(af_q > 0.80);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_sketch_dir/")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("--median")
+        .arg("-n")
+        .arg("5")
+        .arg("--learned-ani")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    println!("ANI search test learned");
+    println!(
+        "{}",
+        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
+    );
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let _af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 0.97);
+    assert!(af_q > 0.80);
+
+
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("search")
         .arg("-d")
@@ -215,6 +246,31 @@ fn test_dist() {
         .parse::<f64>()
         .unwrap();
     assert!(ani > 99.0);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("--marker-index")
+        .arg("-n")
+        .arg("3")
+        .arg("--learned-ani")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.2);
     assert!(ani < 100.);
     assert!(af_q > 90.);
     assert!(af_r > 90.);
@@ -473,6 +529,19 @@ fn test_triangle() {
         .arg("3")
         .assert();
     assert.success().code(0);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("./test_files/query_list.txt")
+        .arg("-o")
+        .arg("./tests/results/output")
+        .arg("--learned-ani")
+        .assert();
+    assert.success().code(0);
+
+
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd

@@ -250,9 +250,6 @@ fn calculate_ani(
         total_query_bases += total_range_query.1 - total_range_query.0;
         total_ref_range += total_range_query.1 - total_range_query.0;
 
-        //        total_query_bases += total_bases_contained_query;
-                //total_ref_range += total_bases_contained_ref;
-
         let mut num_seeds_in_intervals = 0;
         let mut upper_lower_seeds = 0;
         for pos in anchor_chunks.seeds_in_chunk[i].iter() {
@@ -509,6 +506,8 @@ fn calculate_ani(
         query_file: query_sketch.file_name.clone(),
         query_contig: query_sketch.contigs[0].clone(),
         ref_contig: ref_sketch.contigs[0].clone(),
+        num_contigs_r: ref_sketch.contigs.len() as u32,
+        num_contigs_q: query_sketch.contigs.len() as u32,
         ci_upper: ci.1 as f32,
         ci_lower: ci.0 as f32,
         aai: map_params.amino_acid,

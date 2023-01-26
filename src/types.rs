@@ -407,4 +407,6 @@ pub struct AniEstResult{
     pub quant_10_contig_len_q: f32,
     pub quant_10_contig_len_r: f32, 
     pub std: f32,
+    pub num_contigs_q: u32,
+    pub num_contigs_r: u32,
 }

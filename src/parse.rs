@@ -279,6 +279,10 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         learned_ani
     };
 
+    if learned_ani{
+        info!("Learned ANI mode detected. ANI will be adjusted according to a ANI regression model trained on prokaryotic MAGs.");
+    }
+
     (sketch_params, command_params)
 }
 
@@ -376,6 +380,10 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     if command_params.ref_files.is_empty() {
         error!("No valid reference fastas or sketches found.");
         std::process::exit(1)
+    }
+
+    if learned_ani{
+        info!("Learned ANI mode detected. ANI will be adjusted according to a ANI regression model trained on prokaryotic MAGs.");
     }
 
     (SketchParams::default(), command_params)

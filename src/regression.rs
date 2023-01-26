@@ -13,6 +13,8 @@ pub fn predict_from_ani_res(ani_res: &mut AniEstResult, model: &GBDT) {
                     ani_res.align_fraction_query * 100.,
                     ani_res.ci_lower * 100.,
                     ani_res.ci_upper * 100.,
+                    ani_res.num_contigs_r as f32,
+                    ani_res.num_contigs_q as f32,
                     ani_res.std,
                     ani_res.quant_90_contig_len_r,
                     ani_res.quant_50_contig_len_r,
@@ -27,10 +29,12 @@ pub fn predict_from_ani_res(ani_res: &mut AniEstResult, model: &GBDT) {
             data = Data::new_test_data(
                 vec![
                     ani_res.ani * 100.,
-                    ani_res.align_fraction_ref * 100.,
                     ani_res.align_fraction_query * 100.,
+                    ani_res.align_fraction_ref * 100.,
                     ani_res.ci_lower * 100.,
                     ani_res.ci_upper * 100.,
+                    ani_res.num_contigs_q as f32,
+                    ani_res.num_contigs_r as f32,
                     ani_res.std,
                     ani_res.quant_90_contig_len_q,
                     ani_res.quant_50_contig_len_q,

@@ -18,7 +18,12 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let now = Instant::now();
     if command_params.refs_are_sketch {
         info!("Sketches detected.");
-        (sketch_params, ref_sketches) = file_io::sketches_from_sketch(&command_params.ref_files);
+        let param_and_sketches  = file_io::sketches_from_sketch(&command_params.ref_files);
+        if param_and_sketches.0.c != sketch_params.c{
+            warn!("Input parameter c = {} is not equal to the sketch parameter c = {}. Using sketch parameters.", sketch_params.c, param_and_sketches.0.c);
+        }
+        ref_sketches = param_and_sketches.1;
+        sketch_params = param_and_sketches.0;
     } else if command_params.individual_contig_r {
         ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
             &command_params.ref_files,

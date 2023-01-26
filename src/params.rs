@@ -151,7 +151,7 @@ impl SketchParams {
         let orf_size = ORF_SIZE;
         let marker_c = marker_c;
         if c > marker_c{
-            panic!("We currently don't allow c > {}", marker_c);
+            panic!("We currently don't allow c ({}) > m ({}).", c,marker_c);
         }
         SketchParams {
             c,

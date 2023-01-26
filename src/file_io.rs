@@ -37,7 +37,7 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
     } else {
         writeln!(
             writer,
-            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
             ani_res.ref_file,
             ani_res.query_file,
             ani_res.ani * 100.,
@@ -45,6 +45,8 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
             ani_res.align_fraction_query * 100.,
             ani_res.ref_contig,
             ani_res.query_contig,
+            ani_res.num_contigs_r,
+            ani_res.num_contigs_q,
             ani_res.ci_lower * 100.,
             ani_res.ci_upper * 100.,
             ani_res.std * 100.,
