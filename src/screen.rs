@@ -55,6 +55,10 @@ pub fn screen_refs(
     ref_sketches: &Vec<Sketch>,
 ) -> FxHashSet<usize> {
     let mut count_hash_map = FxHashMap::default();
+    //Don't screen when the input sketch is too small.
+    if query_sketch.marker_seeds.len() < 20{
+        return (0..ref_sketches.len()).collect();
+    }
     for marker in query_sketch.marker_seeds.iter() {
         if kmer_to_sketch.contains_key(marker) {
             for sketch_id in kmer_to_sketch[marker].iter() {

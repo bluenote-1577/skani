@@ -107,7 +107,6 @@ pub fn map_params_from_sketch(
     let min_length_cover = if amino_acid{MIN_LENGTH_COVER_AAI} else {MIN_LENGTH_COVER};
     let fragment_length = fragment_length_formula(ref_sketch.total_sequence_length, amino_acid);
     let length_cutoff = fragment_length;
-    trace!("Fragment length is {}.", fragment_length);
     let mut frac_cover_cutoff = command_params.min_aligned_frac;
     if frac_cover_cutoff < 0.{
         if amino_acid {
@@ -146,10 +145,7 @@ pub fn chain_seeds(
     query_sketch: &Sketch,
     map_params: MapParams,
 ) -> AniEstResult {
-    let now = Instant::now();
     let (anchor_chunks, switched) = get_anchors(ref_sketch, query_sketch, &map_params);
-    debug!("Get anchors time: {}", now.elapsed().as_secs_f32());
-    let now = Instant::now();
     let chain_results = chain_anchors_ani(&anchor_chunks, &map_params);
     let mut good_intervals = vec![];
     for i in 0..anchor_chunks.chunks.len() {
@@ -157,10 +153,8 @@ pub fn chain_seeds(
         let anchors = &anchor_chunks.chunks[i];
         get_chain_intervals(&mut good_intervals, chain_result, anchors, &map_params, i);
     }
-    debug!("Chain time: {}", now.elapsed().as_secs_f32());
     let good_interval_chunks =
         get_nonoverlapping_chains(&mut good_intervals, anchor_chunks.chunks.len());
-    let now = Instant::now();
     let ani = calculate_ani(
         &good_interval_chunks,
         ref_sketch,
@@ -169,7 +163,6 @@ pub fn chain_seeds(
         &map_params,
         switched,
     );
-    debug!("Ani calc time: {}", now.elapsed().as_secs_f32());
     ani
 }
 
@@ -184,12 +177,21 @@ fn calculate_ani(
     let k = map_params.k;
     let mut ani_ests = vec![];
     let c = ref_sketch.c as GnPosition;
+    let sensitive_af;
+    if c < 200{
+        sensitive_af = true;
+    }
+    else{
+        sensitive_af = false;
+    }
     let mut _num_good_chunks = 0;
     let mut _all_anchors_total = 0;
     let mut total_query_bases = 0;
     let mut total_ref_range = 0;
     let mut leftmost_interval = &ChainInterval::default();
     let mut rightmost_interval = &ChainInterval::default();
+    let mut avg_chain_int_len = 0;
+    let mut num_chains = 0;
     for (i, intervals) in int_chunks.iter().enumerate() {
         let mut all_intervals = vec![].to_interval_set();
         let mut total_anchors = 0;
@@ -235,20 +237,27 @@ fn calculate_ani(
             let stop = int.interval_on_query.1 + c;
             all_intervals = all_intervals.union(&vec![(start, stop)].to_interval_set());
             //interval_vec.insert(int_insert, i);
+            if sensitive_af{
+                total_query_bases +=  int.query_range_len() - int.overlap + 2 * c + k as GnPosition;
+                total_ref_range +=  int.query_range_len() - int.overlap + 2 * c + k as GnPosition;
+            }
+
+            avg_chain_int_len += int.query_range_len() - int.overlap + 2 * c + k as GnPosition;
+            num_chains += 1;
         }
 
         if total_anchors == 0{
             continue;
         }
 
-        if  total_range_query.1 - total_range_query.0  < map_params.min_length_cover as GnPosition{
-            total_query_bases += total_range_query.1 - total_range_query.0;
-            total_ref_range += total_range_query.1 - total_range_query.0;
+        if  total_range_query.1 - total_range_query.0 < map_params.min_length_cover as GnPosition{
             continue;
         }
 
-        total_query_bases += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
-        total_ref_range += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
+        if !sensitive_af{
+            total_query_bases += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
+            total_ref_range += total_range_query.1 - total_range_query.0 + 2 * c + map_params.k as GnPosition;
+        }
 
         let mut num_seeds_in_intervals = 0;
         let mut upper_lower_seeds = 0;
@@ -261,18 +270,26 @@ fn calculate_ani(
         let mut left_spacing_est =  0;
         let mut right_spacing_est = 0;
         let switched_ref_sketch;
+        let switched_query_sketch;
         if switched{
+            switched_query_sketch = &ref_sketch;
             switched_ref_sketch = &query_sketch;
         }
         else{
             switched_ref_sketch = &ref_sketch;
+            switched_query_sketch = &query_sketch;
         }
+
+        let ref_ctg_len = switched_ref_sketch.contig_lengths[leftmost_interval.ref_contig];
+        trace!("switched ref ctg len {},id {}", ref_ctg_len, leftmost_interval.ref_contig);
+        let q_ctg_len = switched_query_sketch.contig_lengths[leftmost_interval.query_contig];
+        trace!("switched query ctg len {},id {}", q_ctg_len, leftmost_interval.query_contig);
+
 
         //TODO this was for testing... don't use this mechanism
         let extend = 0;
         if leftmost_interval.reverse_chain{
             let ref_ctg_len =switched_ref_sketch.contig_lengths[leftmost_interval.ref_contig];
-            trace!("{},{}", ref_ctg_len, leftmost_interval.ref_contig);
             if ref_ctg_len - leftmost_interval.interval_on_ref.1 < extend{
                 left_spacing_est = ref_ctg_len - leftmost_interval.interval_on_ref.1;
             }
@@ -375,11 +392,11 @@ fn calculate_ani(
         }
         //                        ani_ests.push((ani_est, upper_lower_seeds));
         trace!(
-            "Ani est fragment {}, total range {:?}, total anchors {}, seeds in fragment {:?}",
+            "Ani est fragment {}, total range {:?}, total anchors {}, seeds in fragment {:?},",
             ani_est,
             total_range_query,
             total_anchors,
-            anchor_chunks.seeds_in_chunk[i].len()
+            anchor_chunks.seeds_in_chunk[i].len(),
         );
         trace!(
             "Intervals {:?}, Num Anchors in Interval {}, Total Anchors {}",
@@ -392,11 +409,12 @@ fn calculate_ani(
     }
     ani_ests.sort_by(|x, y| x.partial_cmp(y).unwrap());
 
-    if ani_ests.is_empty() {
+    if ani_ests.is_empty() || num_chains == 0 {
         let mut ret = AniEstResult::default();
         ret.ani = f32::NAN;
         return ret;
     }
+    avg_chain_int_len /= num_chains;
     let mut total_multiplicitiy = 0;
     for ani in ani_ests.iter(){
         total_multiplicitiy += ani.1;
@@ -463,15 +481,16 @@ fn calculate_ani(
     
     let q_string = &query_sketch.file_name;
     let id_string = if map_params.amino_acid { "AAI" } else { "ANI" };
+    debug!("Total 1-to-1 aligned bases: {}", total_query_bases);
+    //println!("{}",total_query_bases);
     debug!(
-        "Query {} Ref {} - {} {}, +/- = {}/{}. Covered {}",
+        "Query {} Ref {} - {} {}, +/- = {}/{}. ",
         q_string,
         ref_sketch.file_name,
         id_string,
         final_ani,
         ci.0,
         ci.1,
-        covered_query,
     );
 
     if map_params.amino_acid{
@@ -518,6 +537,8 @@ fn calculate_ani(
         quant_10_contig_len_q: contig_quants_q[0] as f32,
         quant_10_contig_len_r: contig_quants_r[0] as f32,
         std: std as f32,
+        avg_chain_int_len,
+        total_bases_covered: total_query_bases,
     }
 }
 
@@ -572,7 +593,7 @@ pub fn check_markers_quickly(
     query_sketch: &Sketch,
     screen_val: f64
 ) -> bool{
-    if screen_val <= 0.00{
+    if screen_val <= 0.50 ||  ref_sketch.marker_seeds.len() == 0  || query_sketch.marker_seeds.len() == 0{
         return true;
     }
     let seeds1;
@@ -981,7 +1002,8 @@ fn get_chain_intervals(
             score: max_score,
             num_anchors,
             chunk_id,
-            reverse_chain: anchors[smallest_id].reverse_match
+            reverse_chain: anchors[smallest_id].reverse_match,
+            overlap : 0
         };
         good_intervals.push(chain_interval);
     }
@@ -994,41 +1016,70 @@ fn get_nonoverlapping_chains(
     let mut interval_trees = FxHashMap::default();
     let mut interval_trees_ref = FxHashMap::default();
     let mut good_non_overlap_intervals = vec![vec![]; num_chunks];
+    let mut bases_added = 0;
     for (i, int) in intervals.iter().enumerate() {
         let q_interval = (int.interval_on_query.0)..(int.interval_on_query.1);
         let r_interval = (int.interval_on_ref.0)..(int.interval_on_ref.1);
-        let interval_tree_ref = interval_trees_ref
+        let interval_tree_r = interval_trees_ref
             .entry(int.ref_contig)
             .or_insert(IntervalTree::new());
         let interval_tree_q = interval_trees
             .entry(int.query_contig)
             .or_insert(IntervalTree::new());
 
+        let mut sum_overlaps_ref = 0;
+        let mut sum_overlaps_query = 0;
         let no_overlap_ref;
-        if interval_tree_ref.find(&r_interval).count() == 0 {
+        if interval_tree_r.find(&r_interval).count() == 0 {
             no_overlap_ref = true
         } else {
-            no_overlap_ref = false;
+//            let mut TODO_intervals= vec![];
+            let overlaps = interval_tree_r.find(&r_interval);
+            let mut small_ol = false;
+            for ol in overlaps {
+                let ol_interval: &ChainInterval = &intervals[*ol.data()];
+                let overlap = GnPosition::min(
+                    int.interval_on_ref.1 - ol_interval.interval_on_ref.0,
+                    ol_interval.interval_on_ref.1 - int.interval_on_ref.0,
+                );
+                sum_overlaps_ref += overlap;
+//                TODO_intervals.push(ol_interval.clone());
+                
+            }
+            if (sum_overlaps_ref as f32) < int.ref_range_len() as f32 * OVERLAP_ORTHOLOGOUS_FRACTION {
+                bases_added += int.query_range_len();
+                small_ol = true;
+//                dbg!("ref", TODO_intervals, int);
+            }
+            if small_ol {
+                no_overlap_ref = true;
+            } else {
+                no_overlap_ref = false;
+            }
         }
 
         let no_overlap_query;
         if interval_tree_q.find(&q_interval).count() == 0 {
             no_overlap_query = true;
         } else {
-//            let overlaps = interval_tree_q.find(&q_interval);
-            let small_ol = false;
-            //            for ol in overlaps {
-            //                let ol_interval = &intervals[*ol.data()];
-            //                let interval_length = ol_interval.query_range_len();
-            //                let overlap = GnPosition::min(
-            //                    int.interval_on_query.1 - ol_interval.interval_on_query.0,
-            //                    ol_interval.interval_on_query.1 - int.interval_on_query.0,
-            //                );
-            //                if (overlap as f64) < -1. {
-            //                    //interval_length as f64 * 0.00 {
-            //                    small_ol = true;
-            //                }
-            //            }
+            let overlaps = interval_tree_q.find(&q_interval);
+            let mut small_ol = false;
+//            let mut TODO_intervals= vec![];
+            for ol in overlaps {
+                let ol_interval: &ChainInterval = &intervals[*ol.data()];
+                let overlap = GnPosition::min(
+                    int.interval_on_query.1 - ol_interval.interval_on_query.0,
+                    ol_interval.interval_on_query.1 - int.interval_on_query.0,
+                );
+                sum_overlaps_query += overlap;
+//                TODO_intervals.push(ol_interval.clone());
+            }
+
+            if (sum_overlaps_query as f32) < int.query_range_len() as f32 * OVERLAP_ORTHOLOGOUS_FRACTION {
+                bases_added += int.query_range_len();
+                small_ol = true;
+//                dbg!("query", TODO_intervals, int);
+            }
             if small_ol {
                 no_overlap_query = true;
             } else {
@@ -1036,14 +1087,16 @@ fn get_nonoverlapping_chains(
             }
         }
         if no_overlap_ref && no_overlap_query {
-            //                    if  no_overlap_query{
             //
 
             interval_tree_q.insert(q_interval, i);
-            interval_tree_ref.insert(r_interval, i);
+            interval_tree_r.insert(r_interval, i);
+            let mut cloned_int = int.clone();
+            cloned_int.overlap = sum_overlaps_query;
             good_non_overlap_intervals[int.chunk_id].push(int.clone());
         }
     }
+    debug!("Bases rescued by small overlapping orthologous threshold: {}", bases_added);
     //good_non_overlap_intervals.sort_by(|x, y| y.partial_cmp(&x).unwrap());
     good_non_overlap_intervals
 }

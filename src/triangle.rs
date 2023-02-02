@@ -53,6 +53,19 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
     let counter: Mutex<usize> = Mutex::new(0);
 
+    let model: Option<GBDT>;
+    if command_params.learned_ani {
+        let c = sketch_params.c;
+        if (c as i32 - 125 as i32).abs() < (c as i32 - 200 as i32).abs(){
+            model = Some(serde_json::from_str(model::MODEL).unwrap());
+        }
+        else{
+            model = Some(serde_json::from_str(model::MODEL_C200).unwrap());
+        }
+    }
+    else{
+        model = None;
+    }
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
         .into_par_iter()
@@ -80,7 +93,11 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                         &command_params,
                     );
                     let ref_sketch_j = &ref_sketches[j];
-                    let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                    let mut ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                    if command_params.learned_ani{
+                        let gbdt = model.as_ref().unwrap();
+                        regression::predict_from_ani_res(&mut ani_res, gbdt);
+                    }
                     let mut locked = anis.lock().unwrap();
                     let mapi = locked.entry(i).or_insert(FxHashMap::default());
                     mapi.insert(j, ani_res);
@@ -92,17 +109,9 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                 info!("{} query sequences processed.", locked);
             }
         });
-    let mut anis = anis.into_inner().unwrap();
-
+    let anis = anis.into_inner().unwrap();
     let now_pred = Instant::now();
-    if command_params.learned_ani {
-        let model: GBDT = serde_json::from_str(model::MODEL).unwrap();
-        for (_, val) in anis.iter_mut() {
-            for (_, ani) in val.iter_mut() {
-               regression::predict_from_ani_res(ani, &model); 
-            }
-        }
-    }
+
     debug!("Prediction time: {}", now_pred.elapsed().as_secs_f32());
 
     if command_params.sparse {

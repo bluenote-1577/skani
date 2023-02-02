@@ -343,7 +343,8 @@ pub struct ChainInterval {
     pub ref_contig: usize,
     pub query_contig: usize,
     pub chunk_id: usize,
-    pub reverse_chain: bool
+    pub reverse_chain: bool,
+    pub overlap: u32
 }
 impl ChainInterval {
     pub fn query_range_len(&self) -> GnPosition {
@@ -409,4 +410,6 @@ pub struct AniEstResult{
     pub std: f32,
     pub num_contigs_q: u32,
     pub num_contigs_r: u32,
+    pub avg_chain_int_len: u32,
+    pub total_bases_covered: u32, 
 }

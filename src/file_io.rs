@@ -37,7 +37,7 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
     } else {
         writeln!(
             writer,
-            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
             ani_res.ref_file,
             ani_res.query_file,
             ani_res.ani * 100.,
@@ -56,6 +56,8 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
             ani_res.quant_90_contig_len_q,
             ani_res.quant_50_contig_len_q,
             ani_res.quant_10_contig_len_q,
+            ani_res.avg_chain_int_len,
+            ani_res.total_bases_covered,
         )
         .unwrap();
     }
@@ -146,7 +148,7 @@ pub fn fastx_to_sketches(
                 }
             }
             if is_valid {
-                if new_sketch.total_sequence_length > 20_000_000 {
+                if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
                     new_sketch.repetitive_kmers =
                         seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
                 }
@@ -232,6 +234,13 @@ pub fn fastx_to_multiple_sketch_rewrite(
                             }
                         }
                         new_sketch.contig_order = j;
+
+                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
+                            new_sketch.repetitive_kmers =
+                                seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
+                        }
+
+
                         let mut locked = ref_sketches.lock().unwrap();
                         locked.push(new_sketch);
                         j += 1;
