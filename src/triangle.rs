@@ -10,7 +10,6 @@ use log::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
 use std::time::Instant;
-use gbdt::gradient_boost::GBDT;
 
 pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) {
     //TODO
@@ -53,19 +52,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
     let counter: Mutex<usize> = Mutex::new(0);
 
-    let model: Option<GBDT>;
-    if command_params.learned_ani {
-        let c = sketch_params.c;
-        if (c as i32 - 125 as i32).abs() < (c as i32 - 200 as i32).abs(){
-            model = Some(serde_json::from_str(model::MODEL).unwrap());
-        }
-        else{
-            model = Some(serde_json::from_str(model::MODEL_C200).unwrap());
-        }
-    }
-    else{
-        model = None;
-    }
+    let model = regression::get_model(sketch_params.c, command_params.learned_ani);
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
         .into_par_iter()
@@ -121,6 +108,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             &command_params.out_file_name,
             sketch_params.use_aa,
             command_params.est_ci,
+            command_params.detailed_out,
         );
     } else {
         file_io::write_phyllip_matrix(

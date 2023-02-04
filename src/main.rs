@@ -32,7 +32,7 @@ fn main() {
                         .help("Number of threads. ")
                         .takes_value(true),
                 )
-            .about("Sketch (index) genomes. Usage: skani sketch genome1.fa genome2.fa ... -o new_sketch_folder")
+            .about("Sketch (index) genomes.\nUsage: skani sketch genome1.fa genome2.fa ... -o new_sketch_folder")
                 .help_heading("INPUT/OUTPUT")
                 .arg(
                     Arg::new("fasta_files")
@@ -48,6 +48,19 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(Arg::new("output sketch folder").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true).display_order(1))
+                .help_heading("PRESETS")
+                .arg(
+                    Arg::new(MODE_SLOW)
+                        .long(CMD_MODE_SLOW)
+                        .help(H_MODE_SLOW)
+                        .takes_value(false),
+                )
+                .arg(
+                    Arg::new(MODE_FAST)
+                        .long(CMD_MODE_FAST)
+                        .help(H_MODE_FAST)
+                        .takes_value(false),
+                )
                 .help_heading("SKETCH PARAMETERS")
                 .arg(
                     Arg::new("aai")
@@ -69,10 +82,11 @@ fn main() {
                         .help(H_C_FACTOR)
                         .takes_value(true),
                 )
+
                 .arg(
-                    Arg::new("marker_c")
-                        .short('m')
-                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
+                    Arg::new(MARKER_C)
+                        .short(CMD_MARKER_C)
+                        .help(H_MARKER_C)
                         .takes_value(true),
                 )
                 .group(
@@ -89,7 +103,7 @@ fn main() {
             )
         .subcommand(
             SubCommand::with_name(params::DIST_STRING)
-            .about("Compute ANI for queries against references fasta files or pre-computed sketch files. Usage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
+            .about("Compute ANI for queries against references fasta files or pre-computed sketch files.\nUsage: skani dist query.fa ref1.fa ref2.fa ... or use -q/--ql and -r/--rl options.")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -181,6 +195,25 @@ fn main() {
                         .help(H_CONF_INTERVAL)
                         .takes_value(false)
                 )
+                .arg(
+                    Arg::new(DETAIL_OUT)
+                        .long(CMD_DETAIL_OUT)
+                        .help(H_DETAIL_OUT)
+                        .takes_value(false)
+                )
+                .help_heading("PRESETS")
+                .arg(
+                    Arg::new(MODE_SLOW)
+                        .long(CMD_MODE_SLOW)
+                        .help(H_MODE_SLOW)
+                        .takes_value(false),
+                )
+                .arg(
+                    Arg::new(MODE_FAST)
+                        .long(CMD_MODE_FAST)
+                        .help(H_MODE_FAST)
+                        .takes_value(false),
+                )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new(LEARNED_ANI)
@@ -189,9 +222,15 @@ fn main() {
                     .takes_value(false)
                 )
                 .arg(
-                    Arg::new("marker_c")
-                        .short('m')
-                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
+                    Arg::new(NO_LEARNED_ANI)
+                    .long(CMD_NO_LEARNED_ANI)
+                    .help(H_NO_LEARNED_ANI)
+                    .takes_value(false)
+                )
+                .arg(
+                    Arg::new(MARKER_C)
+                        .short(CMD_MARKER_C)
+                        .help(H_MARKER_C)
                         .takes_value(true),
                 )
                 .arg(
@@ -244,7 +283,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::TRIANGLE_STRING)
-            .about("Compute a lower triangular distance ANI/AF matrix. Usage: skani triangle genome1.fa genome2.fa genome3.fa ...")
+            .about("Compute a lower triangular distance ANI/AF matrix.\nUsage: skani triangle genome1.fa genome2.fa genome3.fa ...")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -304,11 +343,31 @@ fn main() {
                         .takes_value(false)
                 )
                 .arg(
+                    Arg::new(DETAIL_OUT)
+                        .long(CMD_DETAIL_OUT)
+                        .help(H_DETAIL_OUT)
+                        .takes_value(false)
+                )
+                .arg(
                     Arg::new("sparse")
                         .long("sparse")
                         .short('E')
                         .help("Output comparisons in a row-by-row form (i.e. sparse matrix) in the same form as `skani dist`. Only pairs with aligned fraction > --min-af are output."),
                 )
+                .help_heading("PRESETS")
+                .arg(
+                    Arg::new(MODE_SLOW)
+                        .long(CMD_MODE_SLOW)
+                        .help(H_MODE_SLOW)
+                        .takes_value(false),
+                )
+                .arg(
+                    Arg::new(MODE_FAST)
+                        .long(CMD_MODE_FAST)
+                        .help(H_MODE_FAST)
+                        .takes_value(false),
+                )
+
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new(LEARNED_ANI)
@@ -317,9 +376,15 @@ fn main() {
                     .takes_value(false)
                 )
                 .arg(
-                    Arg::new("marker_c")
-                        .short('m')
-                        .help("Marker k-mer compression factor. Markers are used for filtering. You want at least ~100 markers, so genome_size/marker_c > 100 is highly recommended. Higher value is more time/memory efficient. \t[default: 1000] ")
+                    Arg::new(NO_LEARNED_ANI)
+                    .long(CMD_NO_LEARNED_ANI)
+                    .help(H_NO_LEARNED_ANI)
+                    .takes_value(false)
+                )
+                .arg(
+                    Arg::new(MARKER_C)
+                        .short(CMD_MARKER_C)
+                        .help(H_MARKER_C)
                         .takes_value(true),
                 )
                 .arg(Arg::new("s").short('s').takes_value(true).help(H_SCREEN))
@@ -358,7 +423,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::SEARCH_STRING)
-            .about("Search queries against a large pre-sketched database of reference genomes in a memory efficient manner. Algorithm parameters are determined by skani sketch parameters. Usage: skani search -d sketch_folder query1.fa query2.fa ... ")
+            .about("Search queries against a large pre-sketched database of reference genomes in a memory efficient manner.\nUsage: skani search -d sketch_folder query1.fa query2.fa ... ")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -414,6 +479,12 @@ fn main() {
                         .takes_value(false)
                 )
                 .arg(
+                    Arg::new(DETAIL_OUT)
+                        .long(CMD_DETAIL_OUT)
+                        .help(H_DETAIL_OUT)
+                        .takes_value(false)
+                )
+                .arg(
                     Arg::new(MIN_ALIGN_FRAC)
                         .long(CMD_MIN_ALIGN_FRAC)
                         .help(H_MIN_ALIGN_FRAC)
@@ -437,6 +508,12 @@ fn main() {
                     Arg::new(LEARNED_ANI)
                     .long(CMD_LEARNED_ANI)
                     .help(H_LEARNED_ANI)
+                    .takes_value(false)
+                )
+                .arg(
+                    Arg::new(NO_LEARNED_ANI)
+                    .long(CMD_NO_LEARNED_ANI)
+                    .help(H_NO_LEARNED_ANI)
                     .takes_value(false)
                 )
                 .arg(
@@ -472,7 +549,6 @@ fn main() {
     let cmd_txt = env::args().into_iter().collect::<Vec<String>>().join(" ");
     log::info!("{}", cmd_txt);
 
-    //SKETCHING
     if command_params.mode == params::Mode::Sketch {
         sketch::sketch(command_params, sketch_params);
     } else if command_params.mode == params::Mode::Search {

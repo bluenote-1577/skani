@@ -12,11 +12,11 @@ pub const H_IND_CTG_REF: &str = "Use individual sequences for the REFERENCE in a
 
 pub const FULL_INDEX: &str = "marker index";
 pub const CMD_FULL_INDEX: &str = "marker-index";
-pub const H_FULL_INDEX: &str = "Loads a larger index for faster filtering. Uses more memory and takes longer to load, but faster for many all-to-all comparisons.\t[default: load index if > 50 query files, don't load otherwise]";
+pub const H_FULL_INDEX: &str = "Hash-table inverted index for faster ANI filtering. \t[default: load index if > 50 query files]";
 
 pub const ROBUST: &str = "robust";
 pub const CMD_ROBUST: &str = "robust";
-pub const H_ROBUST: &str = "Robust ani estimation; estimate mean after trim off 10%/90% quantiles.";
+pub const H_ROBUST: &str = "Estimate mean after trim off 10%/90% quantiles.";
 
 pub const FULL_MAT: &str = "full-matrix";
 pub const CMD_FULL_MAT: &str = "full-matrix";
@@ -28,9 +28,9 @@ pub const H_KEEP_REFS: &str = "Keep reference sketches in memory if the sketch p
 
 pub const C_FACTOR: &str = "c";
 pub const CMD_C_FACTOR: &str = "c";
-pub const H_C_FACTOR: &str = "Compression factor. Memory usage and runtime is inversely proportional to c. Lower c allows for ANI comparison of more distant genomes.\t[default: 125]";
+pub const H_C_FACTOR: &str = "Compression factor (k-mer subsampling rate).\t[default: 125]";
 
-pub const H_SCREEN: &str = "Screen out pairs with < % identity using a hash table in constant time.\t[default: 80]";
+pub const H_SCREEN: &str = "Screen out pairs with < % identity using k-mer sketching.\t[default: 80]";
 
 pub const CONF_INTERVAL: &str = "ci";
 pub const CMD_CONF_INTERVAL: &str = "ci";
@@ -38,5 +38,27 @@ pub const H_CONF_INTERVAL: &str = "Output [5%,95%] ANI confidence intervals usin
 pub const H_CONF_INTERVAL_TRI: &str = "Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution. Only works with --sparse or -E.";
 
 pub const LEARNED_ANI: &str = "learned-regression-model";
-pub const CMD_LEARNED_ANI : &str = "--learned-ani";
-pub const H_LEARNED_ANI: &str = "More accurate ANI predictio using a regression model trained on MAG data. Makes ANI calculation more accurate in most cases, especially for prokaryotic genomes. \t[default: off]";
+pub const CMD_LEARNED_ANI : &str = "learned-ani";
+pub const H_LEARNED_ANI: &str = "Use ANI prediction with a regression model trained on MAG data. \t[default: on if -c in [70,275], off otherwise]";
+
+pub const NO_LEARNED_ANI: &str = "no-learned-regression-model";
+pub const CMD_NO_LEARNED_ANI : &str = "no-learned-ani";
+pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.\t[default: disabled automatically unless -c is in [70,275]]";
+
+pub const MODE_SLOW: &str = "slow";
+pub const CMD_MODE_SLOW : &str = "slow";
+pub const H_MODE_SLOW : &str = "Slower skani mode; 4x slower and more memory. Gives more accurate AF and sometimes (but not always) more accurate ANI for very messy assemblies (e.g. eukaryotes, low-quality assemblies) and low ANI genomes. Alias for -c 30.";
+
+pub const MODE_FAST: &str = "fast";
+pub const CMD_MODE_FAST : &str = "fast";
+pub const H_MODE_FAST : &str = "Faster skani mode; 2x faster and less memory. Less accurate AF and sometimes less accurate ANI for distant genomes. Alias for -c 200.";
+
+pub const MARKER_C: &str = "marker_c";
+pub const CMD_MARKER_C: char = 'm';
+pub const H_MARKER_C: &str = "Marker k-mer compression factor. Markers are used for filtering. Consider decreasing if genome is small or mapping individual small contigs. \t[default: 1000]";
+
+pub const DETAIL_OUT: &str = "detailed";
+pub const CMD_DETAIL_OUT: &str = "detailed";
+pub const H_DETAIL_OUT: &str = "Output detailed ANI/AF info for debugging.";
+
+

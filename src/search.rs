@@ -5,6 +5,7 @@ use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
+use crate::parse;
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
@@ -222,8 +223,16 @@ pub fn search(command_params: CommandParams) {
         info!("{} references kept in memory for --keep-refs", ref_sketches_used.read().unwrap().len());
     }
     let mut anis = anis.into_inner().unwrap();
-    if command_params.learned_ani{
-        let model: GBDT = serde_json::from_str(model::MODEL).unwrap();
+    let learned_ani;
+    if !command_params.learned_ani_cmd{
+        learned_ani = parse::use_learned_ani(sketch_params.c, command_params.individual_contig_q, command_params.individual_contig_r, command_params.robust, command_params.median);
+    }
+    else{
+        learned_ani = command_params.learned_ani;
+    }
+    let model_opt = regression::get_model(sketch_params.c, learned_ani);
+    if model_opt.is_some(){
+        let model = model_opt.as_ref().unwrap();
         for ani in anis.iter_mut(){
             regression::predict_from_ani_res(ani, &model);
         }
@@ -233,7 +242,8 @@ pub fn search(command_params: CommandParams) {
         &command_params.out_file_name,
         command_params.max_results,
         sketch_params.use_aa,
-        command_params.est_ci
+        command_params.est_ci,
+        command_params.detailed_out,
     );
     info!("Searching time: {}", now.elapsed().as_secs_f32());
 }

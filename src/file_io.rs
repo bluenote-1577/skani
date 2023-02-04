@@ -12,16 +12,18 @@ use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
 use std::sync::Mutex;
 
-fn write_header(writer: &mut impl Write, id_str: &str, ci: bool) {
-    if !ci{
+fn write_header(writer: &mut impl Write, id_str: &str, ci: bool, verbose: bool) {
+    if !ci && !verbose {
         writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name", id_str).unwrap();
+    } else if !verbose {
+        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile", id_str, id_str, id_str).unwrap();
     } else {
-        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\t{}_5_percentile\t{}_95_percentile\tStandard_deviation\tRef_mean_ctg_len\tQuery_mean_ctg_len", id_str, id_str, id_str).unwrap();
+        writeln!(writer,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\tRef_name\tQuery_name\tNum_ref_contigs\tNum_query_contigs\t{}_5_percentile\t{}_95_percentile\tStandard_deviation\tRef_90_ctg_len\tRef_50_ctg_len\tRef_10_ctg_len\tQuery_90_ctg_len\tQuery_50_ctg_len\tQuery_10_ctg_len\tAvg_chain_len\tTotal_bases_covered", id_str, id_str, id_str).unwrap();
     }
 }
 
-fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
-    if !ci{
+fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verbose: bool) {
+    if !ci && !verbose {
         writeln!(
             writer,
             "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}",
@@ -32,6 +34,21 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool) {
             ani_res.align_fraction_query * 100.,
             ani_res.ref_contig,
             ani_res.query_contig,
+        )
+        .unwrap();
+    } else if !verbose {
+        writeln!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}",
+            ani_res.ref_file,
+            ani_res.query_file,
+            ani_res.ani * 100.,
+            ani_res.align_fraction_ref * 100.,
+            ani_res.align_fraction_query * 100.,
+            ani_res.ref_contig,
+            ani_res.query_contig,
+            ani_res.ci_lower * 100.,
+            ani_res.ci_upper * 100.,
         )
         .unwrap();
     } else {
@@ -235,11 +252,10 @@ pub fn fastx_to_multiple_sketch_rewrite(
                         }
                         new_sketch.contig_order = j;
 
-                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
+                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD {
                             new_sketch.repetitive_kmers =
                                 seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
                         }
-
 
                         let mut locked = ref_sketches.lock().unwrap();
                         locked.push(new_sketch);
@@ -320,7 +336,7 @@ pub fn write_phyllip_matrix(
             for j in 0..end {
                 if i == j {
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
-                    continue
+                    continue;
                 }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
@@ -373,10 +389,10 @@ pub fn write_phyllip_matrix(
                 end = i;
             }
             for j in 0..end {
-                if i == j{
+                if i == j {
                     write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
-                    continue
+                    continue;
                 }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
@@ -423,28 +439,29 @@ pub fn write_sparse_matrix(
     file_name: &str,
     aai: bool,
     est_ci: bool,
+    detailed_out: bool
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     if file_name.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write_header(&mut handle, id_str, est_ci);
+        write_header(&mut handle, id_str, est_ci, detailed_out);
         //        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write_ani_res(&mut handle, ani_res, est_ci);
+                    write_ani_res(&mut handle, ani_res, est_ci, detailed_out);
                 }
             }
         }
     } else {
         let ani_mat_file = file_name.to_string();
         let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
-        write_header(&mut ani_file, id_str, est_ci);
+        write_header(&mut ani_file, id_str, est_ci, detailed_out);
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write_ani_res(&mut ani_file, ani_res, est_ci);
+                    write_ani_res(&mut ani_file, ani_res, est_ci, detailed_out);
                 }
             }
         }
@@ -457,6 +474,7 @@ pub fn write_query_ref_list(
     n: usize,
     aai: bool,
     est_ci: bool,
+    detailed_out: bool
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
@@ -482,25 +500,25 @@ pub fn write_query_ref_list(
     if out_file.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write_header(&mut handle, id_str, est_ci);
+        write_header(&mut handle, id_str, est_ci, detailed_out);
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, anis[i], est_ci);
+                write_ani_res(&mut handle, anis[i], est_ci, detailed_out);
             }
         }
     } else {
         let mut handle;
         handle = File::create(out_file).expect(file_name);
-        write_header(&mut handle, id_str, est_ci);
+        write_header(&mut handle, id_str, est_ci, detailed_out);
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, anis[i], est_ci);
+                write_ani_res(&mut handle, anis[i], est_ci, detailed_out);
             }
         }
     }

@@ -6,7 +6,6 @@ use fxhash::FxHashMap;
 use log::*;
 use partitions::*;
 use std::mem;
-use std::time::Instant;
 extern crate interval;
 use gcollections::ops::set::*;
 use interval::interval_set::*;
