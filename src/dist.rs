@@ -1,5 +1,4 @@
 use crate::chain;
-use crate::model;
 use crate::regression;
 use crate::file_io;
 use crate::params::*;
@@ -9,7 +8,6 @@ use log::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
 use std::time::Instant;
-use gbdt::gradient_boost::GBDT;
 
 pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     //TODO

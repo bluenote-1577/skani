@@ -1,6 +1,4 @@
 use crate::chain;
-use crate::model;
-use gbdt::gradient_boost::GBDT;
 use crate::regression;
 use crate::file_io;
 use crate::params::*;

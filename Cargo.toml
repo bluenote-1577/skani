@@ -1,6 +1,6 @@
 [package]
 name = "skani"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
@@ -27,6 +27,7 @@ intervallum = "*"
 rust-lapper = "*"
 gcollections = "*"
 statrs = "*"
+[target.'cfg(not(target_env = "aarch64"))'.dependencies]
 tikv-jemallocator = "*"
 fastrand="*"
 gbdt = "*"

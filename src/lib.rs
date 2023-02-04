@@ -12,3 +12,6 @@ pub mod triangle;
 pub mod cmd_line;
 pub mod model;
 pub mod regression;
+
+#[cfg(target_arch = "x86_64")]
+pub mod avx2_seeding;

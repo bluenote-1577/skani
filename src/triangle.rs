@@ -1,6 +1,5 @@
 use crate::chain;
 use crate::file_io;
-use crate::model;
 use crate::params::*;
 use crate::screen;
 use crate::regression;

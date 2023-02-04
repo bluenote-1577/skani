@@ -133,10 +133,21 @@ pub fn fastx_to_sketches(
                                 seed,
                             )
                         } else {
-                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") && true{
-                                unsafe {
-                                    seeding::avx2_fmh_seeds(
+                            #[cfg(any(target_arch = "x86_64"))]
+                            {
+                                if is_x86_feature_detected!("avx2"){
+                                    use crate::avx2_seeding;
+                                    unsafe {
+                                        avx2_seeding::avx2_fmh_seeds(
+                                            &seq,
+                                            sketch_params,
+                                            j as u32,
+                                            &mut new_sketch,
+                                            seed,
+                                        );
+                                    }
+                                } else {
+                                    seeding::fmh_seeds(
                                         &seq,
                                         sketch_params,
                                         j as u32,
@@ -144,15 +155,18 @@ pub fn fastx_to_sketches(
                                         seed,
                                     );
                                 }
-                            } else {
-                                seeding::fmh_seeds(
-                                    &seq,
-                                    sketch_params,
-                                    j as u32,
-                                    &mut new_sketch,
-                                    seed,
-                                );
                             }
+                            #[cfg(not(target_arch = "x86_64"))]
+                            {
+                            seeding::fmh_seeds(
+                                        &seq,
+                                        sketch_params,
+                                        j as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
+                            }
+
                         }
                         //new_sketch.contig_order = 0;
                         j += 1;
@@ -229,10 +243,21 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                 seed,
                             )
                         } else {
-                            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                            if is_x86_feature_detected!("avx2") {
-                                unsafe {
-                                    seeding::avx2_fmh_seeds(
+                            #[cfg(any(target_arch = "x86_64"))]
+                            {
+                                if is_x86_feature_detected!("avx2") {
+                                    use crate::avx2_seeding;
+                                    unsafe {
+                                        avx2_seeding::avx2_fmh_seeds(
+                                            &seq,
+                                            sketch_params,
+                                            0_u32,
+                                            &mut new_sketch,
+                                            seed,
+                                        );
+                                    }
+                                } else {
+                                    seeding::fmh_seeds(
                                         &seq,
                                         sketch_params,
                                         0_u32,
@@ -240,14 +265,16 @@ pub fn fastx_to_multiple_sketch_rewrite(
                                         seed,
                                     );
                                 }
-                            } else {
-                                seeding::fmh_seeds(
-                                    &seq,
-                                    sketch_params,
-                                    0_u32,
-                                    &mut new_sketch,
-                                    seed,
-                                );
+                            }
+                            #[cfg(not(target_arch = "x86_64"))]
+                            {
+                            seeding::fmh_seeds(
+                                        &seq,
+                                        sketch_params,
+                                        j as u32,
+                                        &mut new_sketch,
+                                        seed,
+                                    );
                             }
                         }
                         new_sketch.contig_order = j;
@@ -439,7 +466,7 @@ pub fn write_sparse_matrix(
     file_name: &str,
     aai: bool,
     est_ci: bool,
-    detailed_out: bool
+    detailed_out: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     if file_name.is_empty() {
@@ -474,7 +501,7 @@ pub fn write_query_ref_list(
     n: usize,
     aai: bool,
     est_ci: bool,
-    detailed_out: bool
+    detailed_out: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
