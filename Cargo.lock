@@ -161,19 +161,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "boomphf"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e8fb7f38fef59c32549861151d63a6190865e60cf690340c13e3d7178b42a2f"
-dependencies = [
- "crossbeam-utils",
- "log",
- "rayon",
- "serde",
- "wyhash",
-]
-
-[[package]]
 name = "bstr"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -386,23 +373,6 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core",
-]
-
-[[package]]
-name = "debruijn"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "346d29ff45270b3642817082a513e55765ef5686b68e6cc0ed595897a64439d5"
-dependencies = [
- "bit-set",
- "boomphf",
- "itertools",
- "log",
- "num-traits",
- "serde",
- "serde_derive",
- "serde_json",
- "smallvec",
 ]
 
 [[package]]
@@ -884,12 +854,6 @@ checksum = "ac8cd24d9f185bb7223958d8c1ff7a961b74b1953fd05dba7cc568a63b3861ec"
 dependencies = [
  "rustc_version",
 ]
-
-[[package]]
-name = "nohash-hasher"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "normalize-line-endings"
@@ -1492,7 +1456,6 @@ dependencies = [
  "bincode",
  "bio",
  "clap",
- "debruijn",
  "fastrand",
  "fxhash",
  "gbdt",
@@ -1500,7 +1463,6 @@ dependencies = [
  "intervallum",
  "log",
  "needletail",
- "nohash-hasher",
  "num-traits",
  "partitions",
  "predicates 1.0.8",
@@ -1808,15 +1770,6 @@ name = "windows_x86_64_msvc"
 version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
-
-[[package]]
-name = "wyhash"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baf6e163c25e3fac820b4b453185ea2dea3b6a3e0a721d4d23d75bd33734c295"
-dependencies = [
- "rand_core 0.6.4",
-]
 
 [[package]]
 name = "xz2"

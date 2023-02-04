@@ -12,7 +12,7 @@ use skani::triangle;
 //because the musl statically compiled binary
 //uses a bad default allocator which makes the
 //binary take 60% longer!!!
-#[cfg(not(target_env = "aarch64"))]
+#[cfg(target_env = "x86_64")]
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
