@@ -24,12 +24,13 @@ bincode = "*"
 intervallum = "*"
 rust-lapper = "*"
 gcollections = "*"
-statrs = "*"
-[target.'cfg(not(target_env = "aarch64"))'.dependencies]
-tikv-jemallocator = "*"
 fastrand="*"
 gbdt = "*"
 serde_json = "*"
+statrs = "*"
+
+[target.'cfg(target_env = "x86_64")'.dependencies]
+tikv-jemallocator = "*"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
