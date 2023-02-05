@@ -42,6 +42,8 @@ pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
 pub const FULL_INDEX_THRESH: usize = 50;
 pub const REPET_KMER_THRESHOLD: usize = 8_000_000;
 pub const OVERLAP_ORTHOLOGOUS_FRACTION: f32  = 0.50;
+pub const DEFAULT_REPET_CUTOFF: usize = 300;
+pub const TOTAL_BASES_REGRESS_CUTOFF: usize = 150000;
 
 pub const FAST_C: usize = 200;
 pub const SLOW_C: usize = 30;

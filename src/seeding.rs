@@ -339,9 +339,9 @@ pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>) -> usize {
             count_vec.push(ref_pos.len());
         }
         count_vec.sort();
-        let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 50000 - 1];
-        if max_repet_cutoff < 30 {
-            max_repet_cutoff = usize::MAX;
+        let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 5000 - 1];
+        if max_repet_cutoff < 20 {
+            max_repet_cutoff = DEFAULT_REPET_CUTOFF;
         }
         max_repet_cutoff
     }

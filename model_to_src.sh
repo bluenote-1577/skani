@@ -1,5 +1,4 @@
-#MODEL=skani_mummer_train/good_models/0.21994846-4-180-0.08.model
-MODEL=skani-mummer-train/good_models/0.19134241-3-175-0.12.model
+MODEL=./skani-mummer-train/src/models/0.18665557-5-115-0.12.model
 MODEL_C200=skani-mummer-train/good_models/0.18635842-7-230-0.08.model
 SRC=src/model.rs
 

@@ -334,10 +334,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         detailed_out,
     };
 
-    if learned_ani {
-        info!("Learned ANI mode detected. ANI will be adjusted according to a ANI regression model trained on prokaryotic MAGs.");
-    }
-
     (sketch_params, command_params)
 }
 

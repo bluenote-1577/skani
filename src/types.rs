@@ -206,7 +206,7 @@ impl Default for Sketch {
             contigs: vec![],
             total_sequence_length: 0,
             contig_lengths: vec![],
-            repetitive_kmers: usize::MAX,
+            repetitive_kmers: DEFAULT_REPET_CUTOFF,
             marker_seeds: MMHashSet::default(),
             marker_c: 0,
             c: 0,

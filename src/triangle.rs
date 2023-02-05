@@ -52,6 +52,9 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let counter: Mutex<usize> = Mutex::new(0);
 
     let model = regression::get_model(sketch_params.c, command_params.learned_ani);
+    if model.is_some(){
+        info!("Learned ANI mode detected. ANI will be adjusted according to a pre-trained regression model. Use --no-learned-ani to disable.");
+    }
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
         .into_par_iter()

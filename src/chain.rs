@@ -727,7 +727,7 @@ fn get_anchors(
         query_position_vec.sort_unstable();
     }
     debug!(
-        "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}",
+        "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}, Ref_file {}, Query_file {}",
         kmer_seeds_ref.len(),
         kmer_seeds_query.len(),
         anchors.len(),
@@ -736,6 +736,8 @@ fn get_anchors(
             (query_kmers_with_hits as f64) / (kmer_seeds_query.len() as f64),
             1. / (k as f64)
         ),
+        ref_sketch.file_name,
+        query_sketch.file_name,
     );
     let mut lengths = vec![];
     let mut chunks = vec![];

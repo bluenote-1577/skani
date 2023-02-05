@@ -182,6 +182,7 @@ pub fn fastx_to_sketches(
                 if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
                     new_sketch.repetitive_kmers =
                         seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
+                    debug!("Repetitive cutoff multiplicity is {} for {}", new_sketch.repetitive_kmers, ref_file);
                 }
 
                 {

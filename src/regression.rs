@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::model;
+use crate::params::*;
 use gbdt::decision_tree::Data;
 use gbdt::gradient_boost::GBDT;
 use log::*;
@@ -23,7 +24,7 @@ pub fn get_model(c: usize, learned_ani: bool) -> Option<GBDT>{
 }
 
 pub fn predict_from_ani_res(ani_res: &mut AniEstResult, model: &GBDT) {
-    if ani_res.ani > 0.9 {
+    if ani_res.ani > 0.9  && ani_res.total_bases_covered > TOTAL_BASES_REGRESS_CUTOFF as GnPosition{
         let data;
         if ani_res.quant_50_contig_len_r > ani_res.quant_50_contig_len_q {
             data = Data::new_test_data(
@@ -62,7 +63,7 @@ pub fn predict_from_ani_res(ani_res: &mut AniEstResult, model: &GBDT) {
         //dbg!(ani_res.ani_res*100., pred_ani_res);
         if pred_ani_res < 100. {
             ani_res.ci_upper = (ani_res.ci_upper - ani_res.ani) + pred_ani_res / 100.;
-            ani_res.ci_lower = (ani_res.ani - ani_res.ci_lower) + pred_ani_res / 100.;
+            ani_res.ci_lower = (ani_res.ci_lower - ani_res.ani) + pred_ani_res / 100.;
             ani_res.ani = pred_ani_res / 100.;
         }
     }
