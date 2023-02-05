@@ -328,7 +328,10 @@ pub fn fmh_seeds(
     }
 }
 
-pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>) -> usize {
+//This function is unused right now. Originally used for
+//getting a repetitive k-mer masking threshold. We may
+//modify the masking procedure in the future, so leaving for now.
+pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>, c: usize) -> usize {
     if kmer_seeds.is_none() {
         usize::MAX
     } else {
@@ -340,8 +343,9 @@ pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>) -> usize {
         }
         count_vec.sort();
         let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 5000 - 1];
-        if max_repet_cutoff < 20 {
-            max_repet_cutoff = DEFAULT_REPET_CUTOFF;
+        let default_repet_cutoff = BP_CHAIN_BAND / c;
+        if max_repet_cutoff < 20 || max_repet_cutoff > default_repet_cutoff{
+            max_repet_cutoff = default_repet_cutoff;
         }
         max_repet_cutoff
     }

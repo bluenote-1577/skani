@@ -39,11 +39,11 @@ pub const H_CONF_INTERVAL_TRI: &str = "Output [5%,95%] ANI confidence intervals 
 
 pub const LEARNED_ANI: &str = "learned-regression-model";
 pub const CMD_LEARNED_ANI : &str = "learned-ani";
-pub const H_LEARNED_ANI: &str = "Use ANI prediction with a regression model trained on MAG data. \t[default: on if -c in [70,275], off otherwise]";
+pub const H_LEARNED_ANI: &str = "Use ANI prediction with a regression model trained on MAG data. \t[default: on if c > 70]";
 
 pub const NO_LEARNED_ANI: &str = "no-learned-regression-model";
 pub const CMD_NO_LEARNED_ANI : &str = "no-learned-ani";
-pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.\t[default: disabled automatically unless -c is in [70,275]]";
+pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.\t[default: disabled unless c > 70]";
 
 pub const MODE_SLOW: &str = "slow";
 pub const CMD_MODE_SLOW : &str = "slow";

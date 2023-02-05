@@ -179,11 +179,11 @@ pub fn fastx_to_sketches(
                 }
             }
             if is_valid {
-                if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
-                    new_sketch.repetitive_kmers =
-                        seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
-                    debug!("Repetitive cutoff multiplicity is {} for {}", new_sketch.repetitive_kmers, ref_file);
-                }
+//                if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
+//                    new_sketch.repetitive_kmers =
+//                        seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k, new_sketch.c);
+//                    debug!("Repetitive cutoff multiplicity is {} for {}", new_sketch.repetitive_kmers, ref_file);
+//                }
 
                 {
                     let mut locked = ref_sketches.lock().unwrap();
@@ -280,10 +280,10 @@ pub fn fastx_to_multiple_sketch_rewrite(
                         }
                         new_sketch.contig_order = j;
 
-                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD {
-                            new_sketch.repetitive_kmers =
-                                seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k);
-                        }
+//                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD {
+//                            new_sketch.repetitive_kmers =
+//                                seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k, new_sketch.c);
+//                        }
 
                         let mut locked = ref_sketches.lock().unwrap();
                         locked.push(new_sketch);

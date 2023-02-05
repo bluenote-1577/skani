@@ -140,6 +140,15 @@ pub struct Sketch {
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
+
+    //repetitive_kmers isn't being used right now, but we may
+    //make the repeat masking procedure smarter in the future. 
+    //A repetitive k-mer threshold is set in chaining as
+    //2500/c. 
+    //
+    //Also leaving this here so that we users can have 
+    //valid .sketch files across versions, although we may
+    //break that in the future. 
     pub repetitive_kmers: usize,
     pub marker_seeds: MMHashSet<MarkerBits>,
     pub marker_c: usize,
@@ -206,7 +215,7 @@ impl Default for Sketch {
             contigs: vec![],
             total_sequence_length: 0,
             contig_lengths: vec![],
-            repetitive_kmers: DEFAULT_REPET_CUTOFF,
+            repetitive_kmers: 0,
             marker_seeds: MMHashSet::default(),
             marker_c: 0,
             c: 0,

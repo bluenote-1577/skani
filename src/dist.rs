@@ -144,7 +144,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
     let mut anis = anis.into_inner().unwrap();
     let model_opt = regression::get_model(sketch_params.c, command_params.learned_ani);
     if model_opt.is_some(){
-        info!("Learned ANI mode detected. ANI will be adjusted according to a pre-trained regression model. Use --no-learned-ani to disable.");
+        info!("{}",LEARNED_INFO_HELP);
         let model = model_opt.as_ref().unwrap();
         for ani in anis.iter_mut(){
             regression::predict_from_ani_res(ani, &model);

@@ -116,7 +116,7 @@ pub fn map_params_from_sketch(
     }
     let length_cover_cutoff = 5000000;
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
-    let chain_band = bp_chain_band/ref_sketch.c;
+    let index_chain_band = bp_chain_band/ref_sketch.c;
     let min_score = min_anchors as f64 * anchor_score * 0.75;
 //    let min_score = 0.;
     let k = ref_sketch.k;
@@ -128,7 +128,7 @@ pub fn map_params_from_sketch(
         length_cutoff,
         frac_cover_cutoff,
         length_cover_cutoff,
-        chain_band,
+        index_chain_band,
         k,
         amino_acid,
         min_score,
@@ -681,7 +681,7 @@ fn get_anchors(
     let mut anchors = vec![];
     let mut query_kmers_with_hits = 0;
     for (canon_kmer, query_pos) in kmer_seeds_query.iter() {
-        if query_pos.len() > query_sketch.repetitive_kmers {
+        if query_pos.len() > map_params.index_chain_band{
             continue;
         }
         let contains = kmer_seeds_ref.contains_key(canon_kmer);
@@ -693,7 +693,7 @@ fn get_anchors(
         } else {
             let ref_pos = &kmer_seeds_ref[canon_kmer];
 
-            if ref_pos.len() > ref_sketch.repetitive_kmers {
+            if ref_pos.len() > map_params.index_chain_band{
                 continue;
             }
 
@@ -861,7 +861,7 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
                     continue;
                 }
                 if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length
-                    || i - j > map_params.chain_band
+                    || i - j > map_params.index_chain_band
                 {
                     break;
                 }

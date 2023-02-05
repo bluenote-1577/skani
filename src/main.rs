@@ -8,10 +8,12 @@ use skani::search;
 use skani::sketch;
 use skani::triangle;
 
-//Use this allocator instead of the default
+//Use this allocator when statically compiling
+//instead of the default
 //because the musl statically compiled binary
 //uses a bad default allocator which makes the
-//binary take 60% longer!!!
+//binary take 60% longer!!! Only affects
+//static compilation though. 
 #[cfg(target_env = "x86_64")]
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
