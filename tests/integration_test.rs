@@ -610,3 +610,4 @@ fn test_triangle() {
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
 
 }
+
