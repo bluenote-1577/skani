@@ -38,11 +38,11 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. 
+Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. See the issue [here](https://github.com/bluenote-1577/skani/issues/6).
 
-#### Option 2: Pre-built linux statically compiled executable
+#### Option 2: Pre-built x86-64 linux statically compiled executable
 
-We offer a pre-built statically compiled executable for 64-bit linux systems. That is, if you're on a linux 64-bit system, you can just download the binary and run it without installing anything. 
+We offer a pre-built statically compiled executable for x86-64 linux systems. That is, if you're on a x86-64 linux system, you can just download the binary and run it without installing anything. 
 
 For using the latest version of skani: 
 
@@ -57,14 +57,13 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (may not be ready yet; [pending bioconda pull-request](https://github.com/bioconda/bioconda-recipes/pull/38886))
+#### Option 3: Conda
 
 ```sh
 conda install -c bioconda skani
 ```
 
-Note: skani installed from bioconda may not be guaranteed to be the latest version.
-
+Note: _I highly recommend options 1 and 2 over using conda right now_. skani is being developed quickly, and bugs are being fixed almost daily. The conda version will always be outdated. I'll remove this message when I feel skani is more stable. 
 
 ## Quick start
 
