@@ -83,12 +83,6 @@ Note: _I highly recommend options 1 and 2 over using conda right now_. skani is 
 
 ## Quick start
 
-### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
-
-For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
-
-All skani modes take the argument `-t` as number of threads (default: 3).
-
 ```sh
 # compare two genomes for ANI. 
 # all options take -t for multi-threading.
@@ -114,6 +108,10 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 ```
 
 ## Tutorials and manuals
+
+### [skani basic usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
 
 ### skani tutorials
 
