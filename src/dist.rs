@@ -10,7 +10,6 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
-    //TODO
     let ref_sketches;
     let query_params;
     let query_sketches;
