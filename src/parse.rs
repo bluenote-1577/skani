@@ -1,12 +1,20 @@
-use crate::params::*;
 use crate::cmd_line::*;
+use crate::params::*;
 use clap::parser::ArgMatches;
 use log::LevelFilter;
 use log::*;
 use std::fs;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-
+pub fn use_learned_ani(c: usize, individual_contig_q: bool, individual_contig_r: bool, median: bool, robust: bool) -> bool{
+    let learned_ani;
+    if c >= 70 && !individual_contig_q && !individual_contig_r && !median && !robust{
+        learned_ani = true;
+    } else {
+        learned_ani = false;
+    }
+    learned_ani
+}
 pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mode;
     let matches_subc;
@@ -140,36 +148,69 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap_or(def_k)
         .parse::<usize>()
         .unwrap();
-    
+
     let use_syncs = false;
-    let c = matches_subc
+    let mut c = matches_subc
         .value_of("c")
         .unwrap_or(def_c)
         .parse::<usize>()
         .unwrap();
+    if matches_subc.is_present(MODE_FAST) &&
+        matches_subc.is_present(MODE_SLOW){
+            panic!("Both --slow and --fast were set. This is not allowed.");
+    }
+    if matches_subc.is_present(MODE_FAST){
+        if matches_subc.is_present("c"){
+            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+        }
+        c = FAST_C
+    }
+    if matches_subc.is_present(MODE_SLOW){
+        if matches_subc.is_present("c"){
+            warn!("-c value is set but --slow is also set. Using --slow mode instead (-c 30)");
+        }
+        c = SLOW_C
+    }
 
     let min_aligned_frac;
     let est_ci;
-    if mode != Mode::Sketch{
-        let def_maf = if amino_acid{ D_FRAC_COVER_CUTOFF_AA} else {D_FRAC_COVER_CUTOFF};
-        min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or(def_maf).parse::<f64>().unwrap()/100.;
+    let detailed_out;
+    if mode != Mode::Sketch {
+        let def_maf = if amino_acid {
+            D_FRAC_COVER_CUTOFF_AA
+        } else {
+            D_FRAC_COVER_CUTOFF
+        };
+        min_aligned_frac = matches_subc
+            .value_of(MIN_ALIGN_FRAC)
+            .unwrap_or(def_maf)
+            .parse::<f64>()
+            .unwrap()
+            / 100.;
         est_ci = matches_subc.is_present(CONF_INTERVAL);
-    }
-    else{
+        detailed_out = matches_subc.is_present(DETAIL_OUT);
+    } else {
         min_aligned_frac = 0.;
         est_ci = false;
+        detailed_out = false;
     }
 
-    let marker_c = matches_subc.value_of("marker_c").unwrap_or(MARKER_C).parse::<usize>().unwrap();
+    let marker_c = matches_subc
+        .value_of("marker_c")
+        .unwrap_or(MARKER_C_DEFAULT)
+        .parse::<usize>()
+        .unwrap();
     let out_file_name;
     if mode == Mode::Triangle {
         out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
     } else if mode == Mode::Sketch {
-        out_file_name = matches_subc.value_of("output sketch folder").unwrap_or("").to_string();
+        out_file_name = matches_subc
+            .value_of("output sketch folder")
+            .unwrap_or("")
+            .to_string();
     } else if mode == Mode::Dist {
         out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
-    }
-    else{
+    } else {
         panic!("Mode doesn't exist");
     }
 
@@ -177,7 +218,12 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mut robust = false;
     let mut median = false;
     if mode == Mode::Triangle || mode == Mode::Dist {
-        screen_val = matches_subc.value_of("s").unwrap_or("0.00").parse::<f64>().unwrap() / 100.;
+        screen_val = matches_subc
+            .value_of("s")
+            .unwrap_or("0.00")
+            .parse::<f64>()
+            .unwrap()
+            / 100.;
     }
     if mode == Mode::Triangle || mode == Mode::Search || mode == Mode::Dist {
         robust = matches_subc.is_present("robust");
@@ -188,7 +234,10 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let mut refs_are_sketch = !ref_files.is_empty();
     for ref_file in ref_files.iter() {
-        if !ref_file.contains(".sketch") && !ref_file.contains(".marker") && !ref_file.contains("markers.bin"){
+        if !ref_file.contains(".sketch")
+            && !ref_file.contains(".marker")
+            && !ref_file.contains("markers.bin")
+        {
             refs_are_sketch = false;
             break;
         }
@@ -202,51 +251,63 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
     }
 
-    
     let individual_contig_q;
     let individual_contig_r;
 
-    if mode == Mode::Triangle{
-        if matches_subc.is_present("individual contig"){
+    if mode == Mode::Triangle {
+        if matches_subc.is_present("individual contig") {
             individual_contig_q = true;
             individual_contig_r = true;
-        }
-        else{
+        } else {
             individual_contig_q = false;
             individual_contig_r = false;
         }
-    }
-    else if mode == Mode::Dist{
+    } else if mode == Mode::Dist {
         individual_contig_q = matches_subc.is_present("individual contig query");
         individual_contig_r = matches_subc.is_present("individual contig ref");
-    }
-    else{
+    } else {
         individual_contig_q = false;
         individual_contig_r = false;
     }
-    
+
     let full_matrix;
-    if mode == Mode::Triangle{
+    if mode == Mode::Triangle {
         full_matrix = matches_subc.is_present(FULL_MAT);
-    }
-    else{
+    } else {
         full_matrix = false;
     }
 
     let screen;
-    if mode == Mode::Dist{
-        if query_files.len() > FULL_INDEX_THRESH || individual_contig_q{
+    if mode == Mode::Dist {
+        if query_files.len() > FULL_INDEX_THRESH || individual_contig_q {
             screen = true;
-        }
-        else{
+        } else {
             screen = matches_subc.is_present(FULL_INDEX);
         }
-    }
-    else if mode == Mode::Triangle{
+    } else if mode == Mode::Triangle {
         screen = true;
-    }
-    else{
+    } else {
         screen = false;
+    }
+
+    let learned_ani;
+    let learned_ani_cmd;
+    if mode == Mode::Triangle || mode == Mode::Dist {
+        if matches_subc.is_present(LEARNED_ANI) && matches_subc.is_present(NO_LEARNED_ANI) {
+            panic!("Only one of --learned-ani and --no-learned-ani is allowed");
+        } else if matches_subc.is_present(LEARNED_ANI) {
+            learned_ani_cmd = true;
+            learned_ani = true;
+        } else if matches_subc.is_present(NO_LEARNED_ANI) {
+            learned_ani_cmd = true;
+            learned_ani = false;
+        } else {
+            learned_ani_cmd = false;
+            learned_ani = use_learned_ani(c, individual_contig_q, individual_contig_r, robust, median);
+        }
+    } else {
+        learned_ani_cmd = false;
+        learned_ani = false;
     }
 
     let command_params = CommandParams {
@@ -267,7 +328,10 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_r,
         min_aligned_frac,
         keep_refs: false,
-        est_ci
+        est_ci,
+        learned_ani,
+        learned_ani_cmd,
+        detailed_out,
     };
 
     (sketch_params, command_params)
@@ -327,19 +391,41 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         .value_of("s")
         .unwrap_or("0.00")
         .parse::<f64>()
-        .unwrap()/100.;
+        .unwrap()
+        / 100.;
     let screen;
     let individual_contig_q = matches_subc.is_present("individual contig query");
-    if query_files.len() > FULL_INDEX_THRESH || individual_contig_q{
+    if query_files.len() > FULL_INDEX_THRESH || individual_contig_q {
         screen = true;
-    }
-    else{
+    } else {
         screen = matches_subc.is_present(FULL_INDEX);
     }
 
-    let min_aligned_frac = matches_subc.value_of(MIN_ALIGN_FRAC).unwrap_or("-100.0").parse::<f64>().unwrap()/100.;
+    let min_aligned_frac = matches_subc
+        .value_of(MIN_ALIGN_FRAC)
+        .unwrap_or("-100.0")
+        .parse::<f64>()
+        .unwrap()
+        / 100.;
     let keep_refs = matches_subc.is_present(KEEP_REFS);
     let est_ci = matches_subc.is_present(CONF_INTERVAL);
+    let detailed_out = matches_subc.is_present(DETAIL_OUT);
+    let learned_ani;
+    let learned_ani_cmd;
+    if matches_subc.is_present(LEARNED_ANI) && matches_subc.is_present(NO_LEARNED_ANI)
+    {
+        panic!("Only one of --learned-ani and --no-learned-ani is allowed");
+    } else if matches_subc.is_present(LEARNED_ANI) {
+        learned_ani = true;
+        learned_ani_cmd = true;
+    } else if matches_subc.is_present(NO_LEARNED_ANI) {
+        learned_ani = false;
+        learned_ani_cmd = true;
+    }
+    else{
+        learned_ani = false;
+        learned_ani_cmd = false;
+    }
 
     let command_params = CommandParams {
         screen,
@@ -360,12 +446,17 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         min_aligned_frac,
         keep_refs,
         est_ci,
+        learned_ani,
+        learned_ani_cmd,
+        detailed_out,
     };
 
     if command_params.ref_files.is_empty() {
         error!("No valid reference fastas or sketches found.");
         std::process::exit(1)
     }
+
+
 
     (SketchParams::default(), command_params)
 }

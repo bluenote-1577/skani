@@ -119,7 +119,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     key
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct SeedPosition{
     pub pos: GnPosition,
     pub canonical: bool,
@@ -140,6 +140,15 @@ pub struct Sketch {
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
+
+    //repetitive_kmers isn't being used right now, but we may
+    //make the repeat masking procedure smarter in the future. 
+    //A repetitive k-mer threshold is set in chaining as
+    //2500/c. 
+    //
+    //Also leaving this here so that we users can have 
+    //valid .sketch files across versions, although we may
+    //break that in the future. 
     pub repetitive_kmers: usize,
     pub marker_seeds: MMHashSet<MarkerBits>,
     pub marker_c: usize,
@@ -206,7 +215,7 @@ impl Default for Sketch {
             contigs: vec![],
             total_sequence_length: 0,
             contig_lengths: vec![],
-            repetitive_kmers: usize::MAX,
+            repetitive_kmers: 0,
             marker_seeds: MMHashSet::default(),
             marker_c: 0,
             c: 0,
@@ -343,7 +352,8 @@ pub struct ChainInterval {
     pub ref_contig: usize,
     pub query_contig: usize,
     pub chunk_id: usize,
-    pub reverse_chain: bool
+    pub reverse_chain: bool,
+    pub overlap: u32
 }
 impl ChainInterval {
     pub fn query_range_len(&self) -> GnPosition {
@@ -400,4 +410,15 @@ pub struct AniEstResult{
     pub ci_upper: f32,
     pub ci_lower: f32,
     pub aai: bool,
+    pub quant_90_contig_len_q: f32,
+    pub quant_90_contig_len_r: f32,
+    pub quant_50_contig_len_q: f32,
+    pub quant_50_contig_len_r: f32, 
+    pub quant_10_contig_len_q: f32,
+    pub quant_10_contig_len_r: f32, 
+    pub std: f32,
+    pub num_contigs_q: u32,
+    pub num_contigs_r: u32,
+    pub avg_chain_int_len: u32,
+    pub total_bases_covered: u32, 
 }

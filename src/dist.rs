@@ -1,4 +1,5 @@
 use crate::chain;
+use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
@@ -9,7 +10,6 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
-    //TODO
     let ref_sketches;
     let query_params;
     let query_sketches;
@@ -140,13 +140,22 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             info!("{} query sequences processed.", locked);
         }
     });
-    let anis = anis.into_inner().unwrap();
+    let mut anis = anis.into_inner().unwrap();
+    let model_opt = regression::get_model(sketch_params.c, command_params.learned_ani);
+    if model_opt.is_some(){
+        info!("{}",LEARNED_INFO_HELP);
+        let model = model_opt.as_ref().unwrap();
+        for ani in anis.iter_mut(){
+            regression::predict_from_ani_res(ani, &model);
+        }
+    }
     file_io::write_query_ref_list(
         &anis,
         &command_params.out_file_name,
         command_params.max_results,
         sketch_params.use_aa,
         command_params.est_ci,
+        command_params.detailed_out,
     );
     info!("ANI calculation time: {}", now.elapsed().as_secs_f32());
 }

@@ -20,10 +20,10 @@ pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
 pub const D_FRAC_COVER_CUTOFF: &str = "15";
 pub const D_ANI_AND_COVER_CUTOFF: f64 = 0.95;
 pub const D_FRAC_COVER_CUTOFF_AA: &str = "5";
-pub const D_CHAIN_BAND: usize = 25;
-pub const D_CHAIN_BAND_AAI: usize = 125;
+//pub const D_CHAIN_BAND: usize = 50;
+//pub const D_CHAIN_BAND_AAI: usize = 125;
 pub const ORF_SIZE: usize = 30;
-pub const MARKER_C: &str = "1000";
+pub const MARKER_C_DEFAULT: &str = "1000";
 pub const K_MARKER_AA: usize = 10;
 pub const K_MARKER_DNA: usize = 21;
 pub const SEARCH_STRING: &str = "search";
@@ -40,6 +40,13 @@ pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
 pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
 pub const FULL_INDEX_THRESH: usize = 50;
+pub const REPET_KMER_THRESHOLD: usize = 8_000_000;
+pub const OVERLAP_ORTHOLOGOUS_FRACTION: f32  = 0.50;
+pub const TOTAL_BASES_REGRESS_CUTOFF: usize = 150000;
+pub const LEARNED_INFO_HELP: &str = "Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.";
+
+pub const FAST_C: usize = 200;
+pub const SLOW_C: usize = 30;
 
 
 #[derive(PartialEq)]
@@ -59,7 +66,7 @@ pub struct MapParams {
     pub length_cutoff: usize,
     pub frac_cover_cutoff: f64,
     pub length_cover_cutoff: usize,
-    pub chain_band: usize,
+    pub index_chain_band: usize,
     pub k: usize,
     pub amino_acid: bool,
     pub min_score: f64,
@@ -88,7 +95,10 @@ pub struct CommandParams{
     pub individual_contig_r: bool,
     pub min_aligned_frac: f64,
     pub keep_refs: bool,
-    pub est_ci: bool
+    pub est_ci: bool,
+    pub learned_ani: bool,
+    pub learned_ani_cmd: bool,
+    pub detailed_out: bool
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

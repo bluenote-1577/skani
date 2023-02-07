@@ -1,6 +1,6 @@
 [package]
 name = "skani"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
@@ -12,23 +12,25 @@ bio = "*"
 rand = "0.8.3"
 fxhash = "*"
 clap = "3"
-debruijn = "*"
 partitions = "*"
 num-traits = "*"
 needletail = "*"
 simple-logging= "*"
 log = "*"
 rayon = "*"
-nohash-hasher = "*"
 smallvec = { version = "*", features = ["union","serde","write"] }
 serde = "*"
 bincode = "*"
 intervallum = "*"
 rust-lapper = "*"
 gcollections = "*"
-statrs = "*"
-tikv-jemallocator = "*"
 fastrand="*"
+gbdt = "*"
+serde_json = "*"
+statrs = "*"
+
+[target.'cfg(target_env = "x86_64")'.dependencies]
+tikv-jemallocator = "*"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"

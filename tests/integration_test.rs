@@ -92,8 +92,39 @@ fn test_search() {
     let _af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(ani > 0.97);
-    assert!(af_q > 0.80);
+    assert!(ani > 97.);
+    assert!(af_q > 80.);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_sketch_dir/")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("--median")
+        .arg("-n")
+        .arg("5")
+        .arg("--learned-ani")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    println!("ANI search test learned");
+    println!(
+        "{}",
+        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
+    );
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let _af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 97.);
+    assert!(af_q > 80.);
+
+
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
@@ -162,9 +193,9 @@ fn test_search() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(ani > 0.70);
+    assert!(ani > 70.);
     //assert!(af_q > 0.80);
-    assert!(af_r > 0.50);
+    assert!(af_r > 30.);
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
 
@@ -194,9 +225,9 @@ fn test_dist() {
     let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
         .parse::<f64>()
         .unwrap();
-    assert!(aai > 0.98);
-    assert!(af_q > 0.80);
-    assert!(af_r > 0.80);
+    assert!(aai > 98.);
+    assert!(af_q > 80.);
+    assert!(af_r > 80.);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
@@ -227,6 +258,31 @@ fn test_dist() {
         .arg("--marker-index")
         .arg("-n")
         .arg("3")
+        .arg("--learned-ani")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.2);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("--marker-index")
+        .arg("-n")
+        .arg("3")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
     let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
@@ -244,6 +300,57 @@ fn test_dist() {
     assert!(af_r > 90.);
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("--marker-index")
+        .arg("-n")
+        .arg("3")
+        .arg("--slow")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.2);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("--marker-index")
+        .arg("-n")
+        .arg("3")
+        .arg("--fast")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.2);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
 
 
     println!("ANI E.coli test");
@@ -278,8 +385,8 @@ fn test_dist() {
     );
     assert!(aai > 70.);
     assert!(aai < 85.);
-    assert!(af_q > 40.);
-    assert!(af_r > 40.);
+    assert!(af_q > 30.);
+    assert!(af_r > 30.);
     assert!(af_q < 90.);
     assert!(af_r < 90.);
 
@@ -475,6 +582,19 @@ fn test_triangle() {
     assert.success().code(0);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("./test_files/query_list.txt")
+        .arg("-o")
+        .arg("./tests/results/output")
+        .arg("--learned-ani")
+        .assert();
+    assert.success().code(0);
+
+
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("triangle")
         .arg("-l")
@@ -490,3 +610,4 @@ fn test_triangle() {
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
 
 }
+

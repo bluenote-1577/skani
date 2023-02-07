@@ -12,7 +12,25 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~5 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+
+##  Updates
+
+### v0.1.0 released - 2023-02-07. 
+
+We added new experiments on the revised version of our preprint (pending bioRxiv update) in the appendix. We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
+
+#### Major
+
+* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. v0.0.1 gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
+* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
+
+#### Minor
+
+* **Small contig/genome defaults made better** - should be more sensitive so that they don't get filtered by default.
+* **Repetitive k-mer masking made better** - smarter settings and should work better for eukaryotic genomes; shouldn't affect prokaryotic genomes much.
+* **`--fast` and `--slow` mode added** - alias for `-c 200` and `-c 30` respectively.
+* **More x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
 
 ##  Install
 
@@ -38,8 +56,6 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-Note: If you're on an ARM64 platform, you may need to build from the `no-simd` branch of skani. See the issue [here](https://github.com/bluenote-1577/skani/issues/6).
-
 #### Option 2: Pre-built x86-64 linux statically compiled executable
 
 We offer a pre-built statically compiled executable for x86-64 linux systems. That is, if you're on a x86-64 linux system, you can just download the binary and run it without installing anything. 
@@ -57,21 +73,15 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda
+#### Option 3: Conda (conda version: 0.0.1 - source version: 0.1.0)
 
 ```sh
 conda install -c bioconda skani
 ```
 
-Note: _I highly recommend options 1 and 2 over using conda right now_. skani is being developed quickly, and bugs are being fixed almost daily. The conda version will always be outdated. I'll remove this message when I feel skani is more stable. 
+Note: _I highly recommend options 1 and 2 over using conda right now_. skani is being developed quickly. The conda version will always be outdated. I'll remove this message when I feel skani is more stable. 
 
 ## Quick start
-
-### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
-
-For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
-
-All skani modes take the argument `-t` as number of threads (default: 3).
 
 ```sh
 # compare two genomes for ANI. 
@@ -98,6 +108,10 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 ```
 
 ## Tutorials and manuals
+
+### [skani basic usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
 
 ### skani tutorials
 

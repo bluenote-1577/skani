@@ -1,0 +1,3 @@
+[submodule "skani-mummer-train"]
+	path = skani-mummer-train
+	url = https://github.com/bluenote-1577/skani-mummer-train
