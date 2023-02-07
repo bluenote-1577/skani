@@ -9,6 +9,11 @@ documentation = "https://github.com/bluenote-1577/skani"
 repository = "https://github.com/bluenote-1577/skani"
 readme = "README.md"
 
+exclude = [
+    "test_files/*",
+    "videos/*",
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
