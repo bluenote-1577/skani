@@ -30,7 +30,7 @@ We added new experiments on the revised version of our preprint (pending bioRxiv
 * **Small contig/genome defaults made better** - should be more sensitive so that they don't get filtered by default.
 * **Repetitive k-mer masking made better** - smarter settings and should work better for eukaryotic genomes; shouldn't affect prokaryotic genomes much.
 * **`--fast` and `--slow` mode added** - alias for `-c 200` and `-c 30` respectively.
-* **More x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
+* **More non x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
 
 ##  Install
 
