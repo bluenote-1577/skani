@@ -18,12 +18,12 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 ### v0.1.0 released - 2023-02-07. 
 
-Lots of new experiments added on revised version of our preprint (pending bioRxiv update) in the appendix. We show skani has quite good AF correlation with MUMmer, and that it even works decently on simple eukaryotic MAGs, especially with the new `--slow` option. 
+We added new experiments on the revised version of our preprint (pending bioRxiv update) in the appendix. We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
 
 #### Major
 
-* **ANI debiasing added** - skani uses a debiasing step with a regression model trained on MAGs with MUMmer to give more accurate ANIs in the 90-98% range. v0.0.1 gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
-* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF by quite a bit for certain assemblies.
+* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. v0.0.1 gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
+* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
 
 #### Minor
 
