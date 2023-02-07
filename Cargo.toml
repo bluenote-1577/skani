@@ -18,34 +18,34 @@ exclude = [
 
 [dependencies]
 thiserror = "1.0"
-bio = "*"
+bio = "1"
 rand = "0.8.3"
-fxhash = "*"
+fxhash = "0"
 clap = "3"
-partitions = "*"
-num-traits = "*"
-needletail = "*"
-simple-logging= "*"
-log = "*"
-rayon = "*"
-smallvec = { version = "*", features = ["union","serde","write"] }
-serde = "*"
-bincode = "*"
-intervallum = "*"
-rust-lapper = "*"
-gcollections = "*"
-fastrand="*"
-gbdt = "*"
-serde_json = "*"
-statrs = "*"
+partitions = "0"
+num-traits = "0"
+needletail = "0.4"
+simple-logging= "2"
+log = "0.4"
+rayon = "1.5"
+smallvec = { version = "1", features = ["union","serde","write"] }
+serde = "1"
+bincode = "1"
+intervallum = "1"
+rust-lapper = "1"
+gcollections = "1"
+fastrand="1"
+gbdt = "0"
+serde_json = "1"
+statrs = "0"
 
 [target.'cfg(target_env = "x86_64")'.dependencies]
-tikv-jemallocator = "*"
+tikv-jemallocator = "0"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1"
-serial_test = "*"
+serial_test = "0"
 
 
 
