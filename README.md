@@ -18,10 +18,12 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 ### v0.1.0 released - 2023-02-07. 
 
+We added new experiments on the revised version of our preprint (pending bioRxiv update) in the appendix. We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
+
 #### Major
 
-* **ANI debiasing added** - skani uses a debiasing step with a regression model trained on MAGs with MUMmer to give more accurate ANIs in the 90-98% range. v0.0.1 gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
-* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF by quite a bit for certain assemblies.
+* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. v0.0.1 gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
+* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
 
 #### Minor
 
@@ -81,12 +83,6 @@ Note: _I highly recommend options 1 and 2 over using conda right now_. skani is 
 
 ## Quick start
 
-### [skani commands usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
-
-For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
-
-All skani modes take the argument `-t` as number of threads (default: 3).
-
 ```sh
 # compare two genomes for ANI. 
 # all options take -t for multi-threading.
@@ -112,6 +108,10 @@ python scripts/clustermap_triangle.py skani_ani_matrix.txt
 ```
 
 ## Tutorials and manuals
+
+### [skani basic usage information](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide)
+
+For more information about using the specific skani subcommands, see the [guide linked above](https://github.com/bluenote-1577/skani/wiki/skani-basic-usage-guide). 
 
 ### skani tutorials
 
