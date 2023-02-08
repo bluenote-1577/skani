@@ -18,7 +18,7 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 ### v0.1.0 released - 2023-02-07. 
 
-We added new experiments on the revised version of our preprint (pending bioRxiv update) in the appendix. We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
+We added new experiments on the revised version of our preprint (Extended Data Figs 11-14). We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
 
 #### Major
 
@@ -48,11 +48,11 @@ git clone https://github.com/bluenote-1577/skani
 cd skani
 
 # If default rust install directory is ~/.cargo
-cargo install --path . --root ~/.cargo
+cargo install --path . --root ~/.cargo --features=cli
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 # If ~/.cargo doesn't exist use below commands instead
-#cargo build --release
+#cargo build --release --features=cli
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
