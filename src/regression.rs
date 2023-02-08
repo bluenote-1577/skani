@@ -5,6 +5,10 @@ use gbdt::decision_tree::Data;
 use gbdt::gradient_boost::GBDT;
 use log::*;
 
+pub fn use_learned_ani(c: usize, individual_contig_q: bool, individual_contig_r: bool, median: bool, robust: bool) -> bool {
+    c >= 70 && !individual_contig_q && !individual_contig_r && !median && !robust
+}
+
 pub fn get_model(c: usize, learned_ani: bool) -> Option<GBDT>{
     let model: Option<GBDT>;
     if learned_ani {
