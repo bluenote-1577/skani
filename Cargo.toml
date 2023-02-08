@@ -51,6 +51,7 @@ predicates = "1"
 serial_test = "0"
 
 [features]
+default = ["cli"]
 cli = ["clap"]
 
 [[bin]]
