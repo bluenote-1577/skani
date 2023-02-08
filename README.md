@@ -48,7 +48,7 @@ git clone https://github.com/bluenote-1577/skani
 cd skani
 
 # If default rust install directory is ~/.cargo
-cargo install --path . --root ~/.cargo
+cargo install --path . --root ~/.cargo --features=cli
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 # If ~/.cargo doesn't exist use below commands instead
