@@ -11,7 +11,6 @@ thiserror = "1.0"
 bio = "*"
 rand = "0.8.3"
 fxhash = "*"
-clap = "3"
 partitions = "*"
 num-traits = "*"
 needletail = "*"
@@ -29,6 +28,10 @@ gbdt = "*"
 serde_json = "*"
 statrs = "*"
 
+[dependencies.clap]
+version = "3"
+optional = true
+
 [target.'cfg(target_env = "x86_64")'.dependencies]
 tikv-jemallocator = "*"
 
@@ -37,6 +40,13 @@ assert_cmd = "1.0.1"
 predicates = "1"
 serial_test = "*"
 
+[features]
+cli = ["clap"]
+
+[[bin]]
+name = "skani"
+path = "src/main.rs"
+required-features = ["cli"]
 
 
 [profile.release]
