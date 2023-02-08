@@ -1,20 +1,13 @@
 use crate::cmd_line::*;
 use crate::params::*;
+use crate::regression;
 use clap::parser::ArgMatches;
 use log::LevelFilter;
 use log::*;
 use std::fs;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-pub fn use_learned_ani(c: usize, individual_contig_q: bool, individual_contig_r: bool, median: bool, robust: bool) -> bool{
-    let learned_ani;
-    if c >= 70 && !individual_contig_q && !individual_contig_r && !median && !robust{
-        learned_ani = true;
-    } else {
-        learned_ani = false;
-    }
-    learned_ani
-}
+
 pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mode;
     let matches_subc;
@@ -303,7 +296,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             learned_ani = false;
         } else {
             learned_ani_cmd = false;
-            learned_ani = use_learned_ani(c, individual_contig_q, individual_contig_r, robust, median);
+            learned_ani = regression::use_learned_ani(c, individual_contig_q, individual_contig_r, robust, median);
         }
     } else {
         learned_ani_cmd = false;

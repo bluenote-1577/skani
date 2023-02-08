@@ -3,7 +3,6 @@ use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
-use crate::parse;
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
@@ -223,7 +222,7 @@ pub fn search(command_params: CommandParams) {
     let mut anis = anis.into_inner().unwrap();
     let learned_ani;
     if !command_params.learned_ani_cmd{
-        learned_ani = parse::use_learned_ani(sketch_params.c, command_params.individual_contig_q, command_params.individual_contig_r, command_params.robust, command_params.median);
+        learned_ani = regression::use_learned_ani(sketch_params.c, command_params.individual_contig_q, command_params.individual_contig_r, command_params.robust, command_params.median);
     }
     else{
         learned_ani = command_params.learned_ani;
