@@ -155,7 +155,7 @@ skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.gi
 
 ### Rust API
 
-If you're interested in using skani as a rust library, check out the minimal example here: https://github.com/bluenote-1577/skani-lib-example. The documentation is currently minimal and I guarantee no API stability. 
+If you're interested in using skani as a rust library, check out the minimal example here: https://github.com/bluenote-1577/skani-lib-example. The documentation is currently minimal (https://docs.rs/skani/0.1.0/skani/) and I guarantee no API stability. 
 
 ### Python bindings 
 
