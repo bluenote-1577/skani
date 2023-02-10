@@ -150,3 +150,13 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 ## Feature requests, issues
 
 skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accommodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
+
+## Calling skani from rust or python
+
+### Rust API
+
+If you're interested in using skani as a rust library, check out the minimal example here: https://github.com/bluenote-1577/skani-lib-example. The documentation is currently minimal and I guarantee no API stability. 
+
+### Python bindings 
+
+If you're interested in calling skani from python, see the [pyskani](https://github.com/althonos/pyskani) python interface and bindings to skani written by [Martin Larralde](https://github.com/althonos). Note: I am not personally involved in the pyskani project and do not offer guarantees on correctness of the outputs. 
