@@ -73,7 +73,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.0.1 - source version: 0.1.0)
+#### Option 3: Conda (conda version: 0.1.0 - source version: 0.1.0)
 
 ```sh
 conda install -c bioconda skani
