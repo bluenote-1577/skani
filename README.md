@@ -79,7 +79,7 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 conda install -c bioconda skani
 ```
 
-Note: _I highly recommend options 1 and 2 over using conda right now_. skani is being developed quickly. The conda version will always be outdated. I'll remove this message when I feel skani is more stable. 
+Note: skani is being developed quickly and the conda version may be outdated; see the version status above. 
 
 ## Quick start
 
