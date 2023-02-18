@@ -2,7 +2,7 @@
 
 ## Introduction
 
-**skani** is a program for calculating average nucleotide identity (ANI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
+**skani** is a program for calculating average nucleotide identity (ANI) from DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
 
 skani uses an approximate mapping method without base-level alignment to get orthology in order to estimate ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
