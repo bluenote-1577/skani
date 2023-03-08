@@ -2,9 +2,9 @@
 
 ## Introduction
 
-**skani** is a program for calculating average nucleotide identity (ANI) from microbial DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
+**skani** is a program for calculating average nucleotide identity (ANI) from DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
 
-skani uses an approximate mapping method without base-level alignment to get orthology in order to estimate ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method without base-level alignment to get orthology to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
@@ -48,11 +48,11 @@ git clone https://github.com/bluenote-1577/skani
 cd skani
 
 # If default rust install directory is ~/.cargo
-cargo install --path . --root ~/.cargo --features=cli
+cargo install --path . --root ~/.cargo
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 # If ~/.cargo doesn't exist use below commands instead
-#cargo build --release --features=cli
+#cargo build --release
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
@@ -73,13 +73,13 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.0.1 - source version: 0.1.0)
+#### Option 3: Conda (conda version: 0.1.0 - source version: 0.1.0)
 
 ```sh
 conda install -c bioconda skani
 ```
 
-Note: _I highly recommend options 1 and 2 over using conda right now_. skani is being developed quickly. The conda version will always be outdated. I'll remove this message when I feel skani is more stable. 
+Note: skani is being developed quickly and the conda version may be outdated; see the version status above. 
 
 ## Quick start
 
@@ -150,3 +150,13 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 ## Feature requests, issues
 
 skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accommodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
+
+## Calling skani from rust or python
+
+### Rust API
+
+If you're interested in using skani as a rust library, check out the minimal example here: https://github.com/bluenote-1577/skani-lib-example. The documentation is currently minimal (https://docs.rs/skani/0.1.0/skani/) and I guarantee no API stability. 
+
+### Python bindings 
+
+If you're interested in calling skani from python, see the [pyskani](https://github.com/althonos/pyskani) python interface and bindings to skani written by [Martin Larralde](https://github.com/althonos). Note: I am not personally involved in the pyskani project and do not offer guarantees on correctness of the outputs. 
