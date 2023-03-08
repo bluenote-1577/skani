@@ -42,7 +42,7 @@ statrs = "0"
 version = "3"
 optional = true
 
-[target.'cfg(target_env = "x86_64")'.dependencies]
+[target.'cfg(target_env = "musl")'.dependencies]
 tikv-jemallocator = "0"
 
 [dev-dependencies]

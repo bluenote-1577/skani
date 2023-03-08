@@ -14,7 +14,7 @@ use skani::triangle;
 //uses a bad default allocator which makes the
 //binary take 60% longer!!! Only affects
 //static compilation though. 
-#[cfg(target_env = "x86_64")]
+#[cfg(target_env = "musl")]
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
