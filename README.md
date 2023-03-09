@@ -14,24 +14,6 @@ skani uses an approximate mapping method without base-level alignment to get ort
 
 4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
-##  Updates
-
-### v0.1.0 released - 2023-02-07. 
-
-We added new experiments on the revised version of our preprint (Extended Data Figs 11-14). We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
-
-#### Major
-
-* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. Old version gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
-* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
-
-#### Minor
-
-* **Small contig/genome defaults made better** - should be more sensitive so that they don't get filtered by default.
-* **Repetitive k-mer masking made better** - smarter settings and should work better for eukaryotic genomes; shouldn't affect prokaryotic genomes much.
-* **`--fast` and `--slow` mode added** - alias for `-c 200` and `-c 30` respectively.
-* **More non x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
-
 ##  Install
 
 #### Option 1: Build from source
@@ -146,6 +128,24 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 ## Citation
 
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
+
+##  Updates
+
+### v0.1.0 released - 2023-02-07. 
+
+We added new experiments on the revised version of our preprint (Extended Data Figs 11-14). We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
+
+#### Major
+
+* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. Old version gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
+* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
+
+#### Minor
+
+* **Small contig/genome defaults made better** - should be more sensitive so that they don't get filtered by default.
+* **Repetitive k-mer masking made better** - smarter settings and should work better for eukaryotic genomes; shouldn't affect prokaryotic genomes much.
+* **`--fast` and `--slow` mode added** - alias for `-c 200` and `-c 30` respectively.
+* **More non x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
 
 ## Feature requests, issues
 
