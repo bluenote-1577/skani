@@ -4,7 +4,7 @@
 
 **skani** is a program for calculating average nucleotide identity (ANI) from DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
 
-skani uses an approximate mapping method without base-level alignment to get orthology to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
 
