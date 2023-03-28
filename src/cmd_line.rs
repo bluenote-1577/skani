@@ -59,6 +59,6 @@ pub const H_MARKER_C: &str = "Marker k-mer compression factor. Markers are used 
 
 pub const DETAIL_OUT: &str = "detailed";
 pub const CMD_DETAIL_OUT: &str = "detailed";
-pub const H_DETAIL_OUT: &str = "Output detailed ANI/AF info for debugging.";
+pub const H_DETAIL_OUT: &str = "Print additional info including contig N50s and more.";
 
 

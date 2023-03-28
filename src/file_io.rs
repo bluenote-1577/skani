@@ -355,12 +355,8 @@ pub fn write_phyllip_matrix(
                 name = &sketches[i].file_name;
             }
             write!(&mut af_file, "{}", name).unwrap();
-            let end;
-            if full_matrix {
-                end = sketches.len();
-            } else {
-                end = i;
-            }
+            //We always output full matrix for AF.
+            let end = sketches.len();
             for j in 0..end {
                 if i == j {
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
@@ -410,15 +406,13 @@ pub fn write_phyllip_matrix(
             }
             write!(&mut ani_file, "{}", name).unwrap();
             write!(&mut af_file, "{}", name).unwrap();
-            let end;
-            if full_matrix {
-                end = sketches.len();
-            } else {
-                end = i;
-            }
+            let end = sketches.len();
             for j in 0..end {
+                let full_cond = (full_matrix && i >= j) || (i < j);
                 if i == j {
-                    write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
+                    if full_cond {
+                        write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
+                    }
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
                     continue;
                 }
@@ -426,13 +420,19 @@ pub fn write_phyllip_matrix(
                 let y = usize::max(i, j);
 
                 if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
-                    write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    if full_cond{
+                        write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    }
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
-                    write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    if full_cond{
+                        write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                    }
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
-                    write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
+                    if full_cond{
+                        write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
+                    }
                     if j > i {
                         write!(
                             &mut af_file,
