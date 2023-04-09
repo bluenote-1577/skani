@@ -75,7 +75,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             ref_files = vec![];
             ref_file_list = Some(values);
         } else {
-            panic!("No reference inputs found.");
+            error!("No reference inputs found.");
+            std::process::exit(1);
         }
     } else if mode == Mode::Dist {
         if let Some(values) = matches_subc.values_of("reference") {
@@ -86,7 +87,8 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         } else if let Some(values) = matches_subc.values_of("references") {
             ref_files = values.map(|x| x.to_string()).collect();
         } else {
-            panic!("No reference inputs found.");
+            error!("No reference inputs found.");
+            std::process::exit(1);
         }
     } else {
         panic!("PATH TODO");
