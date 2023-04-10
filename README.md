@@ -55,13 +55,11 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.1.0 - source version: 0.1.0)
+#### Option 3: Conda (conda version: 0.1.1 - source version: 0.1.1)
 
 ```sh
 conda install -c bioconda skani
 ```
-
-Note: skani is being developed quickly and the conda version may be outdated; see the version status above. 
 
 ## Quick start
 
@@ -130,6 +128,13 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
 
 ##  Updates
+
+### v0.1.1 released - 2023-04-09. 
+
+Small fixes.
+
+* Made aligned fraction in `triangle mode` a full matrix by default. This is not a symmetric matrix since AF is not symmetric. 
+* Misc. help message fixes 
 
 ### v0.1.0 released - 2023-02-07. 
 
