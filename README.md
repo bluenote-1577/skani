@@ -65,8 +65,9 @@ conda install -c bioconda skani
 
 ```sh
 # compare two genomes for ANI. 
-# all options take -t for multi-threading.
+# all options take -t for multi-threading. skani is symmetric, so order does not matter.
 skani dist genome1.fa genome2.fa -t 5
+skani dist genome2.fa genome1.fa -t 5 
 
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
