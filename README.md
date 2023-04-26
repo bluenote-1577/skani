@@ -6,9 +6,9 @@
 
 skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
 
-2. **Aligned fraction results**. skani outputs the fraction of genome aligned, whereas sketching methods do not. 
+2. **Aligned fraction results**. skani outputs the fraction of genome aligned, whereas pure k-mer based methods do not. 
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
