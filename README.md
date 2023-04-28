@@ -97,7 +97,8 @@ For more information about using the specific skani subcommands, see the [guide 
 ### skani tutorials
 
 1. #### [Tutorial: setting up the GTDB prokaryotic genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-the-GTDB-genome-database-to-search-against)
-2. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
+2. #### [Tutorial: classifying entire assemblies against > 85,000 genomes in under 2 minutes](https://github.com/bluenote-1577/skani/wiki/Tutorial:-classifying-entire-assemblies-(MAGs-or-contigs)-against-85,000-genomes-in-under-2-minutes)
+3. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
