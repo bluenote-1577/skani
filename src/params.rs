@@ -47,6 +47,7 @@ pub const LEARNED_INFO_HELP: &str = "Learned ANI mode detected. ANI may be adjus
 
 pub const FAST_C: usize = 200;
 pub const SLOW_C: usize = 30;
+pub const MEDIUM_C: usize = 70;
 
 
 #[derive(PartialEq)]
@@ -98,7 +99,8 @@ pub struct CommandParams{
     pub est_ci: bool,
     pub learned_ani: bool,
     pub learned_ani_cmd: bool,
-    pub detailed_out: bool
+    pub detailed_out: bool,
+    pub distance: bool
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

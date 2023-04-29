@@ -308,7 +308,11 @@ pub fn write_phyllip_matrix(
     use_contig_names: bool,
     full_matrix: bool,
     aai: bool,
+    distance: bool,
 ) {
+    let perfect = if distance {0.} else {100.};
+    let none = 100. - perfect;
+
     let _id_str = if aai { "AAI" } else { "ANI" };
     if file_name.is_empty() {
         let stdout = io::stdout();
@@ -332,13 +336,15 @@ pub fn write_phyllip_matrix(
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
                 if i == j {
-                    write!(&mut handle, "\t{:.2}", 100.).unwrap();
+                    write!(&mut handle, "\t{:.2}", perfect).unwrap();
                 } else if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
-                    write!(&mut handle, "\t{:.2}", 0.).unwrap();
+                    write!(&mut handle, "\t{:.2}", none).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
-                    write!(&mut handle, "\t{:.2}", 0.).unwrap();
+                    write!(&mut handle, "\t{:.2}", none).unwrap();
                 } else {
-                    write!(&mut handle, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
+                    let val = anis[&x][&y].ani * 100.;
+                    let ani_val = if !distance {val} else { 100. - val};
+                    write!(&mut handle, "\t{:.2}", ani_val).unwrap();
                 }
             }
             writeln!(&mut handle).unwrap();
@@ -411,7 +417,7 @@ pub fn write_phyllip_matrix(
                 let full_cond = (full_matrix && i >= j) || (i < j);
                 if i == j {
                     if full_cond {
-                        write!(&mut ani_file, "\t{:.2}", 100.).unwrap();
+                        write!(&mut ani_file, "\t{:.2}", perfect).unwrap();
                     }
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
                     continue;
@@ -421,17 +427,19 @@ pub fn write_phyllip_matrix(
 
                 if !anis.contains_key(&x) || !anis[&x].contains_key(&y) {
                     if full_cond{
-                        write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                        write!(&mut ani_file, "\t{:.2}", none).unwrap();
                     }
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else if anis[&x][&y].ani == -1. || anis[&x][&y].ani.is_nan() {
                     if full_cond{
-                        write!(&mut ani_file, "\t{:.2}", 0.).unwrap();
+                        write!(&mut ani_file, "\t{:.2}", none).unwrap();
                     }
                     write!(&mut af_file, "\t{:.2}", 0.).unwrap();
                 } else {
                     if full_cond{
-                        write!(&mut ani_file, "\t{:.2}", anis[&x][&y].ani * 100.).unwrap();
+                        let val = anis[&x][&y].ani * 100.;
+                        let ani_val = if !distance {val} else { 100. - val};
+                        write!(&mut ani_file, "\t{:.2}", ani_val).unwrap();
                     }
                     if j > i {
                         write!(

@@ -166,6 +166,12 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         }
         c = SLOW_C
     }
+    if matches_subc.is_present(MODE_MEDIUM){
+        if matches_subc.is_present("c"){
+            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+        }
+        c = MEDIUM_C
+    }
 
     let min_aligned_frac;
     let est_ci;
@@ -274,10 +280,10 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let screen;
     if mode == Mode::Dist {
-        if query_files.len() > FULL_INDEX_THRESH || individual_contig_q {
+        if (query_files.len() > FULL_INDEX_THRESH || individual_contig_q) && !matches_subc.is_present(NO_FULL_INDEX) {
             screen = true;
         } else {
-            screen = matches_subc.is_present(FULL_INDEX);
+            screen = false;
         }
     } else if mode == Mode::Triangle {
         screen = true;
@@ -305,6 +311,13 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         learned_ani = false;
     }
 
+    let mut distance = false;
+    if mode == Mode::Triangle{
+        if matches_subc.is_present(DISTANCE_OUT){
+            distance = true;
+        }
+    }
+
     let command_params = CommandParams {
         screen,
         screen_val,
@@ -327,6 +340,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         learned_ani,
         learned_ani_cmd,
         detailed_out,
+        distance,
     };
 
     (sketch_params, command_params)
@@ -390,10 +404,10 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         / 100.;
     let screen;
     let individual_contig_q = matches_subc.is_present("individual contig query");
-    if query_files.len() > FULL_INDEX_THRESH || individual_contig_q {
+    if (query_files.len() > FULL_INDEX_THRESH || individual_contig_q) && !matches_subc.is_present(NO_FULL_INDEX) {
         screen = true;
     } else {
-        screen = matches_subc.is_present(FULL_INDEX);
+        screen = false;
     }
 
     let min_aligned_frac = matches_subc
@@ -444,6 +458,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         learned_ani,
         learned_ani_cmd,
         detailed_out,
+        distance: false,
     };
 
     if command_params.ref_files.is_empty() {

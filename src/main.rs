@@ -21,7 +21,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("0.1.0")
+        .version("0.1.2")
         .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
@@ -59,11 +59,18 @@ fn main() {
                         .takes_value(false),
                 )
                 .arg(
+                    Arg::new(MODE_MEDIUM)
+                        .long(CMD_MODE_MEDIUM)
+                        .help(H_MODE_MEDIUM)
+                        .takes_value(false),
+                )
+                .arg(
                     Arg::new(MODE_FAST)
                         .long(CMD_MODE_FAST)
                         .help(H_MODE_FAST)
                         .takes_value(false),
                 )
+                
                 .help_heading("SKETCH PARAMETERS")
                 .arg(
                     Arg::new("aai")
@@ -212,6 +219,12 @@ fn main() {
                         .takes_value(false),
                 )
                 .arg(
+                    Arg::new(MODE_MEDIUM)
+                        .long(CMD_MODE_MEDIUM)
+                        .help(H_MODE_MEDIUM)
+                        .takes_value(false),
+                )
+                .arg(
                     Arg::new(MODE_FAST)
                         .long(CMD_MODE_FAST)
                         .help(H_MODE_FAST)
@@ -276,9 +289,9 @@ fn main() {
                         .help("Estimate median identity instead of average (mean) identity."),
                 )
                 .arg(
-                    Arg::new(FULL_INDEX)
-                        .long(CMD_FULL_INDEX)
-                        .help(H_FULL_INDEX),
+                    Arg::new(NO_FULL_INDEX)
+                        .long(CMD_NO_FULL_INDEX)
+                        .help(H_NO_FULL_INDEX),
                 )
                 .help_heading("MISC")
                 .arg(Arg::new("v").short('v').help("Debug level verbosity."))
@@ -286,7 +299,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name(params::TRIANGLE_STRING)
-            .about("Compute a lower triangular distance ANI/AF matrix.\nUsage: skani triangle genome1.fa genome2.fa genome3.fa ...")
+            .about("Compute a lower triangular ANI/AF matrix.\nUsage: skani triangle genome1.fa genome2.fa genome3.fa ...")
                 .arg(
                     Arg::new("t")
                         .short('t')
@@ -352,6 +365,12 @@ fn main() {
                         .takes_value(false)
                 )
                 .arg(
+                    Arg::new(DISTANCE_OUT)
+                        .long(CMD_DISTANCE_OUT)
+                        .help(H_DISTANCE_OUT)
+                        .takes_value(false)
+                )
+                .arg(
                     Arg::new("sparse")
                         .long("sparse")
                         .short('E')
@@ -362,6 +381,12 @@ fn main() {
                     Arg::new(MODE_SLOW)
                         .long(CMD_MODE_SLOW)
                         .help(H_MODE_SLOW)
+                        .takes_value(false),
+                )
+                .arg(
+                    Arg::new(MODE_MEDIUM)
+                        .long(CMD_MODE_MEDIUM)
+                        .help(H_MODE_MEDIUM)
                         .takes_value(false),
                 )
                 .arg(
@@ -525,9 +550,9 @@ fn main() {
                         .help(H_KEEP_REFS),
                 )
                 .arg(
-                    Arg::new(FULL_INDEX)
-                        .long(CMD_FULL_INDEX)
-                        .help(H_FULL_INDEX),
+                    Arg::new(NO_FULL_INDEX)
+                        .long(CMD_NO_FULL_INDEX)
+                        .help(H_NO_FULL_INDEX),
                 )
                 .arg(Arg::new("s").short('s').takes_value(true).help(H_SCREEN))
                 .arg(

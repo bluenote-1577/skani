@@ -28,6 +28,7 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         learned_ani: true,
         learned_ani_cmd: false,
         detailed_out: false,
+        distance: false
     };
 
     let sketch_params = SketchParams::new(1000, 125, 15, false, false);

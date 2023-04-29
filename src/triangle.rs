@@ -120,6 +120,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             command_params.individual_contig_r,
             command_params.full_matrix,
             sketch_params.use_aa,
+            command_params.distance
         );
     }
     info!("ANI triangle time: {}", now.elapsed().as_secs_f32());

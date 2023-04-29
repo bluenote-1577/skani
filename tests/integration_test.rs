@@ -145,6 +145,7 @@ fn test_search() {
         .arg("search")
         .arg("-d")
         .arg("./tests/results/test_sketch_dir/")
+        .arg("--no-marker-index")
         .arg("--qi")
         .arg("--ql")
         .arg("./test_files/query_list.txt")
@@ -171,7 +172,6 @@ fn test_search() {
         .arg("-d")
         .arg("./tests/results/test_sketch_dir_aai/")
         .arg("./test_files/MN-03.fa")
-        .arg("--marker-index")
         .arg("-n")
         .arg("5")
         .output();
@@ -255,7 +255,6 @@ fn test_dist() {
         .arg("dist")
         .arg("./test_files/e.coli-EC590.fasta")
         .arg("./test_files/e.coli-K12.fasta")
-        .arg("--marker-index")
         .arg("-n")
         .arg("3")
         .arg("--learned-ani")
@@ -280,7 +279,6 @@ fn test_dist() {
         .arg("dist")
         .arg("./test_files/e.coli-EC590.fasta")
         .arg("./test_files/e.coli-K12.fasta")
-        .arg("--marker-index")
         .arg("-n")
         .arg("3")
         .output();
@@ -301,13 +299,37 @@ fn test_dist() {
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
 
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("-n")
+        .arg("3")
+        .arg("--medium")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.2);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
+
+
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("dist")
         .arg("./test_files/e.coli-EC590.fasta")
         .arg("./test_files/e.coli-K12.fasta")
-        .arg("--marker-index")
         .arg("-n")
         .arg("3")
         .arg("--slow")
@@ -332,7 +354,6 @@ fn test_dist() {
         .arg("dist")
         .arg("./test_files/e.coli-EC590.fasta")
         .arg("./test_files/e.coli-K12.fasta")
-        .arg("--marker-index")
         .arg("-n")
         .arg("3")
         .arg("--fast")
@@ -487,8 +508,7 @@ fn test_dist() {
         .arg("-q")
         .arg("./test_files/o157_reads.fastq")
         .arg("--qi")
-        .arg("--robust")
-        .arg("--marker-index");
+        .arg("--robust");
     println!(
         "{}",
         std::str::from_utf8(&cmd.output().as_ref().unwrap().stdout).unwrap()
