@@ -168,7 +168,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
     if matches_subc.is_present(MODE_MEDIUM){
         if matches_subc.is_present("c"){
-            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+            warn!("-c value is set but --fast is also set. Using --medium mode instead (-c 70)");
         }
         c = MEDIUM_C
     }
