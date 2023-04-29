@@ -6,9 +6,9 @@
 
 skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Sketching methods (e.g. Mash), which may underestimate ANI for incomplete MAGs.
+1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
 
-2. **Aligned fraction results**. skani outputs the fraction of genome aligned, whereas sketching methods do not. 
+2. **Aligned fraction results**. skani outputs the fraction of genome aligned, whereas pure k-mer based methods do not. 
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
@@ -55,20 +55,19 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.1.0 - source version: 0.1.0)
+#### Option 3: Conda (conda version: 0.1.1 - source version: 0.1.1)
 
 ```sh
 conda install -c bioconda skani
 ```
 
-Note: skani is being developed quickly and the conda version may be outdated; see the version status above. 
-
 ## Quick start
 
 ```sh
 # compare two genomes for ANI. 
-# all options take -t for multi-threading.
+# all options take -t for multi-threading. skani is symmetric, so order does not matter.
 skani dist genome1.fa genome2.fa -t 5
+skani dist genome2.fa genome1.fa -t 5 
 
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
@@ -97,8 +96,9 @@ For more information about using the specific skani subcommands, see the [guide 
 
 ### skani tutorials
 
-1. #### [Tutorial: setting up a 65000 prokaryotic genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-a-65000-genome-database-to-search-against)
-2. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
+1. #### [Tutorial: setting up the GTDB prokaryotic genome database to search against](https://github.com/bluenote-1577/skani/wiki/Tutorial:-setting-up-the-GTDB-genome-database-to-search-against)
+2. #### [Tutorial: classifying entire assemblies against > 85,000 genomes in under 2 minutes](https://github.com/bluenote-1577/skani/wiki/Tutorial:-classifying-entire-assemblies-(MAGs-or-contigs)-against-85,000-genomes-in-under-2-minutes)
+3. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
@@ -130,6 +130,13 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
 
 ##  Updates
+
+### v0.1.1 released - 2023-04-09. 
+
+Small fixes.
+
+* Made aligned fraction in `triangle mode` a full matrix by default. This is not a symmetric matrix since AF is not symmetric. 
+* Misc. help message fixes 
 
 ### v0.1.0 released - 2023-02-07. 
 
