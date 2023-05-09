@@ -88,6 +88,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         .collect::<Vec<usize>>();
     let anis: Mutex<Vec<AniEstResult>> = Mutex::new(vec![]);
     let counter: Mutex<usize> = Mutex::new(0);
+    let first_write: Mutex<bool> = Mutex::new(true);
     js.into_par_iter().for_each(|j| {
         let query_sketch = &query_sketches[j];
         if !command_params.screen {
@@ -130,14 +131,41 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                     &command_params,
                 );
                 let ani_res = chain::chain_seeds(ref_sketch, query_sketch, map_params);
-                let mut locked = anis.lock().unwrap();
-                locked.push(ani_res);
+                if ani_res.ani > 0.1{
+                    let mut locked = anis.lock().unwrap();
+                    locked.push(ani_res);
+                }
             });
         }
-        let mut locked = counter.lock().unwrap();
-        *locked += 1;
-        if *locked % 100 == 0 && *locked != 0{
-            info!("{} query sequences processed.", locked);
+        let c;
+        {
+            let mut locked = counter.lock().unwrap();
+            *locked += 1;
+            c = *locked;
+        }
+        if c % 100 == 0 && c != 0{
+            info!("{} query sequences processed.", c);
+            if c % INTERMEDIATE_WRITE_COUNT == 0 && c != 0{
+                info!("Writing results for {} query sequences.", INTERMEDIATE_WRITE_COUNT);
+                let moved_anis: Vec<AniEstResult>;
+                {
+                let mut locked = anis.lock().unwrap();
+                moved_anis = std::mem::take(&mut locked);
+                }
+                let mut fw = first_write.lock().unwrap();
+                file_io::write_query_ref_list(
+                    &moved_anis,
+                    &command_params.out_file_name,
+                    command_params.max_results,
+                    sketch_params.use_aa,
+                    command_params.est_ci,
+                    command_params.detailed_out,
+                    !*fw
+                );
+                if *fw == true{
+                    *fw = false;
+                }
+            }
         }
     });
     let mut anis = anis.into_inner().unwrap();
@@ -156,6 +184,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         sketch_params.use_aa,
         command_params.est_ci,
         command_params.detailed_out,
+        !*first_write.lock().unwrap()
     );
     info!("ANI calculation time: {}", now.elapsed().as_secs_f32());
 }

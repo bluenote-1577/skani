@@ -59,7 +59,7 @@ pub const H_MODE_MEDIUM: &str = "Medium skani mode; 2x slower and more memory. M
 
 pub const MARKER_C: &str = "marker_c";
 pub const CMD_MARKER_C: char = 'm';
-pub const H_MARKER_C: &str = "Marker k-mer compression factor. Markers are used for filtering. Consider decreasing if genome is small or mapping individual small contigs. \t[default: 1000]";
+pub const H_MARKER_C: &str = "Marker k-mer compression factor. Markers are used for filtering. Consider decreasing to ~200-300 if working with small genomes (e.g. plasmids or viruses). \t[default: 1000]";
 
 pub const DETAIL_OUT: &str = "detailed";
 pub const CMD_DETAIL_OUT: &str = "detailed";
@@ -68,5 +68,9 @@ pub const H_DETAIL_OUT: &str = "Print additional info including contig N50s and 
 pub const DISTANCE_OUT: &str = "distance";
 pub const CMD_DISTANCE_OUT: &str = "distance";
 pub const H_DISTANCE_OUT: &str = "Output 100 - ANI instead of ANI, creating a distance instead of a similarity matrix.";
+
+pub const INT_WRITE: &str = "intermediate write count";
+pub const CMD_INT_WRITE: &str = "inter-write";
+pub const H_INT_WRITE: &str = "Write results to output after --inter-write queries are processed (leads to non-deterministic outputs when multi-threading). \t[default: 10000]";
 
 

@@ -2,8 +2,6 @@ use crate::file_io;
 use crate::params::*;
 use crate::types::*;
 use log::*;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::BufWriter;
@@ -23,31 +21,47 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     std::fs::create_dir_all(p).unwrap();
 
     let num_iters = command_params.ref_files.len();
-    let mut shuffle_ref_files: Vec<&String> = command_params.ref_files.iter().collect();
-    shuffle_ref_files.shuffle(&mut thread_rng());
     let counter: Mutex<usize> = Mutex::new(0);
     let marker_sketches: Mutex<Vec<Sketch>> = Mutex::new(vec![]);
     (0..num_iters).into_par_iter().for_each(|i| {
-        let ref_sketches = file_io::fastx_to_sketches(
-            //&vec![command_params.ref_files[i].clone()],
-            &vec![shuffle_ref_files[i].clone()],
-            &sketch_params,
-            !command_params.screen,
+        let ref_sketches;
+        if command_params.individual_contig_r {
+            ref_sketches = file_io::fastx_to_multiple_sketch_rewrite(
+                &vec![command_params.ref_files[i].clone()],
+                &sketch_params,
+                true,
         );
-        let mut marker_ref_sketches = ref_sketches
+        }
+        else{
+            ref_sketches = file_io::fastx_to_sketches(
+                &vec![command_params.ref_files[i].clone()],
+                &sketch_params,
+                true,);
+        }
+        let marker_ref_sketches = ref_sketches
             .iter()
             .map(Sketch::get_markers_only)
             .collect::<Vec<Sketch>>();
-        if !ref_sketches.is_empty() {
-            let sketch = &ref_sketches[0];
-            let marker_sketch = &mut marker_ref_sketches[0];
+        (0..ref_sketches.len()).into_par_iter().for_each(|j|{
+            let sketch = &ref_sketches[j];
+            let marker_sketch = &marker_ref_sketches[j];
             let path = Path::new(&sketch.file_name);
             let filename = path.file_name().unwrap().to_str().unwrap();
-            let mut file_bin = BufWriter::new(
-                File::create(format!(
+            let sketch_name;
+            if command_params.individual_contig_r{
+                sketch_name = format!(
+                    "{}/{}_{}.sketch",
+                    &command_params.out_file_name, j, filename
+                );
+            }
+            else{
+                sketch_name = format!(
                     "{}/{}.sketch",
                     &command_params.out_file_name, filename
-                ))
+                );
+            }
+            let mut file_bin = BufWriter::new(
+                File::create(sketch_name)
                 .unwrap(),
             );
 
@@ -57,13 +71,13 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
             bincode::serialize_into(&mut file_bin, &(&sketch_params, sketch)).unwrap();
 
             let mut locked = marker_sketches.lock().unwrap();
-            locked.push(std::mem::take(marker_sketch));
-        }
-        let mut locked = counter.lock().unwrap();
-        *locked += 1;
-        if *locked % 100 == 0 && *locked != 0 {
-            info!("{} sequences sketched.", locked);
-        }
+            locked.push(marker_sketch.clone());
+            let mut locked = counter.lock().unwrap();
+            *locked += 1;
+            if *locked % 100 == 0 && *locked != 0 {
+                info!("{} sequences sketched.", locked);
+            }
+        });
     });
     let mut file_bin_marker = BufWriter::new(
         File::create(format!(

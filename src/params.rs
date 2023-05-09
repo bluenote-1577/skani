@@ -1,6 +1,8 @@
 use crate::types::*;
+pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
 pub const KMER_SK_SMALL_VEC_SIZE: usize = 3;
+pub const INTERMEDIATE_WRITE_COUNT: usize = 5000;
 use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;
@@ -100,7 +102,7 @@ pub struct CommandParams{
     pub learned_ani: bool,
     pub learned_ani_cmd: bool,
     pub detailed_out: bool,
-    pub distance: bool
+    pub distance: bool,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

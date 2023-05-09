@@ -7,6 +7,7 @@ use fxhash::FxHashMap;
 use fxhash::FxHashSet;
 use log::*;
 
+//Used in search, but not in dist,triangle
 pub fn screen_refs_filenames<'a>(
     identity: f64,
     kmer_to_sketch: &KmerToSketch,
@@ -47,6 +48,8 @@ pub fn screen_refs_filenames<'a>(
 
 }
 
+//used in triangle, dist, but not search. Note the different behavior when the input sketch
+//is small. 
 pub fn screen_refs(
     identity: f64,
     kmer_to_sketch: &KmerToSketch,
@@ -89,9 +92,9 @@ pub fn screen_refs(
     ret
 }
 pub fn kmer_to_sketch_from_refs(ref_sketches: &Vec<Sketch>) -> KmerToSketch {
-    let max_size: usize = ref_sketches.iter().map(|x| x.marker_seeds.len()).sum();
+//    let max_size: usize = ref_sketches.iter().map(|x| x.marker_seeds.len()).sum::<usize>();
     let mut ret = KmerToSketch::default();
-    ret.reserve(max_size);
+    //ret.reserve(max_size);
     for (i, ref_sketch) in ref_sketches.iter().enumerate() {
         for kmer in ref_sketch.marker_seeds.iter() {
             let sketch_set = ret.entry(*kmer).or_insert(SmallVec::<[u32; KMER_SK_SMALL_VEC_SIZE]>::new());

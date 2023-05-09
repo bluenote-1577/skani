@@ -1,5 +1,5 @@
 use crate::params::*;
-
+use std::fs::OpenOptions;
 use crate::seeding;
 use crate::types::*;
 use fxhash::FxHashMap;
@@ -476,12 +476,15 @@ pub fn write_sparse_matrix(
     aai: bool,
     est_ci: bool,
     detailed_out: bool,
+    append: bool
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     if file_name.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write_header(&mut handle, id_str, est_ci, detailed_out);
+        if !append{
+            write_header(&mut handle, id_str, est_ci, detailed_out);
+        }
         //        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
@@ -492,8 +495,20 @@ pub fn write_sparse_matrix(
         }
     } else {
         let ani_mat_file = file_name.to_string();
-        let mut ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
-        write_header(&mut ani_file, id_str, est_ci, detailed_out);
+        let mut ani_file;
+        if append{
+            let file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(ani_mat_file).expect(file_name);
+                ani_file = BufWriter::new(file);
+        }
+        else{
+            ani_file = BufWriter::new(File::create(ani_mat_file).expect(file_name));
+        }
+        if !append{
+            write_header(&mut ani_file, id_str, est_ci, detailed_out);
+        }
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
@@ -511,6 +526,7 @@ pub fn write_query_ref_list(
     aai: bool,
     est_ci: bool,
     detailed_out: bool,
+    append: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
@@ -536,7 +552,9 @@ pub fn write_query_ref_list(
     if out_file.is_empty() {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        write_header(&mut handle, id_str, est_ci, detailed_out);
+        if !append{
+            write_header(&mut handle, id_str, est_ci, detailed_out);
+        }
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 
@@ -547,8 +565,20 @@ pub fn write_query_ref_list(
         }
     } else {
         let mut handle;
-        handle = File::create(out_file).expect(file_name);
-        write_header(&mut handle, id_str, est_ci, detailed_out);
+        if append{
+            let file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(out_file).expect(file_name);
+            handle = BufWriter::new(file);
+        }
+        else{
+            handle = BufWriter::new(File::create(out_file).expect(file_name));
+        }
+
+        if !append{
+            write_header(&mut handle, id_str, est_ci, detailed_out);
+        }
         for key in sorted_keys {
             let mut anis = query_file_result_map[key].clone();
 

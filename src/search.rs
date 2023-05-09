@@ -63,6 +63,7 @@ pub fn search(command_params: CommandParams) {
     //assert!(ref_sketches.len() == ref_marker_files.len());
     let anis: Mutex<Vec<AniEstResult>> = Mutex::new(vec![]);
     let counter: Mutex<usize> = Mutex::new(0);
+    let first_write: Mutex<bool> = Mutex::new(true);
     let folder = Path::new(&ref_marker_file).parent().unwrap();
     for query_file in command_params.query_files.iter() {
         let query_params;
@@ -212,6 +213,27 @@ pub fn search(command_params: CommandParams) {
                 }
                 if c % 100 == 0 && c != 0 {
                     info!("{} query sequences processed.", c);
+                    if c % INTERMEDIATE_WRITE_COUNT == 0 && c != 0{
+                        info!("Writing results for {} query sequences.", INTERMEDIATE_WRITE_COUNT);
+                        let moved_anis: Vec<AniEstResult>;
+                        {
+                        let mut locked = anis.lock().unwrap();
+                        moved_anis = std::mem::take(&mut locked);
+                        }
+                        let mut fw = first_write.lock().unwrap();
+                        file_io::write_query_ref_list(
+                            &moved_anis,
+                            &command_params.out_file_name,
+                            command_params.max_results,
+                            sketch_params.use_aa,
+                            command_params.est_ci,
+                            command_params.detailed_out,
+                            !*fw
+                        );
+                        if *fw == true{
+                            *fw = false;
+                        }
+                    }
                 }
             });
         }
@@ -242,6 +264,7 @@ pub fn search(command_params: CommandParams) {
         sketch_params.use_aa,
         command_params.est_ci,
         command_params.detailed_out,
+        !*first_write.lock().unwrap()
     );
     info!("Searching time: {}", now.elapsed().as_secs_f32());
 }

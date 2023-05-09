@@ -266,9 +266,14 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     } else if mode == Mode::Dist {
         individual_contig_q = matches_subc.is_present("individual contig query");
         individual_contig_r = matches_subc.is_present("individual contig ref");
-    } else {
+    } else if mode == Mode::Sketch{
+        individual_contig_q = false;
+        individual_contig_r = if matches_subc.is_present("individual contig"){ true } else{ false };
+    }
+    else{
         individual_contig_q = false;
         individual_contig_r = false;
+
     }
 
     let full_matrix;

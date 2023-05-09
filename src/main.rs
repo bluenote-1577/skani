@@ -21,7 +21,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("0.1.2")
+        .version("0.1.3")
         .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
@@ -49,6 +49,11 @@ fn main() {
                         .short('l')
                         .help("File with each line containing one fasta/sketch file.")
                         .takes_value(true),
+                )
+                .arg(
+                    Arg::new("individual contig")
+                        .short('i')
+                        .help("Use individual sequences instead the entire file for multi-fastas. CURRENTLY DOES NOT WORK WITH `skani search`.")
                 )
                 .arg(Arg::new("output sketch folder").short('o').help("Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.").takes_value(true).required(true).display_order(1))
                 .help_heading("PRESETS")
