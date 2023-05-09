@@ -1,6 +1,6 @@
 [package]
 name = "skani"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "skani is a fast tool for calculating ANI between metagenomic sequences, such as metagenome-assembled genomes (MAGs). It is extremely fast and is robust against incompleteness and fragmentation, giving accurate ANI estimates."
