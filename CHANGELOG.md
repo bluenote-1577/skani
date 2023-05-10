@@ -2,7 +2,7 @@
 
 #### Major
 * Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
-* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs (`skani triangle *.fa | sort -k 3` will guarantee deterministic output order). 
+* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs, i.e ``skani triangle *.fa | sort -k 3 -n > sorted_skani_result.txt`` will guarantee deterministic output order. 
 
 #### Minor 
 * Changed the marker index hash table population method. Used to overestimate memory usage slightly.
