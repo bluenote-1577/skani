@@ -82,7 +82,7 @@ skani dist database/query.fa.sketch database/ref.fa.sketch
 # construct similarity matrix for all genomes in folder
 skani triangle genome_folder/* > skani_ani_matrix.txt
 # output an edge list instead of a matrix for big computations
-skani triangle genome_folder/* -E > skani_ani_matrix.txt
+skani triangle genome_folder/* -E > skani_ani_edge_list.txt
 
 # we provide a script in this repository for clustering/visualizing distance matrices.
 # requires python3, seaborn, scipy/numpy, and matplotlib.
