@@ -55,7 +55,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.1.1 - source version: 0.1.2)
+#### Option 3: Conda (conda version: 0.1.2 - source version: 0.1.3)
 
 ```sh
 conda install -c bioconda skani
@@ -79,9 +79,8 @@ skani search query1.fa query2.fa ... -d database
 # use sketch from "skani sketch" output as drop-in replacement
 skani dist database/query.fa.sketch database/ref.fa.sketch
 
-# construct similarity matrix for all genomes in folder
+# construct similarity matrix/edge list for all genomes in folder
 skani triangle genome_folder/* > skani_ani_matrix.txt
-# output an edge list instead of a matrix for big computations
 skani triangle genome_folder/* -E > skani_ani_edge_list.txt
 
 # we provide a script in this repository for clustering/visualizing distance matrices.
@@ -127,6 +126,8 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - Ref/Query_name: the id of the first record in the reference/query file.
 
+The order of results is dependent on the command and not guaranteed to be deterministic when > 5000 query genomes are present. `dist` and `search` try to place the highest ANI results first. 
+
 ## Citation
 
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
@@ -137,7 +138,7 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 #### Major
 * Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
-* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs (`skani triangle *.fa | sort -k 3 -n > sorted_skani_result.txt` will guarantee deterministic output order). 
+* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs, i.e. ``skani triangle *.fa | sort -k 3 -n > sorted_skani_result.txt`` will guarantee deterministic output order. 
 
 #### Minor 
 * Changed the marker index hash table population method. Used to overestimate memory usage slightly.
