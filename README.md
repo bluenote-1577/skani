@@ -55,8 +55,9 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.1.2 - source version: 0.1.3)
-
+#### Option 3: Conda (source version: 0.1.3)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
 conda install -c bioconda skani
 ```
