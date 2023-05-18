@@ -135,7 +135,7 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 ##  Updates
 
-### v0.1.3 (pre)released - 2023-05-09, conda update to follow at a later date
+### v0.1.3 released - 2023-05-09
 
 #### Major
 * Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
