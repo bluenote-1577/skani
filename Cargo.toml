@@ -21,9 +21,9 @@ thiserror = "1.0"
 bio = "1"
 rand = "0.8.3"
 fxhash = "0"
-partitions = "0"
+partitions = { git = "https://github.com/bluenote-1577/partitions.git" }
 num-traits = "0"
-needletail = "0.4"
+needletail = "0.5"
 simple-logging= "2"
 log = "0.4"
 rayon = "1.5"
@@ -62,6 +62,7 @@ required-features = ["cli"]
 
 [profile.release]
 panic = "abort"
+lto = true
 
 [profile.dev]
 #opt-level = 1
