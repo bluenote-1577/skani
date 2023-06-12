@@ -73,6 +73,9 @@ skani dist genome2.fa genome1.fa -t 5
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
 
+# compare individual fasta records (e.g. contigs)
+skani dist --qi -q assembly1.fa --ri -r assembly2.fa  
+
 # construct database and do memory-efficient search
 skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
@@ -107,7 +110,7 @@ For more information about using the specific skani subcommands, see the [guide 
 See the advanced usage guide linked above for more information about topics such as:
 
 * optimizing sensitivity/speed of skani
-* using skani for long-reads
+* optimizing skani for long-reads or contigs
 * making skani for memory efficient for huge data sets
 
 ## Output
