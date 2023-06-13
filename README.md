@@ -55,8 +55,9 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (conda version: 0.1.1 - source version: 0.1.2)
-
+#### Option 3: Conda (source version: 0.1.3)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
 conda install -c bioconda skani
 ```
@@ -72,6 +73,9 @@ skani dist genome2.fa genome1.fa -t 5
 # compare multiple genomes
 skani dist -q query1.fa query2.fa -r reference1.fa reference2.fa -o all-to-all_results.txt
 
+# compare individual fasta records (e.g. contigs)
+skani dist --qi -q assembly1.fa --ri -r assembly2.fa  
+
 # construct database and do memory-efficient search
 skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
@@ -79,9 +83,8 @@ skani search query1.fa query2.fa ... -d database
 # use sketch from "skani sketch" output as drop-in replacement
 skani dist database/query.fa.sketch database/ref.fa.sketch
 
-# construct similarity matrix for all genomes in folder
+# construct similarity matrix/edge list for all genomes in folder
 skani triangle genome_folder/* > skani_ani_matrix.txt
-# output an edge list instead of a matrix for big computations
 skani triangle genome_folder/* -E > skani_ani_edge_list.txt
 
 # we provide a script in this repository for clustering/visualizing distance matrices.
@@ -107,7 +110,7 @@ For more information about using the specific skani subcommands, see the [guide 
 See the advanced usage guide linked above for more information about topics such as:
 
 * optimizing sensitivity/speed of skani
-* using skani for long-reads
+* optimizing skani for long-reads or contigs
 * making skani for memory efficient for huge data sets
 
 ## Output
@@ -127,43 +130,27 @@ refs/e.coli-EC590.fasta	refs/e.coli-K12.fasta	99.39	93.95	93.37	NZ_CP016182.2 Es
 - Aligned_fraction_query/reference: fraction of query/reference covered by alignments.
 - Ref/Query_name: the id of the first record in the reference/query file.
 
+The order of results is dependent on the command and not guaranteed to be deterministic when > 5000 query genomes are present. `dist` and `search` try to place the highest ANI results first. 
+
 ## Citation
 
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
 
 ##  Updates
 
-### v0.1.2 released - 2023-04-28.
-
-Small fixes.
-
-* Added `--medium` pre-set, which is just `-c 70`. Seems to work okay for comparing fragmented genomes. 
-* **BREAKING**: Changed `--marker-index` to `--no-marker-index` as a more sane option. 
-* Added `--distance` option to `skani triangle` to output distance matrix (i.e. 100 - ANI) instead of similarity matrix. 
-* Misc. help message fixes
-
-### v0.1.1 released - 2023-04-09. 
-
-Small fixes.
-
-* Made aligned fraction in `triangle mode` a full matrix by default. This is not a symmetric matrix since AF is not symmetric. 
-* Misc. help message fixes 
-
-### v0.1.0 released - 2023-02-07. 
-
-We added new experiments on the revised version of our preprint (Extended Data Figs 11-14). We show skani has quite good AF correlation with MUMmer, and that it works decently on simple eukaryotic MAGs, especially with the `--slow` option (see below). 
+### v0.1.3 released - 2023-05-09
 
 #### Major
+* Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
+* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs, i.e. ``skani triangle *.fa | sort -k 3 -n > sorted_skani_result.txt`` will guarantee deterministic output order. 
 
-* **ANI debiasing added** - skani now uses a debiasing step with a regression model trained on MAGs to give more accurate ANIs. Old version gave robust, but slightly overestimated ANIs, especially around 95-97% range. Debiasing is enabled by default, but can be turned off with ``--no-learned-ani``.
-* **More accurate aligned fraction** - chaining algorithm changed to give a more accurate aligned fraction (AF) estimate. The previous version had more variance and underestimated AF for certain assemblies.
+#### Minor 
+* Changed the marker index hash table population method. Used to overestimate memory usage slightly.
+* New help message for marker parameters. Turns out that for small genomes, having more markers may make filtering significantly better. 
+* Added -i option to sketch so you can sketch individual records in multifastas -- does not work for search yet though, only for sketching. 
 
-#### Minor
 
-* **Small contig/genome defaults made better** - should be more sensitive so that they don't get filtered by default.
-* **Repetitive k-mer masking made better** - smarter settings and should work better for eukaryotic genomes; shouldn't affect prokaryotic genomes much.
-* **`--fast` and `--slow` mode added** - alias for `-c 200` and `-c 30` respectively.
-* **More non x86_64 builds should work** - there was a bug before where skani would be dysfunctional on non x86_64 architectures. It seems to at least build on ARM64 architectures successfully now.
+See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
 ## Feature requests, issues
 
