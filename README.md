@@ -138,17 +138,15 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 ##  Updates
 
-### v0.1.3 released - 2023-05-09
+### v0.1.4 released - 2023-06-14
 
 #### Major
-* Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
-* skani now outputs intermediate results after processing each batch of 5000 queries. **This will mean that outputs may no longer be deterministically ordered if there are > 5000 genomes**, but you can sort the output file to get deterministic outputs, i.e. ``skani triangle *.fa | sort -k 3 -n > sorted_skani_result.txt`` will guarantee deterministic output order. 
+* skani triangle had a bug where if more than 5000 queries were present and --sparse or -E was not specified, the intermediate batch of 5000 queries would be written in sparse mode. 
+* skani triangle -o was giving different upper triangle matrix instead of lower triangle (skani triangle > res gives lower triangle). Matrices are consistently lower triangle now.
+* Changed to lto = true for release mode. I see anywhere from a 5-10% speedup for this.
 
-#### Minor 
-* Changed the marker index hash table population method. Used to overestimate memory usage slightly.
-* New help message for marker parameters. Turns out that for small genomes, having more markers may make filtering significantly better. 
-* Added -i option to sketch so you can sketch individual records in multifastas -- does not work for search yet though, only for sketching. 
-
+#### Minor
+* Changed some dependencies so no more dependencies on old crates that will deprecate. 
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
