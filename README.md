@@ -50,7 +50,7 @@ chmod +x skani
 ./skani -h
 ```
 
-Note: the binary is compiled with a different set of libraries (musl instead of glibc), possibly impacting performance (slightly). Probably not a huge deal. 
+Note: the binary is compiled with a different set of libraries (musl instead of glibc). This appears to make it slightly slower on a simple test (~3% or so), but it is maybe not a huge deal for many applications. 
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
