@@ -21,7 +21,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("0.1.3")
+        .version("0.1.4")
         .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
@@ -112,7 +112,7 @@ fn main() {
                 )
                 
                 .help_heading("MISC")
-                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
 
             )
@@ -299,7 +299,7 @@ fn main() {
                         .help(H_NO_FULL_INDEX),
                 )
                 .help_heading("MISC")
-                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
         )
         .subcommand(
@@ -451,7 +451,7 @@ fn main() {
                         .help("Estimate median identity instead of average (mean) identity."),
                 )
                 .help_heading("MISC")
-                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
         )
         .subcommand(
@@ -571,7 +571,7 @@ fn main() {
                         .help("Estimate median identity instead of average (mean) identity."),
                 )
                 .help_heading("MISC")
-                .arg(Arg::new("v").short('v').help("Debug level verbosity."))
+                .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
 
         )

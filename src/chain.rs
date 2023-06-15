@@ -750,7 +750,7 @@ fn get_anchors(
     for anchor in anchors {
         if last_query_contig != anchor.query_contig || anchor.query_pos > curr_end_point {
             if query_positions_all[last_query_contig as usize].is_empty() {
-                warn!("{}", &query_sketch.contigs[(last_query_contig as usize)]);
+                warn!("{}", &query_sketch.contigs[last_query_contig as usize]);
                 continue;
             }
             let mut _num_seeds_in_block = 0;
@@ -800,7 +800,7 @@ fn get_anchors(
         let mut seed_pos_in_block = vec![];
         loop {
             if query_positions_all[last_query_contig as usize].is_empty() {
-                warn!("{}", &query_sketch.contigs[(last_query_contig as usize)]);
+                warn!("{}", &query_sketch.contigs[last_query_contig as usize]);
                 continue;
             }
             if running_counter >= query_positions_all[last_query_contig as usize].len() {

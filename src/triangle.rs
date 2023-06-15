@@ -103,7 +103,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             }
             if c % 100 == 0 && c != 0 {
                 info!("{} query sequences processed.", c);
-                if c % INTERMEDIATE_WRITE_COUNT == 0 && c != 0 {
+                if c % INTERMEDIATE_WRITE_COUNT == 0 && c != 0 && command_params.sparse{
                     let moved_anis: FxHashMap<_,_>;
                     {
                         let mut locked = anis.lock().unwrap();

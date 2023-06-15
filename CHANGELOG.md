@@ -1,4 +1,14 @@
-### v0.1.3 (pre)released - 2023-05-09 
+### v0.1.4 released - 2023-06-14
+
+#### Major
+* skani triangle had a bug where if more than 5000 queries were present and --sparse or -E was not specified, the intermediate batch of 5000 queries would be written in sparse mode. 
+* skani triangle -o was giving different upper triangle matrix instead of lower triangle (skani triangle > res gives lower triangle). Matrices are consistently lower triangle now.
+* Changed to lto = true for release mode. I see anywhere from a 5-10% speedup for this.
+
+#### Minor
+* Changed some dependencies so no more dependencies on old crates that will deprecate. 
+
+### v0.1.3 released - 2023-05-09 
 
 #### Major
 * Fixed a bug where memory was blowing up in `dist` and `triangle` when the marker-index was activated. For big datasets, there could be > 100 GBs of wasted memory. 
