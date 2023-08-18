@@ -273,8 +273,12 @@ pub fn fmh_seeds(
         rolling_kmer_r_marker >>= 2;
         rolling_kmer_r_marker |= nuc_r << marker_reverse_shift_dist;
     }
+    let mut resume_ind = 0;
     for i in marker_k-1..len {
         let nuc_byte = string[i] as usize;
+        if nuc_byte == ASCII_N || nuc_byte == ASCII_N_SMALL{
+            resume_ind = i + k;
+        }
         let nuc_f = BYTE_TO_SEQ[nuc_byte];
         let nuc_r = 3 - nuc_f;
         rolling_kmer_f_marker <<= 2;
@@ -299,7 +303,7 @@ pub fn fmh_seeds(
 
 //        let hash_seed = mm_hashi64(canonical_kmer_seed as i64);
         let hash_seed = mm_hash64(canonical_kmer_seed);
-        if hash_seed < threshold {
+        if hash_seed < threshold && resume_ind <= i {
             if seed {
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds

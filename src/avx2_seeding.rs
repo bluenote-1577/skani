@@ -63,10 +63,14 @@ pub unsafe fn avx2_fmh_seeds(
     let mut rolling_kmer_r_marker = _mm256_set_epi64x(0, 0, 0, 0);
     let rev_sub = _mm256_set_epi64x(3, 3, 3, 3);
     for i in 0..marker_k - 1 {
-        let nuc_f1 = BYTE_TO_SEQ[string1[i] as usize] as i64;
-        let nuc_f2 = BYTE_TO_SEQ[string2[i] as usize] as i64;
-        let nuc_f3 = BYTE_TO_SEQ[string3[i] as usize] as i64;
-        let nuc_f4 = BYTE_TO_SEQ[string4[i] as usize] as i64;
+        let ascii_rep_1 = string1[i] as usize;
+        let ascii_rep_2 = string2[i] as usize;
+        let ascii_rep_3 = string3[i] as usize;
+        let ascii_rep_4 = string4[i] as usize;
+        let nuc_f1 = BYTE_TO_SEQ[ascii_rep_1] as i64;
+        let nuc_f2 = BYTE_TO_SEQ[ascii_rep_2] as i64;
+        let nuc_f3 = BYTE_TO_SEQ[ascii_rep_3] as i64;
+        let nuc_f4 = BYTE_TO_SEQ[ascii_rep_4] as i64;
         let f_nucs = _mm256_set_epi64x(nuc_f4, nuc_f3, nuc_f2, nuc_f1);
         let r_nucs = _mm256_sub_epi64(rev_sub, f_nucs);
 
@@ -102,11 +106,33 @@ pub unsafe fn avx2_fmh_seeds(
 
     //dbg!(KmerEnc::print_string(u64::from_le_bytes(_mm256_extract_epi64(rolling_kmer_f_marker,0).to_le_bytes()), 21));
 
+    let mut resume_inds = [0,0,0,0];
     for i in marker_k-1..(len + marker_k - 1) {
-        let nuc_f1 = BYTE_TO_SEQ[string1[i] as usize] as i64;
-        let nuc_f2 = BYTE_TO_SEQ[string2[i] as usize] as i64;
-        let nuc_f3 = BYTE_TO_SEQ[string3[i] as usize] as i64;
-        let nuc_f4 = BYTE_TO_SEQ[string4[i] as usize] as i64;
+
+        let ascii_rep_1 = string1[i] as usize;
+        let ascii_rep_2 = string2[i] as usize;
+        let ascii_rep_3 = string3[i] as usize;
+        let ascii_rep_4 = string4[i] as usize;
+
+        if ascii_rep_1 == ASCII_N{
+            resume_inds[0] = i + marker_k;
+        }
+        if ascii_rep_2 == ASCII_N{
+            resume_inds[1] = i + marker_k;
+        }
+        if ascii_rep_3 == ASCII_N{
+            resume_inds[2] = i + marker_k;
+        }
+        if ascii_rep_4 == ASCII_N{
+            resume_inds[3] = i + marker_k;
+        }
+
+
+        let nuc_f1 = BYTE_TO_SEQ[ascii_rep_1] as i64;
+        let nuc_f2 = BYTE_TO_SEQ[ascii_rep_2] as i64;
+        let nuc_f3 = BYTE_TO_SEQ[ascii_rep_3] as i64;
+        let nuc_f4 = BYTE_TO_SEQ[ascii_rep_4] as i64;
+        
         let f_nucs = _mm256_set_epi64x(nuc_f4, nuc_f3, nuc_f2, nuc_f1);
         let r_nucs = _mm256_sub_epi64(rev_sub, f_nucs);
 
@@ -152,7 +178,7 @@ pub unsafe fn avx2_fmh_seeds(
 
         if true {
             //            if m1 !={
-            if v1 < threshold_unsigned {
+            if v1 < threshold_unsigned && resume_inds[0] <= i {
                 const IND: i32 = 0;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -178,7 +204,7 @@ pub unsafe fn avx2_fmh_seeds(
                 }
             }
             //            if m2 != 0 {
-            if v2 < threshold_unsigned {
+            if v2 < threshold_unsigned && resume_inds[1] <= i {
                 const IND: i32 = 1;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -204,7 +230,7 @@ pub unsafe fn avx2_fmh_seeds(
                 }
             }
             //            if m3 != 0 {
-            if v3 < threshold_unsigned {
+            if v3 < threshold_unsigned && resume_inds[2] <= i{
                 const IND: i32 = 2;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds
@@ -230,7 +256,7 @@ pub unsafe fn avx2_fmh_seeds(
                 }
             }
             //            if m4 != 0 {
-            if v4 < threshold_unsigned {
+            if v4 < threshold_unsigned && resume_inds[3] <= i{
                 const IND: i32 = 3;
                 let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
                 let kmer_positions = kmer_seeds

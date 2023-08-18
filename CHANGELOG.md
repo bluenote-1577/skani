@@ -1,3 +1,10 @@
+### v0.1.5 released - 2023-08-TODO
+
+#### Major
+
+* changed query-reference selection to ...
+* robust now uses the learned ANI debiasing procedure
+
 ### v0.1.4 released - 2023-06-14
 
 #### Major

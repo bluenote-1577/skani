@@ -10,29 +10,17 @@ extern crate interval;
 use gcollections::ops::set::*;
 use interval::interval_set::*;
 
-fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64)-> bool{
+fn switch_qr(med_ctg_len_r: f64, med_ctg_len_q: f64, q_sk_len: f64,r_sk_len: f64, query_file_name: &str, ref_file_name: &str)-> bool{
     let score_query = q_sk_len
-//        * med_ctg_len_q;
         * (f64::min(med_ctg_len_q, 300000.));
     let score_ref = r_sk_len
-//        * med_ctg_len_r;
         * (f64::min(med_ctg_len_r, 300000.));
-    score_query > score_ref
-
-
-
-    //let mut score_query = 1. / (1. + f64::powf(2.73, -(med_ctg_len_q - 30000.)));
-    //let mut score_ref = 1. / (1. + f64::powf(2.73, -(med_ctg_len_r - 30000.)));
-//    score_query *= q_sk_len;
-//    score_ref *= r_sk_len;
-//    let norm_len_r = f64::min(med_ctg_len_r, 20000.);
-//    let norm_len_q = f64::min(med_ctg_len_q, 20000.);
-//    if norm_len_r == norm_len_q{
-//        return r_sk_len * med_ctg_len_r.ln() < q_sk_len * med_ctg_len_q.ln()
-//    }
-//    else{
-//        return norm_len_q > norm_len_r
-//    }
+    if score_query == score_ref{
+        query_file_name > ref_file_name
+    }
+    else{
+        score_query > score_ref
+    }
 }
 
 fn mean(data: &[f64]) -> Option<f64> {
@@ -659,7 +647,18 @@ fn get_anchors(
 //    let score_ref = (ref_sketch.total_sequence_length as f64)
 //        * f64::min(med_ctg_len_r, 40000.);
 
-    if switch_qr(mean_ctg_len_r,mean_ctg_len_q, query_sketch.total_sequence_length as f64, ref_sketch.total_sequence_length as f64){
+    let query_length_markers_proxy;
+    let ref_length_markers_proxy;
+
+    if query_sketch.total_sequence_length > 100_000 && ref_sketch.total_sequence_length > 100_000{
+        query_length_markers_proxy = query_sketch.marker_seeds.len() as f64 * query_sketch.c as f64;
+        ref_length_markers_proxy = ref_sketch.marker_seeds.len() as f64 * ref_sketch.c as f64;
+    }
+    else{
+        query_length_markers_proxy = query_sketch.total_sequence_length as f64;
+        ref_length_markers_proxy = ref_sketch.total_sequence_length as f64;
+    }
+    if switch_qr(mean_ctg_len_r,mean_ctg_len_q, query_length_markers_proxy, ref_length_markers_proxy, &query_sketch.file_name, &ref_sketch.file_name){
         switched = true;
         if !check_markers_quickly(query_sketch, ref_sketch, 0.0){
             return (AnchorChunks::default(), switched);

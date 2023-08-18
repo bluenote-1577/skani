@@ -309,7 +309,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             learned_ani = false;
         } else {
             learned_ani_cmd = false;
-            learned_ani = regression::use_learned_ani(c, individual_contig_q, individual_contig_r, robust, median);
+            learned_ani = regression::use_learned_ani(c, individual_contig_q, individual_contig_r, median);
         }
     } else {
         learned_ani_cmd = false;

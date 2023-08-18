@@ -51,6 +51,9 @@ pub const FAST_C: usize = 200;
 pub const SLOW_C: usize = 30;
 pub const MEDIUM_C: usize = 70;
 
+pub const ASCII_N: usize = 78;
+pub const ASCII_N_SMALL: usize = 110;
+
 
 #[derive(PartialEq)]
 pub enum Mode {
