@@ -96,7 +96,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     if ref_file_list.is_some() {
         let ref_file_list = ref_file_list.unwrap();
-        let file = File::open(ref_file_list).unwrap();
+        let file = File::open(ref_file_list).expect("-l specified file could not be opened properly. Make sure this file exists. Exiting.");
         let reader = BufReader::new(file);
         let mut temp_vec = vec![];
 

@@ -1,9 +1,14 @@
-### v0.1.5 released - 2023-08-TODO
+### v0.1.5 released - 2023-09-01
 
 #### Major
 
-* changed query-reference selection to ...
-* robust now uses the learned ANI debiasing procedure
+Improved "N" character support: 
+
+* changed query-reference selection method slightly via a slight hack, using marker seeds to estimate reference length instead. This makes it so NNN characters are not counted. 
+* Now seeds with "N" characters present are no longer indexed. 
+
+#### Minor
+* --robust now uses the learned ANI debiasing procedure by default. 
 
 ### v0.1.4 released - 2023-06-14
 
