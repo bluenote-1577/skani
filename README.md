@@ -55,7 +55,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (source version: 0.1.4)
+#### Option 3: Conda (source version: 0.1.5)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
@@ -138,15 +138,7 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 ##  Updates
 
-### v0.1.4 released - 2023-06-14
-
-#### Major
-* skani triangle had a bug where if more than 5000 queries were present and --sparse or -E was not specified, the intermediate batch of 5000 queries would be written in sparse mode. 
-* skani triangle -o was giving different upper triangle matrix instead of lower triangle (skani triangle > res gives lower triangle). Matrices are consistently lower triangle now.
-* Changed to lto = true for release mode. I see anywhere from a 5-10% speedup for this.
-
-#### Minor
-* Changed some dependencies so no more dependencies on old crates that will deprecate. 
+### v0.1.5 released - 2023-09-01
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
