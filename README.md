@@ -134,8 +134,7 @@ The order of results is dependent on the command and not guaranteed to be determ
 
 ## Citation
 
-Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. bioRxiv (2023).  https://doi.org/10.1101/2023.01.18.524587. Submitted.
-
+Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. Nature Methods (2023). https://doi.org/10.1038/s41592-023-02018-3
 ##  Updates
 
 ### v0.1.5 released - 2023-09-01
