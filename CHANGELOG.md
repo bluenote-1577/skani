@@ -10,6 +10,7 @@
 
 #### Minor
 
+* The rust API is changing in this version. Not published to Cargo yet (waiting on https://github.com/DDOtten/partitions/pull/3 to be published to crates...)
 
 ### v0.1.5 released - 2023-09-01
 
