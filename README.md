@@ -20,7 +20,7 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ### Major bug:
 
-- In versions v0.1.3 - v0.1.5, **when > 5000 comparisons were done with `skani search` or `skani dist`**, the ANI was inaccurate. This is fixed in v0.2.0 now. 
+- In versions v0.1.3 - v0.1.5, **when > 5000 genomes were queried with `skani search` or `skani dist`**, the ANI was inaccurate. This is fixed in v0.2.0 now. 
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
@@ -65,7 +65,7 @@ Note: the binary is compiled with a different set of libraries (musl instead of 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
 
-#### Option 3: Conda (source version: 0.1.5)
+#### Option 3: Conda (source version: 0.2.0)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
