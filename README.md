@@ -14,6 +14,16 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
 
+##  Updates
+
+### v0.2.0 released - 2023-09-25
+
+### Major bug:
+
+- In versions v0.1.3 - v0.1.5, **when > 5000 comparisons were done with `skani search` or `skani dist`**, the ANI was inaccurate. This is fixed in v0.2.0 now. 
+
+See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
+
 ##  Install
 
 #### Option 1: Build from source
@@ -135,11 +145,6 @@ The order of results is dependent on the command and not guaranteed to be determ
 ## Citation
 
 Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison through sparse chaining with skani. Nature Methods (2023). https://doi.org/10.1038/s41592-023-02018-3
-##  Updates
-
-### v0.1.5 released - 2023-09-01
-
-See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
 ## Feature requests, issues
 
