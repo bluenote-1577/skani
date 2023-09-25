@@ -1,3 +1,16 @@
+### v0.2.0 released - 2023-09-26
+
+#### BREAKING
+
+* --learned-ani feature was buggy before and now removed. 
+
+#### Major
+
+* Major bug found: debiasing for ANI was turned off if there were > 5000 queries present in skani search and skani dist. This bug is fixed now. 
+
+#### Minor
+
+
 ### v0.1.5 released - 2023-09-01
 
 #### Major

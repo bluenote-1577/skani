@@ -26,7 +26,6 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         keep_refs: false,
         est_ci: false,
         learned_ani: true,
-        learned_ani_cmd: false,
         detailed_out: false,
         distance: false
     };
@@ -48,7 +47,7 @@ fn code_ecoli_test_simple() {
     let ref_sketch = fastx_to_sketches(&command_params.ref_files, &sketch_params, true)[0].clone();
     let query_sketch =
         fastx_to_sketches(&command_params.query_files, &sketch_params, true)[0].clone();
-    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params);
+    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params, &None);
     let ani_res = chain_seeds(&ref_sketch, &query_sketch, map_params);
     assert!(ani_res.ani >= 1.0);
     assert!(ani_res.align_fraction_query >= 0.99);
@@ -68,7 +67,7 @@ fn code_ecoli_plasmid_test() {
     let ref_sketch = sketches_from_sketch(&command_params.ref_files).1[0].clone();
     let query_sketch =
         fastx_to_sketches(&command_params.query_files, &sketch_params, true)[0].clone();
-    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params);
+    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params, &None);
     let ani_res = chain_seeds(&ref_sketch, &query_sketch, map_params);
     assert!(ani_res.ani >= 1.0);
     assert!(ani_res.align_fraction_query >= 0.99);
@@ -102,8 +101,8 @@ fn code_eukaryote_test() {
     let ref_sketch = fastx_to_sketches(&command_params.ref_files, &sketch_params, true)[0].clone();
     let query_sketch =
         fastx_to_sketches(&command_params.query_files, &sketch_params, true)[0].clone();
-    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params);
-    let mut ani_res = chain_seeds(&ref_sketch, &query_sketch, map_params);
+    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params, &None);
+    let ani_res = chain_seeds(&ref_sketch, &query_sketch, map_params);
 
     assert!(ani_res.ani >= 0.98);
     assert!(ani_res.align_fraction_ref>= 0.70);
@@ -113,11 +112,11 @@ fn code_eukaryote_test() {
     assert!(ani_res.align_fraction_query <= 0.65);
     let old_ani = ani_res.ani;
 
+
     let model_opt = get_model(sketch_params.c, command_params.learned_ani);
-    if model_opt.is_some(){
-        let model = model_opt.as_ref().unwrap();
-        predict_from_ani_res(&mut ani_res, &model);
-    }
+    let map_params = map_params_from_sketch(&ref_sketch, sketch_params.use_aa, &command_params, &model_opt);
+    let ani_res = chain_seeds(&ref_sketch, &query_sketch, map_params);
+
     assert!(ani_res.ani >= 0.98);
     assert!(ani_res.ani <= old_ani);
     println!("{:?}", ani_res);
@@ -126,7 +125,7 @@ fn code_eukaryote_test() {
 #[test]
 fn avx2_vs_normal_code(){
     let str1 = b"ATCAGATTTAAAAAAAAATTTTGCTAGCTGATCGATCGATCGATGTGTATATATTAAAAGAGAGAGAGGGGGGGGAAAAAAAAAAAAACTGATCGATCGATGCTAGCTAGTCAGTCGATG";
-    let (mut command_params, mut sketch_params) = default_params(Mode::Dist);
+    let (_command_params, mut sketch_params) = default_params(Mode::Dist);
     sketch_params.c = 10;
     let mut new_sketch1 = Sketch::default();
     let mut new_sketch2 = Sketch::default();
@@ -145,7 +144,7 @@ fn avx2_vs_normal_code(){
 #[test]
 fn NNN_test_code(){
     let str1 = b"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNn";
-    let (mut command_params, mut sketch_params) = default_params(Mode::Dist);
+    let (mut _command_params, mut sketch_params) = default_params(Mode::Dist);
     sketch_params.c = 30;
     let mut new_sketch1 = Sketch::default();
     fmh_seeds(str1, &sketch_params, 0, &mut new_sketch1, true);

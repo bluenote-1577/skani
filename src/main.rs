@@ -237,12 +237,6 @@ fn main() {
                 )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
-                    Arg::new(LEARNED_ANI)
-                    .long(CMD_LEARNED_ANI)
-                    .help(H_LEARNED_ANI)
-                    .takes_value(false)
-                )
-                .arg(
                     Arg::new(NO_LEARNED_ANI)
                     .long(CMD_NO_LEARNED_ANI)
                     .help(H_NO_LEARNED_ANI)
@@ -403,12 +397,6 @@ fn main() {
 
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
-                    Arg::new(LEARNED_ANI)
-                    .long(CMD_LEARNED_ANI)
-                    .help(H_LEARNED_ANI)
-                    .takes_value(false)
-                )
-                .arg(
                     Arg::new(NO_LEARNED_ANI)
                     .long(CMD_NO_LEARNED_ANI)
                     .help(H_NO_LEARNED_ANI)
@@ -537,12 +525,6 @@ fn main() {
                         .required(true),
                 )
                 .help_heading("ALGORITHM PARAMETERS")
-                .arg(
-                    Arg::new(LEARNED_ANI)
-                    .long(CMD_LEARNED_ANI)
-                    .help(H_LEARNED_ANI)
-                    .takes_value(false)
-                )
                 .arg(
                     Arg::new(NO_LEARNED_ANI)
                     .long(CMD_NO_LEARNED_ANI)

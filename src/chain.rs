@@ -1,6 +1,8 @@
 use crate::params::*;
+use gbdt::gradient_boost::GBDT;
 use crate::types::*;
 use bio::data_structures::interval_tree::IntervalTree;
+use crate::regression;
 
 use fxhash::FxHashMap;
 use log::*;
@@ -83,11 +85,12 @@ fn bootstrap_interval(ani_ests: &Vec<(f64,usize)>) -> (f64,f64,f64){
 
 }
 
-pub fn map_params_from_sketch(
+pub fn map_params_from_sketch <'a>(
     ref_sketch: &Sketch,
     amino_acid: bool,
     command_params: &CommandParams,
-) -> MapParams {
+    model_opt: &'a Option<GBDT>
+) -> MapParams<'a> {
     let max_gap_length = if amino_acid{D_MAX_GAP_LENGTH_AAI} else {D_MAX_GAP_LENGTH};
     let anchor_score = if amino_acid{D_ANCHOR_SCORE_AAI} else {D_ANCHOR_SCORE_ANI};
     let min_anchors = if amino_acid{D_MIN_ANCHORS_AAI} else {D_MIN_ANCHORS_ANI};
@@ -108,6 +111,13 @@ pub fn map_params_from_sketch(
     let min_score = min_anchors as f64 * anchor_score * 0.75;
 //    let min_score = 0.;
     let k = ref_sketch.k;
+    let model;
+    if let Some(m) = model_opt{
+        model = Some(m);
+    }
+    else{
+        model = None
+    }
     MapParams {
         fragment_length,
         max_gap_length,
@@ -124,6 +134,7 @@ pub fn map_params_from_sketch(
         median: command_params.median,
         bp_chain_band,
         min_length_cover,
+        model
     }
 }
 
@@ -142,7 +153,7 @@ pub fn chain_seeds(
     }
     let good_interval_chunks =
         get_nonoverlapping_chains(&mut good_intervals, anchor_chunks.chunks.len());
-    let ani = calculate_ani(
+    let mut ani = calculate_ani(
         &good_interval_chunks,
         ref_sketch,
         query_sketch,
@@ -150,6 +161,9 @@ pub fn chain_seeds(
         &map_params,
         switched,
     );
+    if let Some(model) = map_params.model{
+        regression::predict_from_ani_res(&mut ani, model);
+    }
     ani
 }
 

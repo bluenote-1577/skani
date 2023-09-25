@@ -37,13 +37,9 @@ pub const CMD_CONF_INTERVAL: &str = "ci";
 pub const H_CONF_INTERVAL: &str = "Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution.";
 pub const H_CONF_INTERVAL_TRI: &str = "Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution. Only works with --sparse or -E.";
 
-pub const LEARNED_ANI: &str = "learned-regression-model";
-pub const CMD_LEARNED_ANI : &str = "learned-ani";
-pub const H_LEARNED_ANI: &str = "Use ANI prediction with a regression model trained on MAG data. \t[default: on if c >= 70, >= 150,000 bases aligned]";
-
-pub const NO_LEARNED_ANI: &str = "no-learned-regression-model";
+pub const NO_LEARNED_ANI: &str = "no-learned-ani";
 pub const CMD_NO_LEARNED_ANI : &str = "no-learned-ani";
-pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.\t[default: disabled unless c >= 70, >= 150,000 bases aligned]";
+pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.\t[default: learned ANI used for c >= 70 and >= 150,000 bases aligned and not on individual contigs]";
 
 pub const MODE_SLOW: &str = "slow";
 pub const CMD_MODE_SLOW : &str = "slow";

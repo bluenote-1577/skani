@@ -27,7 +27,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         Some(SEARCH_STRING) => {
             mode = Mode::Search;
             matches_subc = matches.subcommand_matches(SEARCH_STRING).unwrap();
-            //            return parse_params_search(matches_subc);
         }
         _ => {
             panic!()
@@ -297,23 +296,14 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let learned_ani;
-    let learned_ani_cmd;
-    if mode == Mode::Triangle || mode == Mode::Dist {
-        if matches_subc.is_present(LEARNED_ANI) && matches_subc.is_present(NO_LEARNED_ANI) {
-            panic!("Only one of --learned-ani and --no-learned-ani is allowed");
-        } else if matches_subc.is_present(LEARNED_ANI) {
-            learned_ani_cmd = true;
-            learned_ani = true;
-        } else if matches_subc.is_present(NO_LEARNED_ANI) {
-            learned_ani_cmd = true;
-            learned_ani = false;
-        } else {
-            learned_ani_cmd = false;
-            learned_ani = regression::use_learned_ani(c, individual_contig_q, individual_contig_r, median);
-        }
-    } else {
-        learned_ani_cmd = false;
+    if mode == Mode::Sketch{
         learned_ani = false;
+    }
+    else if matches_subc.is_present(NO_LEARNED_ANI){
+        learned_ani = false;
+    }
+    else{
+        learned_ani = regression::use_learned_ani(c, individual_contig_q, individual_contig_r, median);
     }
 
     let mut distance = false;
@@ -343,7 +333,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         keep_refs: false,
         est_ci,
         learned_ani,
-        learned_ani_cmd,
         detailed_out,
         distance,
     };
@@ -424,21 +413,14 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     let keep_refs = matches_subc.is_present(KEEP_REFS);
     let est_ci = matches_subc.is_present(CONF_INTERVAL);
     let detailed_out = matches_subc.is_present(DETAIL_OUT);
+
+
     let learned_ani;
-    let learned_ani_cmd;
-    if matches_subc.is_present(LEARNED_ANI) && matches_subc.is_present(NO_LEARNED_ANI)
-    {
-        panic!("Only one of --learned-ani and --no-learned-ani is allowed");
-    } else if matches_subc.is_present(LEARNED_ANI) {
-        learned_ani = true;
-        learned_ani_cmd = true;
-    } else if matches_subc.is_present(NO_LEARNED_ANI) {
+    if matches_subc.is_present(NO_LEARNED_ANI){
         learned_ani = false;
-        learned_ani_cmd = true;
     }
     else{
-        learned_ani = false;
-        learned_ani_cmd = false;
+        learned_ani = true;
     }
 
     let command_params = CommandParams {
@@ -461,7 +443,6 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         keep_refs,
         est_ci,
         learned_ani,
-        learned_ani_cmd,
         detailed_out,
         distance: false,
     };

@@ -47,6 +47,14 @@ pub fn search(command_params: CommandParams) {
         screen_val = command_params.screen_val;
     }
 
+
+
+    let learned_ani = regression::use_learned_ani(sketch_params.c, command_params.individual_contig_q, false, command_params.median);
+    let model_opt = regression::get_model(sketch_params.c, learned_ani);
+    if model_opt.is_some() {
+        info!("{}", LEARNED_INFO_HELP);
+    }
+
     info!("Loading markers time: {}", now.elapsed().as_secs_f32());
     let kmer_to_sketch;
     if command_params.screen {
@@ -129,13 +137,10 @@ pub fn search(command_params: CommandParams) {
                             &ref_sketch[0],
                             sketch_params.use_aa,
                             &command_params,
+                            &model_opt
                         );
                         let ani_res;
-                        if map_params != MapParams::default() {
-                            ani_res = chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
-                        } else {
-                            ani_res = AniEstResult::default();
-                        }
+                        ani_res = chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
                         if ani_res.ani > 0.5 {
                             let mut locked = anis.lock().unwrap();
                             locked.push(ani_res);
@@ -155,14 +160,10 @@ pub fn search(command_params: CommandParams) {
                                 &ref_sketch[0],
                                 sketch_params.use_aa,
                                 &command_params,
+                                &model_opt
                             );
                             let ani_res;
-                            if map_params != MapParams::default() {
-                                ani_res =
-                                    chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
-                            } else {
-                                ani_res = AniEstResult::default();
-                            }
+                                ani_res = chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
                             if ani_res.ani > 0.5 {
                                 let mut locked = anis.lock().unwrap();
                                 locked.push(ani_res);
@@ -181,15 +182,10 @@ pub fn search(command_params: CommandParams) {
                                 &ref_sketch[0],
                                 sketch_params.use_aa,
                                 &command_params,
+                                &model_opt
                             );
                             let ani_res;
-                            if map_params != MapParams::default() {
-                                ani_res =
-                                    chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
-                            } else {
-                                ani_res = AniEstResult::default();
-                            }
-
+                            ani_res = chain::chain_seeds(&ref_sketch[0], query_sketch, map_params);
                             {
                                 let mut write_table = ref_sketches_used.write().unwrap();
                                 write_table.insert(original_file.clone(), ref_sketch);
@@ -241,22 +237,9 @@ pub fn search(command_params: CommandParams) {
     if command_params.keep_refs{
         info!("{} references kept in memory for --keep-refs", ref_sketches_used.read().unwrap().len());
     }
-    let mut anis = anis.into_inner().unwrap();
-    let learned_ani;
-    if !command_params.learned_ani_cmd{
-        learned_ani = regression::use_learned_ani(sketch_params.c, command_params.individual_contig_q, command_params.individual_contig_r, command_params.median);
-    }
-    else{
-        learned_ani = command_params.learned_ani;
-    }
-    let model_opt = regression::get_model(sketch_params.c, learned_ani);
-    if model_opt.is_some(){
-        info!("{}",LEARNED_INFO_HELP);
-        let model = model_opt.as_ref().unwrap();
-        for ani in anis.iter_mut(){
-            regression::predict_from_ani_res(ani, &model);
-        }
-    }
+    
+    let anis = anis.into_inner().unwrap();
+    
     file_io::write_query_ref_list(
         &anis,
         &command_params.out_file_name,

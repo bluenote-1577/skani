@@ -104,7 +104,6 @@ fn test_search() {
         .arg("--median")
         .arg("-n")
         .arg("5")
-        .arg("--learned-ani")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
     println!("ANI search test learned");
@@ -257,7 +256,6 @@ fn test_dist() {
         .arg("./test_files/e.coli-K12.fasta")
         .arg("-n")
         .arg("3")
-        .arg("--learned-ani")
         .output();
     let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
     let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
@@ -608,7 +606,7 @@ fn test_triangle() {
         .arg("./test_files/query_list.txt")
         .arg("-o")
         .arg("./tests/results/output")
-        .arg("--learned-ani")
+        .arg("--no-learned-ani")
         .assert();
     assert.success().code(0);
 

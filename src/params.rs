@@ -1,4 +1,6 @@
 use crate::types::*;
+use gbdt::gradient_boost::GBDT;
+
 pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
 pub const KMER_SK_SMALL_VEC_SIZE: usize = 3;
@@ -63,8 +65,8 @@ pub enum Mode {
     Search,
 }
 
-#[derive(Default, PartialEq)]
-pub struct MapParams {
+#[derive(Default)]
+pub struct MapParams<'a> {
     pub fragment_length: usize,
     pub max_gap_length: f64,
     pub anchor_score: f64,
@@ -80,6 +82,7 @@ pub struct MapParams {
     pub median: bool,
     pub bp_chain_band: usize,
     pub min_length_cover: usize,
+    pub model: Option<&'a GBDT>
 }
 
 #[derive(PartialEq)]
@@ -103,7 +106,6 @@ pub struct CommandParams{
     pub keep_refs: bool,
     pub est_ci: bool,
     pub learned_ani: bool,
-    pub learned_ani_cmd: bool,
     pub detailed_out: bool,
     pub distance: bool,
 }

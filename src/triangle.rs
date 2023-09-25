@@ -52,8 +52,8 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     let counter: Mutex<usize> = Mutex::new(0);
     let first: Mutex<bool> = Mutex::new(true);
 
-    let model = regression::get_model(sketch_params.c, command_params.learned_ani);
-    if model.is_some() {
+    let model_opt = regression::get_model(sketch_params.c, command_params.learned_ani);
+    if model_opt.is_some() {
         info!("{}", LEARNED_INFO_HELP);
     }
     (0..ref_sketches.len() - 1)
@@ -80,14 +80,11 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                         ref_sketch_i,
                         sketch_params.use_aa,
                         &command_params,
+                        &model_opt 
                     );
                     let ref_sketch_j = &ref_sketches[j];
-                    let mut ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
+                    let ani_res = chain::chain_seeds(ref_sketch_i, ref_sketch_j, map_params);
                     if ani_res.ani > 0.1 {
-                        if command_params.learned_ani {
-                            let gbdt = model.as_ref().unwrap();
-                            regression::predict_from_ani_res(&mut ani_res, gbdt);
-                        }
                         let mut locked = anis.lock().unwrap();
                         let mapi = locked.entry(i).or_insert(FxHashMap::default());
                         mapi.insert(j, ani_res);
@@ -129,9 +126,6 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             //
         });
     let anis = anis.into_inner().unwrap();
-    let now_pred = Instant::now();
-
-    debug!("Prediction time: {}", now_pred.elapsed().as_secs_f32());
 
     if command_params.sparse {
         file_io::write_sparse_matrix(

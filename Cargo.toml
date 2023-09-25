@@ -1,6 +1,6 @@
 [package]
 name = "skani"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "skani is a fast tool for calculating ANI between metagenomic sequences, such as metagenome-assembled genomes (MAGs). It is extremely fast and is robust against incompleteness and fragmentation, giving accurate ANI estimates."
@@ -21,7 +21,8 @@ thiserror = "1.0"
 bio = "1"
 rand = "0.8.3"
 fxhash = "0"
-partitions = { git = "https://github.com/bluenote-1577/partitions.git" }
+#partitions = { git = "https://github.com/bluenote-1577/partitions.git" }
+partitions = "0.2"
 num-traits = "0"
 needletail = "0.5"
 simple-logging= "2"
