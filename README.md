@@ -72,6 +72,8 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 conda install -c bioconda skani
 ```
 
+Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the github repo and will be fixed in the next release.  
+
 ## Quick start
 
 ```sh
