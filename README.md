@@ -77,7 +77,7 @@ Note (2023-9-26): There's currently a bug on the conda version where skani appea
 ## Quick start
 
 ```sh
-# compare two genomes for ANI. skani is symmetric, so order does not matter.
+# compare two genomes for ANI. skani is symmetric, so order does not affect ANI
 skani dist genome1.fa genome2.fa 
 skani dist genome2.fa genome1.fa 
 
