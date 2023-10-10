@@ -48,7 +48,18 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 #./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 ```
 
-#### Option 2: Pre-built x86-64 linux statically compiled executable
+See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
+
+#### Option 2: Conda (source version: 0.2.0)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
+```sh
+conda install -c bioconda skani
+```
+
+Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the github repo and will be fixed in the next release.  
+
+#### Option 3: Pre-built x86-64 linux statically compiled executable
 
 We offer a pre-built statically compiled executable for x86-64 linux systems. That is, if you're on a x86-64 linux system, you can just download the binary and run it without installing anything. 
 
@@ -60,19 +71,7 @@ chmod +x skani
 ./skani -h
 ```
 
-Note: the binary is compiled with a different set of libraries (musl instead of glibc). This appears to make it slightly slower on a simple test (~3% or so), but it is maybe not a huge deal for many applications. 
-
-See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
-
-
-#### Option 3: Conda (source version: 0.2.0)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
-```sh
-conda install -c bioconda skani
-```
-
-Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the github repo and will be fixed in the next release.  
+**Important**: the binary runs slower on some tasks only slightly (3-10%) but can be drastically slower on some other tasks. 
 
 ## Quick start
 
