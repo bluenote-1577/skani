@@ -102,7 +102,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
             is.into_par_iter().for_each(|i| {
                 let ref_sketch = &ref_sketches[i];
                 let passed_screen =
-                    chain::check_markers_quickly(query_sketch, ref_sketch, screen_val);
+                    screen::check_markers_quickly(query_sketch, ref_sketch, screen_val, command_params.rescue_small);
                 if passed_screen {
                     let map_params = chain::map_params_from_sketch(
                         ref_sketch,
@@ -125,6 +125,7 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                 query_sketch,
                 &sketch_params,
                 &ref_sketches,
+                command_params.rescue_small
             );
             refs_passing_screen_table.into_par_iter().for_each(|i| {
                 let ref_sketch = &ref_sketches[i];

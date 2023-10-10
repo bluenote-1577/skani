@@ -11,7 +11,6 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) {
-    //TODO
     let ref_sketches;
     let now = Instant::now();
     if command_params.refs_are_sketch {
@@ -61,13 +60,13 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         .into_par_iter()
         .for_each(|i| {
             let ref_sketch_i = &ref_sketches[i];
-            //if command_params.screen {
             let screened_refs = screen::screen_refs(
                 screen_val,
                 &kmer_to_sketch,
                 ref_sketch_i,
                 &sketch_params,
                 &ref_sketches,
+                command_params.rescue_small
             );
             debug!(
                 "{} has {} refs passing screening.",

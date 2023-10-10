@@ -21,7 +21,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("0.2.0")
+        .version("0.2.1")
         .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
@@ -292,6 +292,11 @@ fn main() {
                         .long(CMD_NO_FULL_INDEX)
                         .help(H_NO_FULL_INDEX),
                 )
+                .arg(
+                    Arg::new(FAST_SMALL)
+                        .long(CMD_FAST_SMALL)
+                        .help(H_FAST_SMALL),
+                )
                 .help_heading("MISC")
                 .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
@@ -438,6 +443,11 @@ fn main() {
                         .long("median")
                         .help("Estimate median identity instead of average (mean) identity."),
                 )
+                .arg(
+                    Arg::new(FAST_SMALL)
+                        .long(CMD_FAST_SMALL)
+                        .help(H_FAST_SMALL),
+                )
                 .help_heading("MISC")
                 .arg(Arg::new("v").short('v').long("debug").help("Debug level verbosity."))
                 .arg(Arg::new("trace").long("trace").help("Trace level verbosity."))
@@ -562,7 +572,13 @@ fn main() {
     let (sketch_params, command_params) = parse::parse_params(&matches);
 
     let cmd_txt = env::args().into_iter().collect::<Vec<String>>().join(" ");
-    log::info!("{}", cmd_txt);
+    let log_str = &cmd_txt[0..usize::min(cmd_txt.len(), 250)];
+    if cmd_txt.len() > 250{
+        log::info!("{} ...", log_str);
+    }
+    else{
+        log::info!("{}", log_str);
+    }
 
     if command_params.mode == params::Mode::Sketch {
         sketch::sketch(command_params, sketch_params);

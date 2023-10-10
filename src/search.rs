@@ -103,7 +103,7 @@ pub fn search(command_params: CommandParams) {
                     let js = 0..ref_sketches.len();
                     js.into_par_iter().for_each(|j| {
                         let ref_sketch = &ref_sketches[j];
-                        if chain::check_markers_quickly(query_sketch, ref_sketch, screen_val) {
+                        if screen::check_markers_quickly(query_sketch, ref_sketch, screen_val, false) {
                             let mut lock = refs_to_try_mutex.lock().unwrap();
                             lock.push(&ref_sketches[j].file_name);
                         }

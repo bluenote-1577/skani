@@ -16,7 +16,7 @@ pub const H_NO_FULL_INDEX: &str = "Do not use hash-table inverted index for fast
 
 pub const ROBUST: &str = "robust";
 pub const CMD_ROBUST: &str = "robust";
-pub const H_ROBUST: &str = "Estimate mean after trim off 10%/90% quantiles.";
+pub const H_ROBUST: &str = "Estimate mean after trimming off 10%/90% quantiles.";
 
 pub const FULL_MAT: &str = "full-matrix";
 pub const CMD_FULL_MAT: &str = "full-matrix";
@@ -68,5 +68,9 @@ pub const H_DISTANCE_OUT: &str = "Output 100 - ANI instead of ANI, creating a di
 pub const INT_WRITE: &str = "intermediate write count";
 pub const CMD_INT_WRITE: &str = "inter-write";
 pub const H_INT_WRITE: &str = "Write results to output after --inter-write queries are processed (leads to non-deterministic outputs when multi-threading). \t[default: 10000]";
+
+pub const FAST_SMALL: &str = "faster-small";
+pub const CMD_FAST_SMALL: &str = "faster-small";
+pub const H_FAST_SMALL: &str = "Make small genome/contig comparison faster by ANI filtering (default: no filtering if < 20 marker k-mers). Much faster for many small genomes but may miss some comparisons for small genomes. ";
 
 

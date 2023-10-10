@@ -254,6 +254,30 @@ fn test_dist() {
         .arg("dist")
         .arg("./test_files/e.coli-EC590.fasta")
         .arg("./test_files/e.coli-K12.fasta")
+        .arg("--faster-small")
+        .output();
+    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
+        .parse::<f64>()
+        .unwrap();
+    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
+        .parse::<f64>()
+        .unwrap();
+    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
+        .parse::<f64>()
+        .unwrap();
+    assert!(ani > 99.0);
+    assert!(ani < 100.);
+    assert!(af_q > 90.);
+    assert!(af_r > 90.);
+
+
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("dist")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
         .arg("-n")
         .arg("3")
         .output();
@@ -559,7 +583,6 @@ fn test_triangle() {
         .arg("-l")
         .arg("./test_files/query_list.txt")
         .output();
-
     println!(
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
@@ -570,6 +593,20 @@ fn test_triangle() {
     );
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("--faster-small")
+        .arg("./test_files/query_list.txt")
+        .output();
+    println!("--faster-small TEST");
+    println!(
+        "{}",
+        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
+    );
+
 
 
     let mut cmd = Command::cargo_bin("skani").unwrap();

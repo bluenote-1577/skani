@@ -43,6 +43,7 @@ pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
 pub const SEARCH_ANI_CUTOFF_DEFAULT: f64 = 0.80;
+pub const SCREEN_MINIMUM_KMERS: usize = 20;
 pub const FULL_INDEX_THRESH: usize = 50;
 pub const REPET_KMER_THRESHOLD: usize = 8_000_000;
 pub const OVERLAP_ORTHOLOGOUS_FRACTION: f32  = 0.50;
@@ -55,6 +56,7 @@ pub const MEDIUM_C: usize = 70;
 
 pub const ASCII_N: usize = 78;
 pub const ASCII_N_SMALL: usize = 110;
+
 
 
 #[derive(PartialEq)]
@@ -108,6 +110,7 @@ pub struct CommandParams{
     pub learned_ani: bool,
     pub detailed_out: bool,
     pub distance: bool,
+    pub rescue_small: bool,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

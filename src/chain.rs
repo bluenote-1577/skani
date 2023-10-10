@@ -589,46 +589,7 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
     map_params.anchor_score - gap
 }
 
-pub fn check_markers_quickly(
-    ref_sketch: &Sketch,
-    query_sketch: &Sketch,
-    screen_val: f64
-) -> bool{
-    if screen_val <= 0.50 ||  ref_sketch.marker_seeds.len() == 0  || query_sketch.marker_seeds.len() == 0{
-        return true;
-    }
-    let seeds1;
-    let seeds2;
-    let min_card;
-    if query_sketch.marker_seeds.len() > ref_sketch.marker_seeds.len(){
-        seeds1 = &ref_sketch.marker_seeds;
-        seeds2 = &query_sketch.marker_seeds;
-        min_card = ref_sketch.marker_seeds.len();
-    }
-    else{
-        seeds2 = &ref_sketch.marker_seeds;
-        seeds1 = &query_sketch.marker_seeds;
-        min_card = query_sketch.marker_seeds.len();
-    }
-    assert!(ref_sketch.amino_acid == query_sketch.amino_acid);
-    let k = if ref_sketch.amino_acid{K_MARKER_AA} else {K_MARKER_DNA};
-    let ratio = screen_val.powi(k.try_into().unwrap()) * min_card as f64;
-    let mut ratio = ratio as usize;
-    if ratio == 0{
-        ratio = 1;
-    }
-    let mut intersect_len = 0;
-    for marker_seed1 in seeds1.iter(){
-        if seeds2.contains(marker_seed1){
-            intersect_len += 1;
-        }
-        if intersect_len >= ratio{
-            return true;
-        }
-    }
-    trace!("Ratio {}, intersect_len {}, min_card {}", ratio, intersect_len, min_card);
-    false
-}
+
 
 
 fn get_anchors(
@@ -674,17 +635,13 @@ fn get_anchors(
     }
     if switch_qr(mean_ctg_len_r,mean_ctg_len_q, query_length_markers_proxy, ref_length_markers_proxy, &query_sketch.file_name, &ref_sketch.file_name){
         switched = true;
-        if !check_markers_quickly(query_sketch, ref_sketch, 0.0){
-            return (AnchorChunks::default(), switched);
-        }
+
         kmer_seeds_ref = query_sketch.kmer_seeds_k.as_ref().unwrap();
         kmer_seeds_query = ref_sketch.kmer_seeds_k.as_ref().unwrap();
         query_positions_all = vec![vec![]; ref_sketch.contigs.len()];
     } else {
         switched = false;
-        if !check_markers_quickly(ref_sketch, query_sketch, 0.0){
-            return (AnchorChunks::default(), switched);
-        }
+
         kmer_seeds_ref = ref_sketch.kmer_seeds_k.as_ref().unwrap();
         kmer_seeds_query = query_sketch.kmer_seeds_k.as_ref().unwrap();
         query_positions_all = vec![vec![]; query_sketch.contigs.len()];

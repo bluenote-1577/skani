@@ -61,6 +61,19 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         amino_acid = false;
     }
 
+    let rescue_small;
+    if mode == Mode::Triangle || mode == Mode::Dist{
+        if matches_subc.is_present(FAST_SMALL){
+            rescue_small = false;
+        }
+        else{
+            rescue_small = true;
+        }
+    }
+    else{
+        rescue_small = false;
+    }
+
     let mut ref_files: Vec<String>;
     let mut ref_file_list = None;
     let mut sparse = false;
@@ -108,10 +121,11 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     let mut query_files = vec![];
     let mut query_file_list = None;
     let mut max_results = usize::MAX;
+
     if mode == Mode::Dist {
         max_results = matches_subc
             .value_of("n")
-            .unwrap_or("1000000000")
+            .unwrap_or("1000000000000")
             .parse::<usize>()
             .unwrap();
         if let Some(values) = matches_subc.values_of("query") {
@@ -335,6 +349,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         learned_ani,
         detailed_out,
         distance,
+        rescue_small,
     };
 
     (sketch_params, command_params)
@@ -348,7 +363,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
     let mut query_file_list = None;
     let max_results = matches_subc
         .value_of("n")
-        .unwrap_or("1000000000")
+        .unwrap_or("10000000")
         .parse::<usize>()
         .unwrap();
     if let Some(values) = matches_subc.values_of("query") {
@@ -445,6 +460,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         learned_ani,
         detailed_out,
         distance: false,
+        rescue_small: false
     };
 
     if command_params.ref_files.is_empty() {
