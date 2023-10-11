@@ -71,7 +71,7 @@ chmod +x skani
 ./skani -h
 ```
 
-**Important**: the binary runs slower on some tasks only slightly (3-10%) but can be drastically slower on some other tasks. 
+**Important**: the binary runs slightly slower (3-10%) most of the time, but it can be drastically slower on some tasks. 
 
 ## Quick start
 
