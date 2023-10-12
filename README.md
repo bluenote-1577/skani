@@ -63,8 +63,6 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 conda install -c bioconda skani
 ```
 
-Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the GitHub repo and will be fixed in the next release.  
-
 #### Option 3: Pre-built x86-64 linux statically compiled executable
 
 We offer a pre-built statically compiled executable for x86-64 Linux systems. That is, if you're on an x86-64 Linux system, you can just download the binary and run it without installing anything. 
