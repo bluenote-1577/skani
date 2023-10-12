@@ -121,6 +121,10 @@ For more information about using the specific skani subcommands, see the [guide 
 2. #### [Tutorial: classifying entire assemblies against > 85,000 genomes in under 2 minutes](https://github.com/bluenote-1577/skani/wiki/Tutorial:-classifying-entire-assemblies-(MAGs-or-contigs)-against-85,000-genomes-in-under-2-minutes)
 3. #### [Tutorial: strain-level clustering of MAGs using skani, and why Mash/FastANI have issues](https://github.com/bluenote-1577/skani/wiki/Tutorial:-strain-and-species-level-clustering-of-MAGs-with-skani-triangle)
 
+### [skani cookbook](https://github.com/bluenote-1577/skani/wiki/skani-cookbook)
+
+Some common use cases and parameter settings are outlined in the cookbook. 
+
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
 See the advanced usage guide linked above for more information about topics such as:
