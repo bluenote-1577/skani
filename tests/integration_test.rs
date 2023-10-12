@@ -514,6 +514,10 @@ fn full_test_dist() {
         .assert();
     assert.success().code(0);
 
+    Command::new("mkdir")
+        .args(["./tests/results/"])
+        .spawn();
+
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("dist")
@@ -658,7 +662,6 @@ fn full_test_triangle() {
     );
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
-
 }
 
 
