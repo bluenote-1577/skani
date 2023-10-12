@@ -107,7 +107,7 @@ pub fn fastx_to_sketches(
             }
         } else {
             let mut j = 0;
-            let mut is_valid = false;
+            let mut is_valid = true;
             let mut reader = reader.unwrap();
             trace!("Sketching {} {}", new_sketch.file_name, i);
             while let Some(record) = reader.next() {
@@ -170,7 +170,6 @@ pub fn fastx_to_sketches(
                         }
                         //new_sketch.contig_order = 0;
                         j += 1;
-                        is_valid = true;
                     }
                 } else {
                     warn!("File {} is not a valid fasta/fastq file", ref_file);
@@ -178,17 +177,14 @@ pub fn fastx_to_sketches(
                     break;
                 }
             }
-            if is_valid {
-//                if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD{
-//                    new_sketch.repetitive_kmers =
-//                        seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k, new_sketch.c);
-//                    debug!("Repetitive cutoff multiplicity is {} for {}", new_sketch.repetitive_kmers, ref_file);
-//                }
-
+            if is_valid && j > 0{
                 {
                     let mut locked = ref_sketches.lock().unwrap();
                     locked.push(new_sketch);
                 }
+            }
+            if j == 0 && is_valid{
+                warn!("File {} consists of only contigs < {} bp. Skipping this file.",  ref_file, MIN_LENGTH_CONTIG);
             }
         }
     });
@@ -205,6 +201,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
     let mut index_vec = (0..ref_files.len()).collect::<Vec<usize>>();
     index_vec.shuffle(&mut thread_rng());
     index_vec.into_par_iter().for_each(|i| {
+        let mut small_contig_warn = false;
         let ref_file = &ref_files[i];
         let reader = parse_fastx_file(ref_file);
         if reader.is_err() {
@@ -288,6 +285,11 @@ pub fn fastx_to_multiple_sketch_rewrite(
                         let mut locked = ref_sketches.lock().unwrap();
                         locked.push(new_sketch);
                         j += 1;
+                    }
+                    else if !small_contig_warn
+                    {
+                        small_contig_warn = true;
+                        warn!("At least one sequence in file {} has < {} bp. These sequences will be skipped.", ref_file, MIN_LENGTH_CONTIG);
                     }
                 } else {
                     warn!("File {} is not a valid fasta/fastq file", ref_file);

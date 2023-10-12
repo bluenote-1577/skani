@@ -52,6 +52,8 @@ tikv-jemallocator = "0.5.4"
 assert_cmd = "1.0.1"
 predicates = "1"
 serial_test = "0"
+tsv = "0.1.1"
+reflection = "0"
 
 [features]
 default = ["cli"]

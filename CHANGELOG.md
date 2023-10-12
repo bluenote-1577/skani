@@ -1,3 +1,21 @@
+### v0.2.1 released - 2023-10-11
+
+More consistent support for small contigs and sequences. 
+
+#### Major
+
+* --faster-small option included in dist and triangle. 
+
+Genomes (and contigs with the --i, --ri, --qi options) with less than 20 marker k-mers are not screened according to the -s option. This makes skani for senative for small sequences, but can hamper performance on very large datasets with lots of small genomes/contigs. 
+
+This heuristic can now be disabled with the `--faster-small` option. 
+
+#### Minor
+
+* skani's version is now displayed properly
+* Added some error messages for degenerate cases (and more testing)
+* We found that the statically built binary can be a lot slower in certain cases. File i/o may be an issue for the binary version. A note is now added in the README.
+
 ### v0.2.0 released - 2023-09-26
 
 #### BREAKING

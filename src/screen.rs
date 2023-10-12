@@ -1,4 +1,5 @@
 use crate::params::*;
+use std::iter;
 //use std::collections::{HashMap, HashSet};
 //use std::hash::{BuildHasherDefault, Hash, Hasher};
 use smallvec::SmallVec;
@@ -6,6 +7,34 @@ use crate::types::*;
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
 use log::*;
+
+pub fn check_small_contigs(ref_sketches: &Vec<Sketch>, query_sketches: &Vec<Sketch>){
+    let mut num_small_sketches = 0;
+    let mut num_large_sketches = 0;
+    for sketch in ref_sketches.iter(){
+        if sketch.marker_seeds.len() < SCREEN_MINIMUM_KMERS{
+            num_small_sketches += 1;
+        }
+        else{
+            num_large_sketches += 1;
+        }
+    }
+    for sketch in query_sketches.iter(){
+        if sketch.marker_seeds.len() < SCREEN_MINIMUM_KMERS{
+            num_small_sketches += 1;
+        }
+        else{
+            num_large_sketches += 1;
+        }
+    }
+    if num_large_sketches + num_small_sketches == 0{
+        return
+    }
+    if num_small_sketches as f64 / (num_large_sketches + num_small_sketches) as f64 > 0.25 &&
+    num_small_sketches + num_large_sketches > 10_000{
+        log::warn!("Lots of small genomes detected with < 20 marker k-mers. Consider -m or using --faster-small for faster runtimes.");
+    }
+}
 
 //Used in search, but not in dist,triangle
 pub fn screen_refs_filenames<'a>(

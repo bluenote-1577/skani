@@ -72,5 +72,3 @@ pub const H_INT_WRITE: &str = "Write results to output after --inter-write queri
 pub const FAST_SMALL: &str = "faster-small";
 pub const CMD_FAST_SMALL: &str = "faster-small";
 pub const H_FAST_SMALL: &str = "Make small genome/contig comparison faster by ANI filtering (default: no filtering if < 20 marker k-mers). Much faster for many small genomes but may miss some comparisons for small genomes. ";
-
-

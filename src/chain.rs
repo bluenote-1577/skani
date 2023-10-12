@@ -482,7 +482,7 @@ fn calculate_ani(
     
     let q_string = &query_sketch.file_name;
     let id_string = if map_params.amino_acid { "AAI" } else { "ANI" };
-    debug!("Total 1-to-1 aligned bases: {}", total_query_bases);
+    trace!("Total 1-to-1 aligned bases: {}", total_query_bases);
     //println!("{}",total_query_bases);
     debug!(
         "Query {} Ref {} - {} {}, +/- = {}/{}. ",
@@ -1067,7 +1067,7 @@ fn get_nonoverlapping_chains(
             good_non_overlap_intervals[int.chunk_id].push(int.clone());
         }
     }
-    debug!("Bases rescued by small overlapping orthologous threshold: {}", bases_added);
+    trace!("Bases rescued by small overlapping orthologous threshold: {}", bases_added);
     //good_non_overlap_intervals.sort_by(|x, y| y.partial_cmp(&x).unwrap());
     good_non_overlap_intervals
 }

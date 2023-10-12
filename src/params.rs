@@ -5,6 +5,7 @@ pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
 pub const KMER_SK_SMALL_VEC_SIZE: usize = 3;
 pub const INTERMEDIATE_WRITE_COUNT: usize = 5000;
+//pub const INTERMEDIATE_WRITE_COUNT: usize = 2;
 use serde::{Serialize, Deserialize};
 use fxhash::FxHashMap;
 pub const D_FRAGMENT_LENGTH: usize = 200000;

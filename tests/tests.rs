@@ -36,7 +36,7 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
 }
 
 #[test]
-fn code_ecoli_test_simple() {
+fn fast_ecoli_test_simple() {
     let (mut command_params, sketch_params) = default_params(Mode::Dist);
     command_params
         .ref_files
@@ -56,7 +56,7 @@ fn code_ecoli_test_simple() {
 }
 
 #[test]
-fn code_ecoli_plasmid_test() {
+fn fast_ecoli_plasmid_test() {
     let (mut command_params, sketch_params) = default_params(Mode::Dist);
     command_params
         .ref_files
@@ -76,7 +76,7 @@ fn code_ecoli_plasmid_test() {
 }
 
 #[test]
-fn code_eukaryote_test() {
+fn fast_eukaryote_test() {
 
 /*   Mummer stats
     [Bases]
@@ -124,7 +124,7 @@ fn code_eukaryote_test() {
 }
 
 #[test]
-fn avx2_vs_normal_code(){
+fn fast_avx2_vs_normal_code(){
     let str1 = b"ATCAGATTTAAAAAAAAATTTTGCTAGCTGATCGATCGATCGATGTGTATATATTAAAAGAGAGAGAGGGGGGGGAAAAAAAAAAAAACTGATCGATCGATGCTAGCTAGTCAGTCGATG";
     let (_command_params, mut sketch_params) = default_params(Mode::Dist);
     sketch_params.c = 10;
@@ -143,7 +143,7 @@ fn avx2_vs_normal_code(){
 //Ns are treated as As right now. Luckily, the hash function doesn't accept AAAAAA... 
 //for FMH when c = 30. 
 #[test]
-fn NNN_test_code(){
+fn fast_NNN_test_code(){
     let str1 = b"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNn";
     let (mut _command_params, mut sketch_params) = default_params(Mode::Dist);
     sketch_params.c = 30;
