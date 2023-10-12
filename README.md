@@ -16,11 +16,17 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-### v0.2.0 released - 2023-09-25
+### v0.2.1 released - 2023-10-11
 
-### Major bug:
+More consistent support for small contigs and sequences. 
 
-- In versions v0.1.3 - v0.1.5, **when > 5000 genomes were queried with `skani search` or `skani dist`**, the ANI was inaccurate. This is fixed in v0.2.0 now. 
+#### Major
+
+* --faster-small option included in dist and triangle. 
+
+Genomes (and contigs with the --i, --ri, --qi options) with less than 20 marker k-mers are not screened according to the -s option. This was always the case but never documented. This makes skani more sensitive for small sequences, but can hamper performance on very large datasets with lots of small genomes/contigs. 
+
+This heuristic can now be disabled with the `--faster-small` option. 
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
@@ -57,11 +63,11 @@ See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obt
 conda install -c bioconda skani
 ```
 
-Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the github repo and will be fixed in the next release.  
+Note (2023-9-26): There's currently a bug on the conda version where skani appears to be version 0.1.4 instead of 0.2.0. This is fixed in the GitHub repo and will be fixed in the next release.  
 
 #### Option 3: Pre-built x86-64 linux statically compiled executable
 
-We offer a pre-built statically compiled executable for x86-64 linux systems. That is, if you're on a x86-64 linux system, you can just download the binary and run it without installing anything. 
+We offer a pre-built statically compiled executable for x86-64 Linux systems. That is, if you're on an x86-64 Linux system, you can just download the binary and run it without installing anything. 
 
 For using the latest version of skani: 
 
@@ -148,7 +154,7 @@ Jim Shaw and Yun William Yu. Fast and robust metagenomic sequence comparison thr
 
 ## Feature requests, issues
 
-skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accommodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the github repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
+skani is actively being developed by me ([Jim Shaw](https://jim-shaw-bluenote.github.io/)). I'm more than happy to accommodate simple feature requests (different types of outputs, etc). Feel free to open an issue with your feature request on the GitHub repository. If you catch any bugs, please open an issue or e-mail me (e-mail on my website). 
 
 ## Calling skani from rust or python
 
@@ -158,4 +164,4 @@ If you're interested in using skani as a rust library, check out the minimal exa
 
 ### Python bindings 
 
-If you're interested in calling skani from python, see the [pyskani](https://github.com/althonos/pyskani) python interface and bindings to skani written by [Martin Larralde](https://github.com/althonos). Note: I am not personally involved in the pyskani project and do not offer guarantees on correctness of the outputs. 
+If you're interested in calling skani from python, see the [pyskani](https://github.com/althonos/pyskani) python interface and bindings to skani written by [Martin Larralde](https://github.com/althonos). Note: I am not personally involved in the pyskani project and do not offer guarantees on the correctness of the outputs. 
