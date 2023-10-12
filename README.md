@@ -56,7 +56,7 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
-#### Option 2: Conda (source version: 0.2.0)
+#### Option 2: Conda (source version: 0.2.1)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
