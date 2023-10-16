@@ -47,9 +47,7 @@ pub fn search(command_params: CommandParams) {
         screen_val = command_params.screen_val;
     }
 
-
-
-    let learned_ani = regression::use_learned_ani(sketch_params.c, command_params.individual_contig_q, false, command_params.median);
+    let learned_ani = command_params.learned_ani && regression::use_learned_ani(sketch_params.c, command_params.individual_contig_q, false, command_params.median);
     let model_opt = regression::get_model(sketch_params.c, learned_ani);
     if model_opt.is_some() {
         info!("{}", LEARNED_INFO_HELP);

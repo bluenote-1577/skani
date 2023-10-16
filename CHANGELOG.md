@@ -1,3 +1,15 @@
+### v0.3.0 released - TODO
+
+#### BREAKING
+
+Old sketches from before v0.3.0 no longer work. You will have to re-sketch your databases. 
+
+#### Major
+
+#### Minor
+
+`--no-learned-ani` wasn't working for `search` properly
+
 ### v0.2.1 released - 2023-10-11
 
 More consistent support for small contigs and sequences. 
