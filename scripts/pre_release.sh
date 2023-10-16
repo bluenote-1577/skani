@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the expected version
-EXPECTED_VERSION="0.2.1"
+EXPECTED_VERSION="0.3.0"
 
 # Function to extract the version from Cargo.toml
 get_cargo_version() {

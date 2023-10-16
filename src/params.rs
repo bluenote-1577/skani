@@ -1,7 +1,7 @@
 use crate::types::*;
 use gbdt::gradient_boost::GBDT;
 
-pub const VERSION: &str = "0.2.1";
+pub const VERSION: &str = "0.3.0";
 
 pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
