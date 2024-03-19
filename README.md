@@ -1,4 +1,4 @@
-# skani - accurate, fast nucleotide identity calculation for MAGs and databases
+# skani - accurate, fast nucleotide identity calculation for MAGs, genomes, and databases
 
 ## Introduction
 
