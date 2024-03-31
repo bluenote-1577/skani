@@ -123,6 +123,10 @@ For more information about using the specific skani subcommands, see the [guide 
 
 Some common use cases and parameter settings are outlined in the cookbook. 
 
+### [Pre-sketched databases for searching](https://github.com/bluenote-1577/skani/wiki/Pre%E2%80%90sketched-databases)
+
+Pre-sketched databases can be downloaded and quickly searched against. GTDB-R214 is currently supported. 
+
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
 See the advanced usage guide linked above for more information about topics such as:
