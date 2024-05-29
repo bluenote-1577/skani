@@ -2,31 +2,23 @@
 
 ## Introduction
 
-**skani** is a program for calculating average nucleotide identity (ANI) from DNA sequences (contigs/MAGs/genomes) for ANI > ~80%.
+**skani** is a program for calculating **average nucleotide identity** (ANI) and **aligned fraction** (AF) for DNA sequences (contigs/MAGs/genomes) and ANI > ~80%.
 
-skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST based methods and almost as accurate. skani offers:
+skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST-based methods and almost as accurate. skani offers:
 
 1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
 
-2. **Aligned fraction results**. skani outputs the fraction of genome aligned, whereas pure k-mer based methods do not. 
+2. **Aligned fraction results**. skani outputs the fraction of genome aligned. 
 
 3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
 
-4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes a few seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes a few minutes to an hour.
+4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes minutes to an hour.
 
 ##  Updates
 
-### v0.2.1 released - 2023-10-11
+### GTDB-R220 usage - 2024-04-23
 
-More consistent support for small contigs and sequences. 
-
-#### Major
-
-* --faster-small option included in dist and triangle. 
-
-Genomes (and contigs with the --i, --ri, --qi options) with less than 20 marker k-mers are not screened according to the -s option. This was always the case but never documented. This makes skani more sensitive for small sequences, but can hamper performance on very large datasets with lots of small genomes/contigs. 
-
-This heuristic can now be disabled with the `--faster-small` option. 
+skani is now used to define species clusters for the [Genome Taxonomy Database (GTDB)](https://gtdb.ecogenomic.org/) since the [R220 release!](https://forum.gtdb.ecogenomic.org/t/announcing-gtdb-r09-rs220/595)
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
