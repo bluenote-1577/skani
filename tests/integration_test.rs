@@ -662,6 +662,33 @@ fn full_test_triangle() {
     );
     let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
     assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("./test_files/query_list.txt")
+        .arg("--full-matrix")
+        .arg("-o")
+        .arg("./tests/results/output_o_triangle_full")
+        .output();
+
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let out = cmd
+        .arg("triangle")
+        .arg("-l")
+        .arg("./test_files/query_list.txt")
+        .arg("--full-matrix")
+        .output();
+
+    let std_out = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+
+    //assert that std_out and output_o_triangle_full are the same by reading the file and using
+    //assert!
+    let mut cmd = Command::new("cat");
+    let out = cmd.arg("./tests/results/output_o_triangle_full").output();
+    let out = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
+    assert_eq!(std_out, out);
 }
 
 

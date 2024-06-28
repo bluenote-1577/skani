@@ -1,3 +1,9 @@
+### v0.2.2 released - 2024-TODO
+
+#### Minor
+
+* fixed a bug where `skani triangle --full-matrix` gave different results between STDOUT and `-o` (thanks to Florian Plaza Onate)
+
 ### v0.2.1 released - 2023-10-11
 
 More consistent support for small contigs and sequences. 
