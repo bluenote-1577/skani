@@ -416,7 +416,7 @@ pub fn write_phyllip_matrix(
             write!(&mut af_file, "{}", name).unwrap();
             let end = sketches.len();
             for j in 0..end {
-                let full_cond = (full_matrix && i >= j) || (i > j);
+                let full_cond = full_matrix || (i > j);
                 if i == j {
                     if full_cond {
                         write!(&mut ani_file, "\t{:.2}", perfect).unwrap();
