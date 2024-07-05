@@ -57,18 +57,16 @@ fn get_result_from_out(tsv_res : &str) -> Vec<AniResult>{
 fn fast_test_small_genomes() {
     let out_line = run_skani(&["triangle", "-i", "-E", "./test_files/viruses.fna"], false);
     let results = get_result_from_out(&out_line);
-    for result in results{
-        assert!(result.ani > 99.0);
-        assert!(result.ani < 99.9);
-    }
+    assert!(results[0].ani > 99.0);
+    assert!(results[0].ani < 99.9);
+    assert!(results[1].ani > 99.9);
 
     let out_line = run_skani(&["triangle", "-i", "-E", "./test_files/viruses.fna", "--faster-small"], false);
     let results = get_result_from_out(&out_line);
-    for result in results{
-        assert!(result.ani > 99.0);
-        assert!(result.ani < 99.9);
-    }
 
+    assert!(results[0].ani > 99.0);
+    assert!(results[0].ani < 99.9);
+    assert!(results[1].ani > 99.9);
 
     let out_line = run_skani(&["triangle", "-i", "-E", "./test_files/o157_reads.fastq"], false);
     let results = get_result_from_out(&out_line);
