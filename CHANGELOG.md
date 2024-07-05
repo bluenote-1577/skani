@@ -1,8 +1,14 @@
-### v0.2.2 released - 2024-TODO
+### v0.2.2 released - 2024-07-04
+
+#### Major
+
+* added the `--small-genomes` preset. This is just an alias for `-c 30 -m 200 --faster-small`. This makes skani much faster when comparing hundreds of thousands of small genomes. 
 
 #### Minor
 
 * fixed a bug where `skani triangle --full-matrix` gave different results between STDOUT and `-o` (thanks to Florian Plaza Onate)
+* added a `--diagonal` option (suggested by Antonio Camargo) to print diagonal entries for sparse and lower-triangular distance matrices
+* added a warning to use `--faster-small` when comparing too many contigs (e.g. viruses, plasmids). 
 
 ### v0.2.1 released - 2023-10-11
 

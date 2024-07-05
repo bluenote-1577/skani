@@ -74,9 +74,30 @@ fn fast_test_small_genomes() {
     let results = get_result_from_out(&out_line);
     println!("o157_reads, number of results without faster-small: {}", results.len());
 
+    let out_line = run_skani(&["triangle", "-t", "1", "-i", "-E", "--small-genomes", "./test_files/o157_reads.fastq"], false);
+    let results1 = get_result_from_out(&out_line);
+
+    let out_line = run_skani(&["triangle","-t", "1",  "-i", "-E", "-c", "30", "-m", "200", "--faster-small", "./test_files/o157_reads.fastq"], false);
+    let results2 = get_result_from_out(&out_line);
+
+    assert!(results1 == results2);
+
+
     let out_line = run_skani(&["triangle", "-i", "-E", "--faster-small", "./test_files/o157_reads.fastq"], false);
     let results = get_result_from_out(&out_line);
     println!("o157_reads, number of results WITH faster-small: {}", results.len());
+}
+
+#[test]
+fn test_diag_triangle(){
+    let out_line = run_skani(&["triangle", "-i", "-E", "./test_files/viruses.fna", "--diagonal"], false);
+    let results = get_result_from_out(&out_line);
+    assert!(results[0].ani == 100.0);
+
+    let out_line = run_skani(&["triangle", "-i", "-E", "./test_files/viruses.fna", "--diagonal", "--detailed"], false);
+    let results = get_result_from_out(&out_line);
+    assert!(results[0].ani == 100.0);
+
 }
 
 #[test]

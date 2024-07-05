@@ -19,6 +19,7 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         median: false,
         sparse: false,
         full_matrix: false,
+        diagonal: false,
         max_results: 10000000,
         individual_contig_q: false,
         individual_contig_r: false,

@@ -22,6 +22,64 @@ fn write_header(writer: &mut impl Write, id_str: &str, ci: bool, verbose: bool) 
     }
 }
 
+fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, verbose: bool) {
+    if !ci && !verbose {
+        writeln!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}",
+            sketch.file_name,
+            sketch.file_name,
+            100,
+            100,
+            100,
+            sketch.contigs[0],
+            sketch.contigs[0],
+        )
+        .unwrap();
+    } else if !verbose {
+        writeln!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}",
+            sketch.file_name,
+            sketch.file_name,
+            100,
+            100,
+            100,
+            sketch.contigs[0],
+            sketch.contigs[0],
+            100,
+            100,
+        )
+        .unwrap();
+    } else {
+        writeln!(
+            writer,
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}\t{:0}",
+            sketch.file_name,
+            sketch.file_name,
+            100,
+            100,
+            100,
+            sketch.contigs[0],
+            sketch.contigs[0],
+            sketch.contigs.len(),
+            sketch.contigs.len(),
+            100,
+            100,
+            0,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            0,
+            sketch.total_sequence_length,
+        )
+        .unwrap();
+    }
+}
+
 fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verbose: bool) {
     if !ci && !verbose {
         writeln!(
@@ -309,6 +367,7 @@ pub fn write_phyllip_matrix(
     file_name: &str,
     use_contig_names: bool,
     full_matrix: bool,
+    diag: bool,
     aai: bool,
     distance: bool,
 ) {
@@ -332,9 +391,17 @@ pub fn write_phyllip_matrix(
             if full_matrix {
                 end = sketches.len();
             } else {
-                end = i;
+                if diag {
+                    end = i + 1;
+                } else {
+                    end = i;
+                }
             }
             for j in 0..end {
+                if j == i {
+                    write!(&mut handle, "\t{:.2}", perfect).unwrap();
+                    continue;
+                }
                 let x = usize::min(i, j);
                 let y = usize::max(i, j);
                 if i == j {
@@ -418,7 +485,7 @@ pub fn write_phyllip_matrix(
             for j in 0..end {
                 let full_cond = full_matrix || (i > j);
                 if i == j {
-                    if full_cond {
+                    if full_cond || diag {
                         write!(&mut ani_file, "\t{:.2}", perfect).unwrap();
                     }
                     write!(&mut af_file, "\t{:.2}", 100.).unwrap();
@@ -473,11 +540,12 @@ pub fn write_phyllip_matrix(
 
 pub fn write_sparse_matrix(
     anis: &FxHashMap<usize, FxHashMap<usize, AniEstResult>>,
-    _sketches: &Vec<Sketch>,
+    sketches: &Vec<Sketch>,
     file_name: &str,
     aai: bool,
     est_ci: bool,
     detailed_out: bool,
+    diag: bool,
     append: bool
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
@@ -488,6 +556,11 @@ pub fn write_sparse_matrix(
             write_header(&mut handle, id_str, est_ci, detailed_out);
         }
         //        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
+        if diag{
+            for sketch in sketches.iter(){
+                write_ani_res_perfect(&mut handle, sketch, est_ci, detailed_out);
+            }
+        }
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
@@ -511,7 +584,17 @@ pub fn write_sparse_matrix(
         if !append{
             write_header(&mut ani_file, id_str, est_ci, detailed_out);
         }
+
+        if diag{
+            for sketch in sketches.iter(){
+                write_ani_res_perfect(&mut ani_file, sketch, est_ci, detailed_out);
+            }
+        }
+
         for i in anis.keys() {
+            if diag{
+                write_ani_res_perfect(&mut ani_file, &sketches[*i], est_ci, detailed_out);
+            }
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
                     write_ani_res(&mut ani_file, ani_res, est_ci, detailed_out);
@@ -602,7 +685,12 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
         .for_each(|i| {
             let sketch_file = &ref_files[i];
             if !sketch_file.contains("markers.bin") {
-                let reader = BufReader::new(File::open(sketch_file).expect(sketch_file));
+                let f = File::open(sketch_file);
+                if f.is_err() {
+                    error!("Problem reading sketch file {}. Perhaps your file path is wrong? Exiting.", sketch_file);
+                    std::process::exit(1)
+                }
+                let reader = BufReader::new(f.unwrap());
                 let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
                 if res.is_ok() {
                     let (temp_sketch_param, temp_ref_sketch) = res.unwrap();

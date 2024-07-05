@@ -1,5 +1,4 @@
 use crate::params::*;
-use std::iter;
 //use std::collections::{HashMap, HashSet};
 //use std::hash::{BuildHasherDefault, Hash, Hasher};
 use smallvec::SmallVec;

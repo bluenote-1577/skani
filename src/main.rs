@@ -21,7 +21,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 fn main() {
     let matches = Command::new("skani")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version(params::VERSION)
+        .version("0.2.2")
         .about("fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*")
         .subcommand(
             SubCommand::with_name("help").setting(AppSettings::Hidden)
@@ -75,7 +75,6 @@ fn main() {
                         .help(H_MODE_FAST)
                         .takes_value(false),
                 )
-                
                 .help_heading("SKETCH PARAMETERS")
                 .arg(
                     Arg::new("aai")
@@ -235,6 +234,12 @@ fn main() {
                         .help(H_MODE_FAST)
                         .takes_value(false),
                 )
+                .arg(
+                    Arg::new(MODE_SMALL_GENOMES)
+                        .long(CMD_MODE_SMALL_GENOMES)
+                        .help(H_MODE_SMALL_GENOMES)
+                        .takes_value(false),
+                )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new(NO_LEARNED_ANI)
@@ -351,6 +356,12 @@ fn main() {
                         .help(H_FULL_MAT)
                 )
                 .arg(
+                    Arg::new(DIAG)
+                        .long(DIAG)
+                        .help(H_DIAG)
+                        .takes_value(false)
+                )
+                .arg(
                     Arg::new(MIN_ALIGN_FRAC)
                         .long(CMD_MIN_ALIGN_FRAC)
                         .help(H_MIN_ALIGN_FRAC)
@@ -399,7 +410,12 @@ fn main() {
                         .help(H_MODE_FAST)
                         .takes_value(false),
                 )
-
+                .arg(
+                    Arg::new(MODE_SMALL_GENOMES)
+                        .long(CMD_MODE_SMALL_GENOMES)
+                        .help(H_MODE_SMALL_GENOMES)
+                        .takes_value(false),
+                )
                 .help_heading("ALGORITHM PARAMETERS")
                 .arg(
                     Arg::new(NO_LEARNED_ANI)

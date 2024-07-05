@@ -30,7 +30,7 @@ pub const C_FACTOR: &str = "c";
 pub const CMD_C_FACTOR: &str = "c";
 pub const H_C_FACTOR: &str = "Compression factor (k-mer subsampling rate).\t[default: 125]";
 
-pub const H_SCREEN: &str = "Screen out pairs with < % identity using k-mer sketching.\t[default: 80]";
+pub const H_SCREEN: &str = "Screen out pairs with *approximately* < % identity using k-mer sketching.\t[default: 80]";
 
 pub const CONF_INTERVAL: &str = "ci";
 pub const CMD_CONF_INTERVAL: &str = "ci";
@@ -44,6 +44,10 @@ pub const H_NO_LEARNED_ANI: &str = "Disable regression model for ANI prediction.
 pub const MODE_SLOW: &str = "slow";
 pub const CMD_MODE_SLOW : &str = "slow";
 pub const H_MODE_SLOW : &str = "Slower skani mode; 4x slower and more memory. Gives much more accurate AF for distant genomes. More accurate ANI for VERY fragmented assemblies (< 3kb N50), but less accurate ANI otherwise. Alias for -c 30.";
+
+pub const MODE_SMALL_GENOMES: &str = "small-genomes";
+pub const CMD_MODE_SMALL_GENOMES: &str = "small-genomes";
+pub const H_MODE_SMALL_GENOMES : &str = "Mode for small genomes such as viruses or plasmids (< 20 kb). Can be much faster for large data, but is slower/less accurate on bacterial-sized genomes. Alias for: -c 30 -m 200 --faster-small.";
 
 pub const MODE_FAST: &str = "fast";
 pub const CMD_MODE_FAST : &str = "fast";
@@ -63,7 +67,7 @@ pub const H_DETAIL_OUT: &str = "Print additional info including contig N50s and 
 
 pub const DISTANCE_OUT: &str = "distance";
 pub const CMD_DISTANCE_OUT: &str = "distance";
-pub const H_DISTANCE_OUT: &str = "Output 100 - ANI instead of ANI, creating a distance instead of a similarity matrix.";
+pub const H_DISTANCE_OUT: &str = "Output 100 - ANI instead of ANI, creating a distance instead of a similarity matrix. No effect if using --sparse or -E.";
 
 pub const INT_WRITE: &str = "intermediate write count";
 pub const CMD_INT_WRITE: &str = "inter-write";
@@ -72,3 +76,8 @@ pub const H_INT_WRITE: &str = "Write results to output after --inter-write queri
 pub const FAST_SMALL: &str = "faster-small";
 pub const CMD_FAST_SMALL: &str = "faster-small";
 pub const H_FAST_SMALL: &str = "Filter genomes with < 20 marker k-mers more aggressively. Much faster for many small genomes but may miss some comparisons.";
+
+pub const DIAG: &str = "diagonal";
+pub const CMD_DIAG: &str = "diagonal";
+pub const H_DIAG: &str = "Output the diagonal of the ANI matrix (i.e. self-self comparisons) for both dense and sparse matrices.";
+

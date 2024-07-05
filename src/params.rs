@@ -1,7 +1,7 @@
 use crate::types::*;
 use gbdt::gradient_boost::GBDT;
 
-pub const VERSION: &str = "0.2.1";
+pub const VERSION: &str = "0.2.2";
 
 pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
@@ -56,6 +56,7 @@ pub const LEARNED_INFO_HELP: &str = "Learned ANI mode detected. ANI may be adjus
 pub const FAST_C: usize = 200;
 pub const SLOW_C: usize = 30;
 pub const MEDIUM_C: usize = 70;
+pub const SMALL_M: usize = 200;
 
 pub const ASCII_N: usize = 78;
 pub const ASCII_N_SMALL: usize = 110;
@@ -104,6 +105,7 @@ pub struct CommandParams{
     pub median: bool,
     pub sparse: bool,
     pub full_matrix: bool,
+    pub diagonal: bool,
     pub max_results: usize,
     pub individual_contig_q: bool,
     pub individual_contig_r: bool,

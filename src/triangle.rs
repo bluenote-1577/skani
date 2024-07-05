@@ -16,8 +16,8 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     if command_params.refs_are_sketch {
         info!("Sketches detected.");
         let param_and_sketches = file_io::sketches_from_sketch(&command_params.ref_files);
-        if param_and_sketches.0.c != sketch_params.c {
-            warn!("Input parameter c = {} is not equal to the sketch parameter c = {}. Using sketch parameters.", sketch_params.c, param_and_sketches.0.c);
+        if param_and_sketches.0.c != sketch_params.c || param_and_sketches.0.marker_c != sketch_params.marker_c {
+            warn!("Input parameter c = {}, m = {} is not equal to the sketch parameter c = {},m = {}. Using sketch parameters.", sketch_params.c, sketch_params.marker_c, param_and_sketches.0.c, param_and_sketches.0.marker_c);
         }
         ref_sketches = param_and_sketches.1;
         sketch_params = param_and_sketches.0;
@@ -55,6 +55,14 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
     if model_opt.is_some() {
         info!("{}", LEARNED_INFO_HELP);
     }
+
+    let num_rescue = ref_sketches.iter().filter(|x| x.marker_seeds.len() < 20).count();
+    if num_rescue > 1000 {
+        if command_params.rescue_small && ref_sketches.len() > 2000 {
+            warn!("> 1000 genomes with < 20 markers are detected. Consider decreasing -m value and/or using --faster-small for faster calculations.");
+        }
+    }
+
     (0..ref_sketches.len() - 1)
         .collect::<Vec<usize>>()
         .into_par_iter()
@@ -113,6 +121,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                             sketch_params.use_aa,
                             command_params.est_ci,
                             command_params.detailed_out,
+                            command_params.diagonal,
                             !*locked,
                         );
                         if *locked == true {
@@ -134,6 +143,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             sketch_params.use_aa,
             command_params.est_ci,
             command_params.detailed_out,
+            command_params.diagonal,
             !*first.lock().unwrap(),
         );
     } else {
@@ -143,6 +153,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             &command_params.out_file_name,
             command_params.individual_contig_r,
             command_params.full_matrix,
+            command_params.diagonal,
             sketch_params.use_aa,
             command_params.distance,
         );

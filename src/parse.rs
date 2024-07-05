@@ -63,7 +63,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
 
     let rescue_small;
     if mode == Mode::Triangle || mode == Mode::Dist{
-        if matches_subc.is_present(FAST_SMALL){
+        if matches_subc.is_present(FAST_SMALL) || matches_subc.is_present(MODE_SMALL_GENOMES) {
             rescue_small = false;
         }
         else{
@@ -163,6 +163,13 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         .unwrap_or(def_c)
         .parse::<usize>()
         .unwrap();
+
+    let mut marker_c = matches_subc
+        .value_of("marker_c")
+        .unwrap_or(MARKER_C_DEFAULT)
+        .parse::<usize>()
+        .unwrap();
+
     if matches_subc.is_present(MODE_FAST) &&
         matches_subc.is_present(MODE_SLOW){
             panic!("Both --slow and --fast were set. This is not allowed.");
@@ -184,6 +191,15 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             warn!("-c value is set but --fast is also set. Using --medium mode instead (-c 70)");
         }
         c = MEDIUM_C
+    }
+    if mode == Mode::Triangle || mode == Mode::Dist{
+        if matches_subc.is_present(MODE_SMALL_GENOMES){
+            if matches_subc.is_present("c") || matches_subc.is_present("marker_c") {
+                warn!("-c or -m value is set but --small-genomes is also set. Using -c 30 and -m 200 instead.");
+            }
+            c = SLOW_C;
+            marker_c = SMALL_M;
+        }
     }
 
     let min_aligned_frac;
@@ -209,11 +225,6 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         detailed_out = false;
     }
 
-    let marker_c = matches_subc
-        .value_of("marker_c")
-        .unwrap_or(MARKER_C_DEFAULT)
-        .parse::<usize>()
-        .unwrap();
     let out_file_name;
     if mode == Mode::Triangle {
         out_file_name = matches_subc.value_of("output").unwrap_or("").to_string();
@@ -290,10 +301,13 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let full_matrix;
+    let diagonal;
     if mode == Mode::Triangle {
         full_matrix = matches_subc.is_present(FULL_MAT);
+        diagonal = matches_subc.is_present(DIAG);
     } else {
         full_matrix = false;
+        diagonal = false;
     }
 
     let screen;
@@ -340,6 +354,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         median,
         sparse,
         full_matrix,
+        diagonal,
         max_results,
         individual_contig_q,
         individual_contig_r,
@@ -451,6 +466,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         median,
         sparse,
         full_matrix: false,
+        diagonal: false,
         max_results,
         individual_contig_q,
         individual_contig_r: false,
