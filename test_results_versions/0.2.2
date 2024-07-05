@@ -1,62 +1,113 @@
 
 running 0 tests
 
+successes:
+
+successes:
+
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 
 running 0 tests
 
+successes:
+
+successes:
+
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 
 running 4 tests
-test fast_show_degenerate_inputs ... [00:00:00.000] (7f9350a12480) INFO   /home/jshaw/software/skani/target/debug/skani dist file_that_doesn't_exist file_that_doesn't_exist
-[00:00:00.000] (7f9350a12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f9350a12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f9350a12480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+test test_diag_triangle ... ok
+test fast_show_degenerate_inputs ... ok
+test fast_test_small_genomes ... ok
+test fast_test_screen ... ok
 
-[00:00:00.000] (7f1c7513f480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt ./test_files/viruses.fna
-[00:00:00.000] (7f1c7513f480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f1c7513f480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+successes:
 
-[00:00:00.000] (7fdb7118d480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt list.txt
-[00:00:00.000] (7fdb7118d480) WARN   list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7fdb7118d480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7fdb7118d480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+---- fast_show_degenerate_inputs stdout ----
+[00:00:00.000] (7f9faee12480) INFO   /home/jshaw/software/skani/target/debug/skani dist file_that_doesn't_exist file_that_doesn't_exist
+[00:00:00.000] (7f9faee12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7f9faee12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7f9faee12480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7f267177a480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
-[00:00:00.000] (7f267177a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
-[00:00:00.000] (7f267177a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
-[00:00:00.000] (7f267177a480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (7f83fe9df480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt ./test_files/viruses.fna
+[00:00:00.000] (7f83fe9df480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.002] (7f83fe9df480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7fb007e27480) INFO   /home/jshaw/software/skani/target/debug/skani dist --qi --ri ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
-[00:00:00.000] (7fb007e27480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
-[00:00:00.000] (7fb007e27480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
-[00:00:00.000] (7fb007e27480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (7f7c2dcdd480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt list.txt
+[00:00:00.000] (7f7c2dcdd480) WARN   list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7f7c2dcdd480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7f7c2dcdd480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7f758d2cd480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/all_ns.fa ./test_files/all_ns.fa
-[00:00:00.001] (7f758d2cd480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.001] (7f758d2cd480) INFO   Generating sketch time: 0.001056513
-[00:00:00.001] (7f758d2cd480) INFO   ANI calculation time: 0.000024224
+[00:00:00.000] (7fc29a04a480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
+[00:00:00.000] (7fc29a04a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
+[00:00:00.000] (7fc29a04a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
+[00:00:00.000] (7fc29a04a480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-ok
-test fast_test_screen ... rescue small heuristic with screen 345
+[00:00:00.000] (7efcef71c480) INFO   /home/jshaw/software/skani/target/debug/skani dist --qi --ri ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
+[00:00:00.000] (7efcef71c480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
+[00:00:00.000] (7efcef71c480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
+[00:00:00.000] (7efcef71c480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+
+[00:00:00.000] (7f79630d4480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/all_ns.fa ./test_files/all_ns.fa
+[00:00:00.001] (7f79630d4480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.001] (7f79630d4480) INFO   Generating sketch time: 0.001046916
+[00:00:00.001] (7f79630d4480) INFO   ANI calculation time: 0.000008017
+
+
+---- fast_test_small_genomes stdout ----
+o157_reads, number of results without faster-small: 270
+o157_reads, number of results WITH faster-small: 154
+
+---- fast_test_screen stdout ----
+rescue small heuristic with screen 345
 rescue small heuristic no screen 345
 dist no rescue, no screen 175
 dist rescue, no screen 269
 no rescue, screen 87
 no rescue, screen, 0 markers 0
-ok
-test fast_test_small_genomes ... o157_reads, number of results without faster-small: 270
-o157_reads, number of results WITH faster-small: 154
-ok
-test test_diag_triangle ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.76s
+
+successes:
+    fast_show_degenerate_inputs
+    fast_test_screen
+    fast_test_small_genomes
+    test_diag_triangle
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
 
 
 running 3 tests
-test full_test_dist ... AAI E.coli test
+test full_test_triangle ... ok
+test full_test_dist ... ok
+test full_test_sketch_and_search ... ok
+
+successes:
+
+---- full_test_triangle stdout ----
+4
+./test_files/GCF_005706655.1_ASM570665v1_genomic.fna
+./test_files/e.coli-EC590.fasta	0.00
+./test_files/e.coli-W.fasta.gz	0.00	98.58
+./test_files/o157_reads.fastq	0.00	92.81	93.15
+
+[00:00:00.000] (7eff20db7480) INFO   /home/jshaw/software/skani/target/debug/skani triangle -l ./test_files/query_list.txt
+[00:00:00.073] (7eff20db7480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.090] (7eff20db7480) INFO   Aligned fraction matrix written to skani_matrix.af
+[00:00:00.090] (7eff20db7480) INFO   ANI triangle time: 0.09080148
+
+--faster-small TEST
+
+4
+./test_files/GCF_005706655.1_ASM570665v1_genomic.fna	100.00	0.00	0.00	0.00
+./test_files/e.coli-EC590.fasta	0.00	100.00	98.58	92.81
+./test_files/e.coli-W.fasta.gz	0.00	98.58	100.00	93.15
+./test_files/o157_reads.fastq	0.00	92.81	93.15	100.00
+
+
+---- full_test_dist stdout ----
+AAI E.coli test
 Ref_file	Query_file	AAI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
 ./test_files/e.coli-K12.fasta	./test_files/e.coli-EC590.fasta	98.74	98.25	98.86	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome
 
@@ -73,14 +124,15 @@ ANI E.coli-klebsiella test
 Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
 ./test_files/MN-03.fa	./test_files/e.coli-K12.fasta	79.68	26.21	29.59	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence
 
-ok
-test full_test_sketch_and_search ... ANI search test
+
+---- full_test_sketch_and_search stdout ----
+ANI search test
 Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
 test_files/o157_plasmid.fasta	./test_files/e.coli-o157.fasta	100.00	99.84	1.68	NZ_CP017439.1 Escherichia coli O157:H7 strain 2159 plasmid pO157, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-o157.fasta	./test_files/e.coli-o157.fasta	100.00	100.00	100.00	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-EC590.fasta	./test_files/e.coli-o157.fasta	98.44	87.84	73.62	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-K12.fasta	./test_files/e.coli-o157.fasta	98.42	88.04	74.25	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
-test_files/e.coli-W.fasta.gz	./test_files/e.coli-o157.fasta	98.39	85.46	75.97	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
+test_files/e.coli-W.fasta	./test_files/e.coli-o157.fasta	98.39	85.46	75.97	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 
 ANI search test learned
 Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
@@ -90,11 +142,11 @@ test_files/e.coli-EC590.fasta	./test_files/e.coli-o157.fasta	98.44	87.84	73.62	N
 test_files/e.coli-K12.fasta	./test_files/e.coli-o157.fasta	98.42	88.04	74.25	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-W.fasta	./test_files/e.coli-o157.fasta	98.39	85.46	75.97	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 
-[00:00:00.000] (7fcd35c99480) INFO   /home/jshaw/software/skani/target/debug/skani search -d ./tests/results/test_sketch_dir/ ./tests/results/test_sketch_dir/markers.bin ./tests/results/test_sketch_dir/e.coli-EC590.fasta.sketch
-[00:00:00.000] (7fcd35c99480) INFO   Searching...
-[00:00:00.001] (7fcd35c99480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.001] (7fcd35c99480) INFO   Loading markers time: 0.001559318
-[00:00:00.055] (7fcd35c99480) INFO   Searching time: 0.054292697
+[00:00:00.000] (7f6e247a9480) INFO   /home/jshaw/software/skani/target/debug/skani search -d ./tests/results/test_sketch_dir/ ./tests/results/test_sketch_dir/markers.bin ./tests/results/test_sketch_dir/e.coli-EC590.fasta.sketch
+[00:00:00.000] (7f6e247a9480) INFO   Searching...
+[00:00:00.001] (7f6e247a9480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.001] (7f6e247a9480) INFO   Loading markers time: 0.001559018
+[00:00:00.059] (7f6e247a9480) INFO   Searching time: 0.058213696
 
 AAI search test
 Ref_file	Query_file	AAI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
@@ -375,29 +427,14 @@ Ref_file	Query_file	ANI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_n
 ./test_files/e.coli-EC590.fasta	./test_files/o157_reads.fastq	93.88	0.37	96.78	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	fe0cd2ea-fe40-cf0f-d7ab-d0a699dffa0b NZ_CP017438.1,+strand,1378797-1396517 length=17722 error-free_length=17720 read_identity=94.32%
 ./test_files/e.coli-EC590.fasta	./test_files/o157_reads.fastq	97.90	0.25	94.27	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	ff0d321f-c9cf-0f8f-e518-538b3ab0e53b NZ_CP017438.1,-strand,1803091-1815087 length=12009 error-free_length=11996 read_identity=99.30%
 
-ok
-test full_test_triangle ... 4
-./test_files/GCF_005706655.1_ASM570665v1_genomic.fna
-./test_files/e.coli-EC590.fasta	0.00
-./test_files/e.coli-W.fasta.gz	0.00	98.58
-./test_files/o157_reads.fastq	0.00	92.81	93.15
 
-[00:00:00.000] (7eff99792480) INFO   /home/jshaw/software/skani/target/debug/skani triangle -l ./test_files/query_list.txt
-[00:00:00.052] (7eff99792480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.065] (7eff99792480) INFO   Aligned fraction matrix written to skani_matrix.af
-[00:00:00.065] (7eff99792480) INFO   ANI triangle time: 0.065410115
 
---faster-small TEST
+successes:
+    full_test_dist
+    full_test_sketch_and_search
+    full_test_triangle
 
-4
-./test_files/GCF_005706655.1_ASM570665v1_genomic.fna	100.00	0.00	0.00	0.00
-./test_files/e.coli-EC590.fasta	0.00	100.00	98.58	92.81
-./test_files/e.coli-W.fasta.gz	0.00	98.58	100.00	93.15
-./test_files/o157_reads.fastq	0.00	92.81	93.15	100.00
-
-ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.82s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.62s
 
 
 running 5 tests
@@ -405,13 +442,29 @@ test fast_NNN_test_code ... ok
 test fast_avx2_vs_normal_code ... ok
 test fast_ecoli_plasmid_test ... ok
 test fast_ecoli_test_simple ... ok
-test fast_eukaryote_test ... AniEstResult { ani: 0.9898663, align_fraction_query: 0.60535073, align_fraction_ref: 0.74593395, ref_file: "./test_files/TOPAZ_IOD1_E001.fna.gz", query_file: "./test_files/TOPAZ_RSS1_E007.fna.gz", query_contig: "RS-all-SRF-0-8-5-00_k119_3692", ref_contig: "IO-all-DCM-0-8-5-00_k119_2678", ci_upper: 0.9900135, ci_lower: 0.9897283, aai: false, quant_90_contig_len_q: 9095.0, quant_90_contig_len_r: 7016.0, quant_50_contig_len_q: 4276.0, quant_50_contig_len_r: 3761.0, quant_10_contig_len_q: 2759.0, quant_10_contig_len_r: 2688.0, std: 0.007433527, num_contigs_q: 8559, num_contigs_r: 8377, avg_chain_int_len: 3187, total_bases_covered: 27655368 }
-ok
+test fast_eukaryote_test ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.17s
+successes:
+
+---- fast_eukaryote_test stdout ----
+AniEstResult { ani: 0.9898663, align_fraction_query: 0.60535073, align_fraction_ref: 0.74593395, ref_file: "./test_files/TOPAZ_IOD1_E001.fna.gz", query_file: "./test_files/TOPAZ_RSS1_E007.fna.gz", query_contig: "RS-all-SRF-0-8-5-00_k119_3692", ref_contig: "IO-all-DCM-0-8-5-00_k119_2678", ci_upper: 0.9900135, ci_lower: 0.9897283, aai: false, quant_90_contig_len_q: 9095.0, quant_90_contig_len_r: 7016.0, quant_50_contig_len_q: 4276.0, quant_50_contig_len_r: 3761.0, quant_10_contig_len_q: 2759.0, quant_10_contig_len_r: 2688.0, std: 0.007433527, num_contigs_q: 8559, num_contigs_r: 8377, avg_chain_int_len: 3187, total_bases_covered: 27655368 }
+
+
+successes:
+    fast_NNN_test_code
+    fast_avx2_vs_normal_code
+    fast_ecoli_plasmid_test
+    fast_ecoli_test_simple
+    fast_eukaryote_test
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
 
 
 running 0 tests
+
+successes:
+
+successes:
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
