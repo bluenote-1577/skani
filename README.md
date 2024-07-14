@@ -16,9 +16,10 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-### GTDB-R220 usage - 2024-04-23
+### v0.2.2 
 
-skani is now used to define species clusters for the [Genome Taxonomy Database (GTDB)](https://gtdb.ecogenomic.org/) since the [R220 release!](https://forum.gtdb.ecogenomic.org/t/announcing-gtdb-r09-rs220/595)
+* Added the `--small-genomes` preset that is an alias for `-c 30 -m 200 --faster-small`
+* Fixed some bugs
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
