@@ -16,7 +16,7 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-### v0.2.2 
+### v0.2.2 - 2024-07-04
 
 * Added the `--small-genomes` preset that is an alias for `-c 30 -m 200 --faster-small`
 * Fixed some bugs
