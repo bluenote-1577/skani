@@ -69,6 +69,10 @@ pub struct SketchArgs {
     #[clap(long = "fast", help_heading = "PRESETS")]
     pub fast: bool,
 
+    /// Create separate .sketch files instead of consolidated database format
+    #[clap(long = "separate-sketches", help_heading = "INPUT/OUTPUT")]
+    pub separate_sketches: bool,
+
     /// Use amino acid to calculate AAI instead. [default: ANI]
     #[clap(short = 'a', long = "aai", hide = true, help_heading = "SKETCH PARAMETERS")]
     pub aai: bool,

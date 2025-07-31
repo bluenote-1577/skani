@@ -29,7 +29,8 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         learned_ani: true,
         detailed_out: false,
         distance: false,
-        rescue_small: true
+        rescue_small: true,
+        separate_sketches: false
     };
 
     let sketch_params = SketchParams::new(1000, 125, 15, false, false);

@@ -18,6 +18,7 @@ fn full_test_sketch_and_search() {
         .arg("./test_files/e.coli-W.fasta.gz")
         .arg("-o")
         .arg("./tests/results/test_sketch_dir1")
+        .arg("--separate-sketches")
         .assert();
     assert.success().code(0);
 
@@ -28,6 +29,7 @@ fn full_test_sketch_and_search() {
         .arg("./test_files/list.txt")
         .arg("-o")
         .arg("./tests/results/test_sketch_dir3")
+        .arg("--separate-sketches")
         .assert();
     assert.success().code(0);
 
@@ -38,6 +40,7 @@ fn full_test_sketch_and_search() {
         .arg("./test_files/list.txt")
         .arg("-o")
         .arg("./tests/results/test_sketch_dir")
+        .arg("--separate-sketches")
         .assert();
     assert.success().code(0);
 
@@ -49,6 +52,7 @@ fn full_test_sketch_and_search() {
         .arg("-o")
         .arg("./tests/results/test_sketch_dir_aai")
         .arg("-a")
+        .arg("--separate-sketches")
         .assert();
     assert.success().code(0);
 
@@ -691,4 +695,169 @@ fn full_test_triangle() {
     assert_eq!(std_out, out);
 }
 
+#[test]
+fn test_consolidated_database_functionality() {
+    // Clean up any existing test directories
+    Command::new("rm")
+        .arg("-rf")
+        .args(["./tests/results/test_consolidated_db", "./tests/results/test_separate_db"])
+        .spawn();
+
+    // Test 1: Create consolidated database (default behavior)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("sketch")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("-o")
+        .arg("./tests/results/test_consolidated_db")
+        .assert();
+    assert.success().code(0);
+
+    // Verify consolidated database files exist
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/test_consolidated_db.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/index.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/markers.bin").exists());
+
+    // Test 2: Create separate sketches database using --separate-sketches flag
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("sketch")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("-o")
+        .arg("./tests/results/test_separate_db")
+        .arg("--separate-sketches")
+        .assert();
+    assert.success().code(0);
+
+    // Verify separate sketch files exist
+    assert!(std::path::Path::new("./tests/results/test_separate_db/e.coli-EC590.fasta.sketch").exists());
+    assert!(std::path::Path::new("./tests/results/test_separate_db/e.coli-K12.fasta.sketch").exists());
+    assert!(std::path::Path::new("./tests/results/test_separate_db/markers.bin").exists());
+
+    // Test 3: Search with consolidated database
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let consolidated_output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_consolidated_db")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .output()
+        .unwrap();
+    
+    assert!(consolidated_output.status.success());
+    let consolidated_stdout = std::str::from_utf8(&consolidated_output.stdout).unwrap();
+    
+    // Verify consolidated format was detected
+    let consolidated_stderr = std::str::from_utf8(&consolidated_output.stderr).unwrap();
+    assert!(consolidated_stderr.contains("Detected consolidated sketch database format"));
+
+    // Test 4: Search with separate database
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let separate_output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_separate_db")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .output()
+        .unwrap();
+    
+    assert!(separate_output.status.success());
+    let separate_stdout = std::str::from_utf8(&separate_output.stdout).unwrap();
+    
+    // Verify separate format was detected
+    let separate_stderr = std::str::from_utf8(&separate_output.stderr).unwrap();
+    assert!(separate_stderr.contains("Detected separate sketch files format"));
+
+    // Test 5: Verify both formats produce identical search results
+    // Parse ANI results from both outputs (skip header line)
+    let consolidated_lines: Vec<&str> = consolidated_stdout.lines().skip(1).collect();
+    let separate_lines: Vec<&str> = separate_stdout.lines().skip(1).collect();
+    
+    assert_eq!(consolidated_lines.len(), separate_lines.len());
+    
+    // Compare ANI values from both results
+    for (consolidated_line, separate_line) in consolidated_lines.iter().zip(separate_lines.iter()) {
+        let consolidated_parts: Vec<&str> = consolidated_line.split('\t').collect();
+        let separate_parts: Vec<&str> = separate_line.split('\t').collect();
+        
+        // Compare ANI values (column 2, 0-indexed)
+        if consolidated_parts.len() > 2 && separate_parts.len() > 2 {
+            let consolidated_ani: f64 = consolidated_parts[2].parse().unwrap_or(0.0);
+            let separate_ani: f64 = separate_parts[2].parse().unwrap_or(0.0);
+            
+            // ANI values should be very close (within 0.01% difference)
+            let diff = (consolidated_ani - separate_ani).abs();
+            assert!(diff < 0.01, "ANI values differ too much: {} vs {}", consolidated_ani, separate_ani);
+        }
+    }
+
+    // Clean up test directories
+    Command::new("rm")
+        .arg("-rf")
+        .args(["./tests/results/test_consolidated_db", "./tests/results/test_separate_db"])
+        .spawn();
+}
+
+#[test]
+fn test_consolidated_database_multiple_files() {
+    // Clean up any existing test directories
+    Command::new("rm")
+        .arg("-rf")
+        .arg("./tests/results/test_multi_consolidated_db")
+        .spawn();
+
+    // Create consolidated database with multiple files
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("sketch")
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("./test_files/e.coli-W.fasta")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("-o")
+        .arg("./tests/results/test_multi_consolidated_db")
+        .assert();
+    assert.success().code(0);
+
+    // Verify database files exist
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/test_multi_consolidated_db.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/index.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/markers.bin").exists());
+
+    // Test search functionality
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg("./tests/results/test_multi_consolidated_db")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("-n")
+        .arg("5")
+        .output()
+        .unwrap();
+    
+    assert!(output.status.success());
+    let stdout = std::str::from_utf8(&output.stdout).unwrap();
+    
+    // Verify we get search results
+    let lines: Vec<&str> = stdout.lines().collect();
+    assert!(lines.len() > 1, "Should have header plus at least one result line");
+    
+    // Verify the first result has high ANI (self-match)
+    if lines.len() > 1 {
+        let parts: Vec<&str> = lines[1].split('\t').collect();
+        if parts.len() > 2 {
+            let ani: f64 = parts[2].parse().unwrap_or(0.0);
+            assert!(ani > 95.0, "Self-match should have high ANI: {}", ani);
+        }
+    }
+
+    // Clean up test directory
+    Command::new("rm")
+        .arg("-rf")
+        .arg("./tests/results/test_multi_consolidated_db")
+        .spawn();
+}
 

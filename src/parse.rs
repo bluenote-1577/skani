@@ -366,6 +366,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         detailed_out,
         distance,
         rescue_small,
+        separate_sketches: false,
     };
 
     (sketch_params, command_params)
@@ -477,7 +478,8 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         learned_ani,
         detailed_out,
         distance: false,
-        rescue_small: false
+        rescue_small: false,
+        separate_sketches: false,
     };
 
     if command_params.ref_files.is_empty() {
@@ -608,6 +610,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         detailed_out: false,
         distance: false,
         rescue_small: false,
+        separate_sketches: args.separate_sketches,
     };
 
     (sketch_params, command_params)
@@ -763,6 +766,7 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
         detailed_out: args.detailed,
         distance: false,
         rescue_small,
+        separate_sketches: false,
     };
 
     (sketch_params, command_params)
@@ -889,6 +893,7 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
         detailed_out: args.detailed,
         distance: args.distance,
         rescue_small,
+        separate_sketches: false,
     };
 
     (sketch_params, command_params)
@@ -963,6 +968,7 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         detailed_out: args.detailed,
         distance: false,
         rescue_small: false,
+        separate_sketches: false,
     };
 
     if command_params.ref_files.is_empty() {

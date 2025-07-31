@@ -116,6 +116,7 @@ pub struct CommandParams{
     pub detailed_out: bool,
     pub distance: bool,
     pub rescue_small: bool,
+    pub separate_sketches: bool,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
@@ -129,7 +130,7 @@ pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 3;
 }
 
-#[derive(Default,  PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Default,  PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub struct SketchParams {
     pub c: usize,
     pub k: usize,

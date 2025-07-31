@@ -3,6 +3,7 @@ use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
+use crate::sketch_db::{SketchDbReader, is_consolidated_db, has_separate_sketches};
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
@@ -73,6 +74,26 @@ pub fn search(command_params: CommandParams) {
     let counter: Mutex<usize> = Mutex::new(0);
     let first_write: Mutex<bool> = Mutex::new(true);
     let folder = Path::new(&ref_marker_file).parent().unwrap();
+    let folder_str = folder.to_str().unwrap();
+    
+    // Detect database format and initialize reader if consolidated
+    let db_reader_opt = if is_consolidated_db(folder_str) {
+        info!("Detected consolidated sketch database format");
+        match SketchDbReader::new(folder_str) {
+            Ok(reader) => Some(reader),
+            Err(e) => {
+                error!("Failed to load consolidated database: {}", e);
+                std::process::exit(1);
+            }
+        }
+    } else if has_separate_sketches(folder_str) {
+        info!("Detected separate sketch files format");
+        None
+    } else {
+        error!("No valid sketch database format found in directory");
+        std::process::exit(1);
+    };
+    
     for query_file in command_params.query_files.iter() {
         let query_params;
         let query_sketches;
@@ -124,14 +145,27 @@ pub fn search(command_params: CommandParams) {
                     let original_file = &refs_to_try[j];
                     let ref_sketch;
                     if !command_params.keep_refs {
-                        let sketch_file = folder.join(
-                            Path::new(&format!("{}.sketch", original_file))
-                                .file_name()
-                                .unwrap(),
-                        );
-                        let (_sketch_params_ref, ref_sketch_new) = file_io::sketches_from_sketch(
-                            &vec![sketch_file.to_str().unwrap().to_string()],
-                        );
+                        let ref_sketch_new = if let Some(ref db_reader) = &db_reader_opt {
+                            // Load from consolidated database
+                            match db_reader.get_sketch(original_file) {
+                                Ok((_params, sketch)) => vec![sketch],
+                                Err(e) => {
+                                    error!("Failed to load sketch {}: {}", original_file, e);
+                                    return;
+                                }
+                            }
+                        } else {
+                            // Load from separate sketch file
+                            let sketch_file = folder.join(
+                                Path::new(&format!("{}.sketch", original_file))
+                                    .file_name()
+                                    .unwrap(),
+                            );
+                            let (_sketch_params_ref, sketches) = file_io::sketches_from_sketch(
+                                &vec![sketch_file.to_str().unwrap().to_string()],
+                            );
+                            sketches
+                        };
                         ref_sketch = ref_sketch_new;
                         let map_params = chain::map_params_from_sketch(
                             &ref_sketch[0],
@@ -169,14 +203,27 @@ pub fn search(command_params: CommandParams) {
                                 locked.push(ani_res);
                             }
                         } else {
-                            let sketch_file = folder.join(
-                                Path::new(&format!("{}.sketch", original_file))
-                                    .file_name()
-                                    .unwrap(),
-                            );
-                            let (_sketch_params_ref, ref_sketch) = file_io::sketches_from_sketch(
-                                &vec![sketch_file.to_str().unwrap().to_string()],
-                            );
+                            let ref_sketch = if let Some(ref db_reader) = &db_reader_opt {
+                                // Load from consolidated database
+                                match db_reader.get_sketch(original_file) {
+                                    Ok((_params, sketch)) => vec![sketch],
+                                    Err(e) => {
+                                        error!("Failed to load sketch {}: {}", original_file, e);
+                                        return;
+                                    }
+                                }
+                            } else {
+                                // Load from separate sketch file
+                                let sketch_file = folder.join(
+                                    Path::new(&format!("{}.sketch", original_file))
+                                        .file_name()
+                                        .unwrap(),
+                                );
+                                let (_sketch_params_ref, sketches) = file_io::sketches_from_sketch(
+                                    &vec![sketch_file.to_str().unwrap().to_string()],
+                                );
+                                sketches
+                            };
 
                             let map_params = chain::map_params_from_sketch(
                                 &ref_sketch[0],
