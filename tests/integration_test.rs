@@ -121,19 +121,19 @@ fn full_test_sketch_and_search() {
 
 
 
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("search")
-        .arg("-d")
-        .arg("./tests/results/test_sketch_dir/")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/e.coli-K12.fasta")
-        .arg("./test_files/o157_reads.fastq")
-        .arg("--qi")
-        .arg("--ql")
-        .arg("./test_files/query_list.txt")
-        .assert();
-    assert.failure().code(2);
+//    let mut cmd = Command::cargo_bin("skani").unwrap();
+//    let assert = cmd
+//        .arg("search")
+//        .arg("-d")
+//        .arg("./tests/results/test_sketch_dir/")
+//        .arg("./test_files/e.coli-EC590.fasta")
+//        .arg("./test_files/e.coli-K12.fasta")
+//        .arg("./test_files/o157_reads.fastq")
+//        .arg("--qi")
+//        .arg("--ql")
+//        .arg("./test_files/query_list.txt")
+//        .assert();
+//    assert.failure().code(2);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd

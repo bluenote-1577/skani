@@ -26,34 +26,34 @@ test fast_test_screen ... ok
 successes:
 
 ---- fast_show_degenerate_inputs stdout ----
-[00:00:00.000] (7f9faee12480) INFO   /home/jshaw/software/skani/target/debug/skani dist file_that_doesn't_exist file_that_doesn't_exist
-[00:00:00.000] (7f9faee12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f9faee12480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f9faee12480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (7ab485965480) INFO   /home/jshaw/software/skani/target/debug/skani dist file_that_doesn't_exist file_that_doesn't_exist
+[00:00:00.000] (7ab485965480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7ab485965480) WARN   file_that_doesn't_exist is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (7ab485965480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7f83fe9df480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt ./test_files/viruses.fna
-[00:00:00.000] (7f83fe9df480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.002] (7f83fe9df480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (77565fd67480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt ./test_files/viruses.fna
+[00:00:00.001] (77565fd67480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.001] (77565fd67480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7f7c2dcdd480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt list.txt
-[00:00:00.000] (7f7c2dcdd480) WARN   list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f7c2dcdd480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
-[00:00:00.000] (7f7c2dcdd480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (76f964a17480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/query_list.txt list.txt
+[00:00:00.000] (76f964a17480) WARN   list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (76f964a17480) WARN   ./test_files/query_list.txt is not a valid fasta/fastq file; skipping.
+[00:00:00.000] (76f964a17480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7fc29a04a480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
-[00:00:00.000] (7fc29a04a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
-[00:00:00.000] (7fc29a04a480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
-[00:00:00.000] (7fc29a04a480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (76100144e480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
+[00:00:00.000] (76100144e480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
+[00:00:00.000] (76100144e480) WARN   File ./test_files/empty_fasta.fa consists of only contigs < 500 bp. Skipping this file.
+[00:00:00.000] (76100144e480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7efcef71c480) INFO   /home/jshaw/software/skani/target/debug/skani dist --qi --ri ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
-[00:00:00.000] (7efcef71c480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
-[00:00:00.000] (7efcef71c480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
-[00:00:00.000] (7efcef71c480) ERROR  No reference sketches/genomes or query sketches/genomes found.
+[00:00:00.000] (78ed400b9480) INFO   /home/jshaw/software/skani/target/debug/skani dist --qi --ri ./test_files/empty_fasta.fa ./test_files/empty_fasta.fa
+[00:00:00.000] (78ed400b9480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
+[00:00:00.000] (78ed400b9480) WARN   At least one sequence in file ./test_files/empty_fasta.fa has < 500 bp. These sequences will be skipped.
+[00:00:00.000] (78ed400b9480) ERROR  No reference sketches/genomes or query sketches/genomes found.
 
-[00:00:00.000] (7f79630d4480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/all_ns.fa ./test_files/all_ns.fa
-[00:00:00.001] (7f79630d4480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.001] (7f79630d4480) INFO   Generating sketch time: 0.001046916
-[00:00:00.001] (7f79630d4480) INFO   ANI calculation time: 0.000008017
+[00:00:00.000] (7f13cb282480) INFO   /home/jshaw/software/skani/target/debug/skani dist ./test_files/all_ns.fa ./test_files/all_ns.fa
+[00:00:00.001] (7f13cb282480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.001] (7f13cb282480) INFO   Generating sketch time: 0.001658365
+[00:00:00.001] (7f13cb282480) INFO   ANI calculation time: 0.000016397
 
 
 ---- fast_test_small_genomes stdout ----
@@ -75,7 +75,7 @@ successes:
     fast_test_small_genomes
     test_diag_triangle
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
 
 
 running 3 tests
@@ -92,10 +92,10 @@ successes:
 ./test_files/e.coli-W.fasta.gz	0.00	98.58
 ./test_files/o157_reads.fastq	0.00	92.81	93.15
 
-[00:00:00.000] (7eff20db7480) INFO   /home/jshaw/software/skani/target/debug/skani triangle -l ./test_files/query_list.txt
-[00:00:00.073] (7eff20db7480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.090] (7eff20db7480) INFO   Aligned fraction matrix written to skani_matrix.af
-[00:00:00.090] (7eff20db7480) INFO   ANI triangle time: 0.09080148
+[00:00:00.000] (786a04aa6480) INFO   /home/jshaw/software/skani/target/debug/skani triangle -l ./test_files/query_list.txt
+[00:00:00.072] (786a04aa6480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.085] (786a04aa6480) INFO   Aligned fraction matrix written to skani_matrix.af
+[00:00:00.085] (786a04aa6480) INFO   ANI triangle time: 0.08514588
 
 --faster-small TEST
 
@@ -140,19 +140,19 @@ test_files/o157_plasmid.fasta	./test_files/e.coli-o157.fasta	100.00	99.84	1.68	N
 test_files/e.coli-o157.fasta	./test_files/e.coli-o157.fasta	100.00	100.00	100.00	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-EC590.fasta	./test_files/e.coli-o157.fasta	98.44	87.84	73.62	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 test_files/e.coli-K12.fasta	./test_files/e.coli-o157.fasta	98.42	88.04	74.25	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
-test_files/e.coli-W.fasta	./test_files/e.coli-o157.fasta	98.39	85.46	75.97	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
+test_files/e.coli-W.fasta.gz	./test_files/e.coli-o157.fasta	98.39	85.46	75.97	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP017438.1 Escherichia coli O157:H7 strain 2159 chromosome, complete genome
 
-[00:00:00.000] (7f6e247a9480) INFO   /home/jshaw/software/skani/target/debug/skani search -d ./tests/results/test_sketch_dir/ ./tests/results/test_sketch_dir/markers.bin ./tests/results/test_sketch_dir/e.coli-EC590.fasta.sketch
-[00:00:00.000] (7f6e247a9480) INFO   Searching...
-[00:00:00.001] (7f6e247a9480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
-[00:00:00.001] (7f6e247a9480) INFO   Loading markers time: 0.001559018
-[00:00:00.059] (7f6e247a9480) INFO   Searching time: 0.058213696
+[00:00:00.000] (7ba8c05b8480) INFO   /home/jshaw/software/skani/target/debug/skani search -d ./tests/results/test_sketch_dir/ ./tests/results/test_sketch_dir/markers.bin ./tests/results/test_sketch_dir/e.coli-EC590.fasta.sketch
+[00:00:00.000] (7ba8c05b8480) INFO   Searching...
+[00:00:00.001] (7ba8c05b8480) INFO   Learned ANI mode detected. ANI may be adjusted according to a regression model trained on MAGs.
+[00:00:00.001] (7ba8c05b8480) INFO   Loading markers time: 0.001054972
+[00:00:00.040] (7ba8c05b8480) INFO   Searching time: 0.039176743
 
 AAI search test
 Ref_file	Query_file	AAI	Align_fraction_ref	Align_fraction_query	Ref_name	Query_name
 test_files/e.coli-EC590.fasta	./test_files/MN-03.fa	84.60	39.64	34.89	NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
-test_files/e.coli-W.fasta.gz	./test_files/MN-03.fa	84.34	37.06	34.59	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
 test_files/e.coli-W.fasta	./test_files/MN-03.fa	84.34	37.06	34.59	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
+test_files/e.coli-W.fasta.gz	./test_files/MN-03.fa	84.34	37.06	34.59	NC_017664.1 Escherichia coli W, complete sequence	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
 test_files/e.coli-K12.fasta	./test_files/MN-03.fa	84.23	39.06	34.59	NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
 test_files/e.coli-h5.fasta	./test_files/MN-03.fa	83.56	37.58	34.62	NZ_CP010169.1 Escherichia coli strain H5 chromosome, complete genome	NZ_CP081897.1 Klebsiella pneumoniae strain MN-03 chromosome, complete genome
 
@@ -434,7 +434,7 @@ successes:
     full_test_sketch_and_search
     full_test_triangle
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.62s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.86s
 
 
 running 5 tests
@@ -457,7 +457,7 @@ successes:
     fast_ecoli_test_simple
     fast_eukaryote_test
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.80s
 
 
 running 0 tests

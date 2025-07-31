@@ -1,3 +1,9 @@
+### v0.2.3 released - TODO
+
+#### Major
+
+* Refactored the commandline backend. Small deviations in commandline behavior may be present, hopefully not big bugs were introduced. 
+
 ### v0.2.2 released - 2024-07-04
 
 #### Major
