@@ -1,7 +1,8 @@
-### v0.2.3 released - TODO
+### v0.3.0 released - TODO
 
 #### Major
 
+* Changed sketching output. Now all sketches are concatenated into a searchable database file by default. Original behavior can be resotored via `--separate-files`. 
 * Refactored the commandline backend. Small deviations in commandline behavior may be present, hopefully not big bugs were introduced. 
 
 ### v0.2.2 released - 2024-07-04
