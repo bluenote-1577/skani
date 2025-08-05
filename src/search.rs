@@ -18,7 +18,7 @@ pub fn search(command_params: CommandParams) {
     info!("Searching...");
     let mut ref_marker_file = "";
     for file in command_params.ref_files.iter() {
-        if !file.contains(".sketch") && !file.contains("marker") {
+        if !file.contains(".sketch") && !file.contains("marker") && !file.ends_with("db"){
             warn!(
                 "{} does not have .sketch as an extension; skipping file",
                 file
