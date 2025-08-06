@@ -20,7 +20,6 @@ pub struct SketchDbWriter {
     concat_file: BufWriter<File>,
     index: Vec<IndexEntry>,
     current_offset: u64,
-    db_name: String,
 }
 
 /// Reader for accessing consolidated sketch databases
@@ -46,7 +45,6 @@ impl SketchDbWriter {
             concat_file,
             index: Vec::new(),
             current_offset: 0,
-            db_name,
         })
     }
 
@@ -120,11 +118,43 @@ impl SketchDbReader {
 
     /// Get a sketch by file name
     pub fn get_sketch(&self, file_name: &str) -> Result<(SketchParams, Sketch), Box<dyn std::error::Error>> {
+        use std::time::Instant;
+        
+        let total_start = Instant::now();
+        
         if let Some(&(offset, length)) = self.index.get(file_name) {
             let start = offset as usize;
             let end = start + length as usize;
+            
+            // Time the mmap slice access (potential disk I/O)
+            let mmap_start = Instant::now();
             let bytes = &self.mmap[start..end];
+            let mmap_time = mmap_start.elapsed();
+            
+            // Force page fault by accessing first and last bytes
+            let page_fault_start = Instant::now();
+            let first = bytes[0];
+            let last = bytes[bytes.len() - 1];
+            let page_fault_time = page_fault_start.elapsed();
+            let store = last as i32 - first as i32;
+            
+            // Time the deserialization (memory copy + parsing)
+            let deserialize_start = Instant::now();
             let (params, sketch) = bincode::deserialize(bytes)?;
+            let deserialize_time = deserialize_start.elapsed();
+            
+            let total_time = total_start.elapsed();
+            
+            info!("Timing for sketch '{}' ({}KB): mmap_slice={:.2}ms, page_fault={:.2}ms, deserialize={:.2}ms, total={:.2}ms", 
+                file_name, 
+                length / 1024,
+                mmap_time.as_secs_f64() * 1000.0,
+                page_fault_time.as_secs_f64() * 1000.0,
+                deserialize_time.as_secs_f64() * 1000.0,
+                total_time.as_secs_f64() * 1000.0
+            );
+            log::debug!("{}", store);
+            
             Ok((params, sketch))
         } else {
             Err(format!("Sketch not found: {}", file_name).into())
