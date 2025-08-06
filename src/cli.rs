@@ -49,11 +49,11 @@ pub struct SketchArgs {
     #[clap(short = 'l', help_heading = "INPUT/OUTPUT", group = "input_group")]
     pub fasta_list: Option<String>,
     
-    /// Use individual sequences instead the entire file for multi-fastas. CURRENTLY DOES NOT WORK WITH `skani search`.
+    /// Use individual sequences instead the entire file for multi-fastas. 
     #[clap(short = 'i', help_heading = "INPUT/OUTPUT")]
     pub individual_contig: bool,
     
-    /// Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.
+    /// Output folder where sketch files are placed. 
     #[clap(short = 'o', required = true, display_order = 1, help_heading = "INPUT/OUTPUT")]
     pub output: String,
 
@@ -69,7 +69,7 @@ pub struct SketchArgs {
     #[clap(long = "fast", help_heading = "PRESETS")]
     pub fast: bool,
 
-    /// Create separate .sketch files instead of consolidated database format
+    /// Create separate .sketch files instead of consolidated database format. DOES NOT WORK WITH -i. 
     #[clap(long = "separate-sketches", help_heading = "INPUT/OUTPUT")]
     pub separate_sketches: bool,
 

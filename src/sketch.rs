@@ -23,6 +23,9 @@ pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     std::fs::create_dir_all(&p).unwrap();
 
     if command_params.separate_sketches {
+        if command_params.individual_contig_r {
+            warn!("WARNING: --separate-sketches combined with -i (individual contigs) is NOT compatible with `skani search`. Use the default consolidated database format for search functionality with individual contigs.");
+        }
         sketch_separate_files(command_params, sketch_params);
     } else {
         sketch_consolidated_db(command_params, sketch_params);

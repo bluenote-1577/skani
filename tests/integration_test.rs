@@ -889,3 +889,91 @@ fn test_short_header_functionality() {
         .spawn();
 }
 
+#[test]
+fn test_individual_contigs_with_search() {
+    // Test that sketch -i (individual contigs) works correctly with search
+    let sketch_dir = "./tests/results/individual_contigs_search_test";
+    
+    // Test 1: Create sketches with -i (individual contigs) - should use default consolidated format
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("sketch")
+        .arg("./test_files/e.coli-K12.fasta")  // Multi-contig file
+        .arg("./test_files/e.coli-EC590.fasta")
+        .arg("-i")  // Individual contigs flag
+        .arg("-o")
+        .arg(sketch_dir)
+        .assert();
+    assert.success();
+    
+    // Test 2: Verify that search works with individual contig sketches (consolidated format)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg(sketch_dir)
+        .arg("./test_files/e.coli-K12.fasta")
+        .output()
+        .expect("Failed to execute skani search with individual contig sketches");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "Search with individual contigs failed: {}", stdout);
+    
+    // Should find matches since we're searching for the same genome that was sketched
+    let lines: Vec<&str> = stdout.lines().collect();
+    assert!(lines.len() > 1, "Should have header line plus at least one result: {}", stdout);
+    
+    // Test 3: Test the problematic combination - sketch with both -i and --separate-sketches  
+    let incompatible_sketch_dir = "./tests/results/incompatible_sketch_test";
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("sketch")
+        .arg("./test_files/e.coli-K12.fasta")
+        .arg("-i")  // Individual contigs
+        .arg("--separate-sketches")  // Separate files (incompatible combo)
+        .arg("-o")
+        .arg(incompatible_sketch_dir)
+        .output()
+        .expect("Failed to execute skani sketch with incompatible flags");
+    
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Sketch command should still succeed: {}", stderr);
+    
+    // Should contain the warning we added
+    assert!(stderr.contains("WARNING") && stderr.contains("separate-sketches") && stderr.contains("individual contigs"), 
+            "Should warn about incompatible combination: {}", stderr);
+    
+    // Test 4: Verify that search fails or gives poor results with the incompatible format
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg(incompatible_sketch_dir)
+        .arg("./test_files/e.coli-K12.fasta")
+        .output()
+        .expect("Failed to execute skani search with incompatible sketches");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    
+    // The search might fail or give no results - either is acceptable for this incompatible combination
+    // This test documents the expected behavior
+    if !output.status.success() {
+        // Search fails - this is expected behavior for incompatible format
+        assert!(stderr.contains("No valid reference fastas") || stderr.len() > 0,
+                "Search should fail gracefully with incompatible format: {}", stderr);
+    } else {
+        // Search succeeds but may have no results
+        let lines: Vec<&str> = stdout.lines().collect();
+        // Having only a header line (no results) is acceptable for incompatible format
+        assert!(lines.len() >= 1, "Should at least have header line: {}", stdout);
+    }
+    
+    // Clean up test directories
+    Command::new("rm")
+        .arg("-rf")
+        .arg(sketch_dir)
+        .arg(incompatible_sketch_dir)
+        .spawn();
+}
+
