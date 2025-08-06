@@ -1,7 +1,6 @@
 use crate::params::*;
 use crate::types::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
@@ -25,7 +24,7 @@ pub struct SketchDbWriter {
 /// Reader for accessing consolidated sketch databases
 pub struct SketchDbReader {
     mmap: memmap2::Mmap,
-    index: HashMap<String, (u64, u64)>, // file_name -> (offset, length)
+    index: Vec<(u64, u64)>, // Vector of (offset, length) pairs, indexed by sketch index
 }
 
 impl SketchDbWriter {
@@ -91,11 +90,10 @@ impl SketchDbReader {
         let index_reader = BufReader::new(index_file);
         let index_vec: Vec<IndexEntry> = bincode::deserialize_from(index_reader)?;
 
-        // Convert to HashMap for O(1) lookups
-        let mut index = HashMap::new();
-        for entry in index_vec {
-            index.insert(entry.file_name, (entry.offset, entry.length));
-        }
+        // Convert to vector for index-based lookups
+        let index: Vec<(u64, u64)> = index_vec.iter()
+            .map(|entry| (entry.offset, entry.length))
+            .collect();
 
         // Memory map the main database file
         let concat_path = format!("{}/sketches.db", database_dir);
@@ -106,13 +104,9 @@ impl SketchDbReader {
         Ok(SketchDbReader { mmap, index })
     }
 
-    /// Get a sketch by file name
-    pub fn get_sketch(&self, file_name: &str) -> Result<(SketchParams, Sketch), Box<dyn std::error::Error>> {
-        use std::time::Instant;
-        
-        let total_start = Instant::now();
-        
-        if let Some(&(offset, length)) = self.index.get(file_name) {
+    /// Get a sketch by index
+    pub fn get_sketch(&self, index: usize) -> Result<(SketchParams, Sketch), Box<dyn std::error::Error>> {
+        if let Some(&(offset, length)) = self.index.get(index) {
             let start = offset as usize;
             let end = start + length as usize;
             
@@ -120,21 +114,17 @@ impl SketchDbReader {
             let bytes = &self.mmap[start..end];
             
             // Time the deserialization (memory copy + parsing)
-            let deserialize_start = Instant::now();
             let (params, sketch) = bincode::deserialize(bytes)?;
-            let deserialize_time = deserialize_start.elapsed();
-            
-            let total_time = total_start.elapsed();
                         
             Ok((params, sketch))
         } else {
-            Err(format!("Sketch not found: {}", file_name).into())
+            Err(format!("Sketch index out of bounds: {}", index).into())
         }
     }
 
-    /// Get all sketch file names in the database
-    pub fn get_sketch_names(&self) -> Vec<String> {
-        self.index.keys().cloned().collect()
+    /// Get the number of sketches in the database
+    pub fn sketch_count(&self) -> usize {
+        self.index.len()
     }
 
     /// Get the number of sketches in the database

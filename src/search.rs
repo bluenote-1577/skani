@@ -118,20 +118,20 @@ pub fn search(command_params: CommandParams) {
             let is = 0..query_sketches.len();
             is.into_par_iter().for_each(|i| {
                 let query_sketch = &query_sketches[i];
-                let refs_to_try;
+                let ref_indices_to_try;
                 if !command_params.screen {
-                    let refs_to_try_mutex: Mutex<Vec<&String>> = Mutex::new(vec![]);
+                    let refs_to_try_mutex: Mutex<Vec<usize>> = Mutex::new(vec![]);
                     let js = 0..ref_sketches.len();
                     js.into_par_iter().for_each(|j| {
                         let ref_sketch = &ref_sketches[j];
                         if screen::check_markers_quickly(query_sketch, ref_sketch, screen_val, false) {
                             let mut lock = refs_to_try_mutex.lock().unwrap();
-                            lock.push(&ref_sketches[j].file_name);
+                            lock.push(j);
                         }
                     });
-                    refs_to_try = refs_to_try_mutex.into_inner().unwrap();
+                    ref_indices_to_try = refs_to_try_mutex.into_inner().unwrap();
                 } else {
-                    refs_to_try = screen::screen_refs_filenames(
+                    ref_indices_to_try = screen::screen_refs_indices(
                         screen_val,
                         &kmer_to_sketch,
                         query_sketch,
@@ -139,15 +139,13 @@ pub fn search(command_params: CommandParams) {
                         &ref_sketches,
                     );
                 }
-                debug!("Refs to try {}", refs_to_try.len());
-                let js = 0..refs_to_try.len();
-                js.into_par_iter().for_each(|j| {
-                    let original_file = &refs_to_try[j];
+                ref_indices_to_try.into_par_iter().for_each(|j| {
+                    let original_file = &ref_sketches[j].file_name;
                     let ref_sketch;
                     if !command_params.keep_refs {
                         let ref_sketch_new = if let Some(ref db_reader) = &db_reader_opt {
                             // Load from consolidated database
-                            match db_reader.get_sketch(original_file) {
+                            match db_reader.get_sketch(j) {
                                 Ok((_params, sketch)) => vec![sketch],
                                 Err(e) => {
                                     error!("Failed to load sketch {}: {}", original_file, e);
@@ -205,7 +203,7 @@ pub fn search(command_params: CommandParams) {
                         } else {
                             let ref_sketch = if let Some(ref db_reader) = &db_reader_opt {
                                 // Load from consolidated database
-                                match db_reader.get_sketch(original_file) {
+                                match db_reader.get_sketch(j) {
                                     Ok((_params, sketch)) => vec![sketch],
                                     Err(e) => {
                                         error!("Failed to load sketch {}: {}", original_file, e);

@@ -272,6 +272,7 @@ pub struct Sketch {
     pub c: usize,
     pub k: usize,
     pub contig_order: usize,
+    pub individual_contig: bool,
     pub amino_acid: bool
 }
 
@@ -333,6 +334,7 @@ impl Sketch{
             c : sketch.c,
             k : sketch.k,
             contig_order: sketch.contig_order,
+            individual_contig: sketch.individual_contig,
             amino_acid: sketch.amino_acid
         }
     }
@@ -382,6 +384,7 @@ impl Default for Sketch {
             c: 0,
             k: 0,
             contig_order:0,
+            individual_contig: false,
             amino_acid: false,
         }
     }

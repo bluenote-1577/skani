@@ -977,3 +977,129 @@ fn test_individual_contigs_with_search() {
         .spawn();
 }
 
+#[test]
+fn test_sketch_search_individual_contigs_matches_dist() {
+    // Test that sketch -i followed by search --qi gives same results as dist --qi --ri
+    let sketch_dir = "./tests/results/test_sketch_individual_o157_comparison";
+    let search_output = "./tests/results/search_individual_o157_comparison.txt";
+    let dist_output = "./tests/results/dist_individual_o157_comparison.txt";
+    
+    // Clean up any existing test directories
+    let _ = Command::new("rm")
+        .arg("-rf")
+        .arg(sketch_dir)
+        .arg(search_output)
+        .arg(dist_output)
+        .spawn();
+    
+    // Step 1: Sketch e.coli-o157.fasta with individual contigs (-i)
+    let sketch_cmd = Command::new("./target/debug/skani")
+        .arg("sketch")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("-o")
+        .arg(sketch_dir)
+        .arg("-i")
+        .output()
+        .expect("Failed to execute skani sketch -i");
+    
+    assert!(sketch_cmd.status.success(), 
+            "skani sketch -i should succeed: {}", String::from_utf8_lossy(&sketch_cmd.stderr));
+    
+    // Step 2: Search with individual query contigs (--qi)
+    let search_cmd = Command::new("./target/debug/skani")
+        .arg("search")
+        .arg("-d")
+        .arg(sketch_dir)
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("--qi")
+        .arg("-o")
+        .arg(search_output)
+        .arg("-s")
+        .arg("50") // Lower screen threshold to ensure results
+        .output()
+        .expect("Failed to execute skani search --qi");
+    
+    assert!(search_cmd.status.success(), 
+            "skani search --qi should succeed: {}", String::from_utf8_lossy(&search_cmd.stderr));
+    
+    // Step 3: Run dist with individual contigs for both query and reference (--qi --ri)
+    let dist_cmd = Command::new("./target/debug/skani")
+        .arg("dist")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("--qi")
+        .arg("--ri")
+        .arg("-o")
+        .arg(dist_output)
+        .output()
+        .expect("Failed to execute skani dist --qi --ri");
+    
+    assert!(dist_cmd.status.success(), 
+            "skani dist --qi --ri should succeed: {}", String::from_utf8_lossy(&dist_cmd.stderr));
+    
+    // Step 4: Compare the results
+    let search_content = std::fs::read_to_string(search_output)
+        .expect("Should be able to read search output");
+    let dist_content = std::fs::read_to_string(dist_output)
+        .expect("Should be able to read dist output");
+    
+    // Parse both outputs and verify they contain the same ANI results
+    let search_lines: Vec<&str> = search_content.lines().skip(1).collect(); // Skip header
+    let dist_lines: Vec<&str> = dist_content.lines().skip(1).collect(); // Skip header
+    
+    // Both should have results (e.coli-o157 has 2 contigs, so we expect 2x2=4 comparisons)
+    assert!(!search_lines.is_empty(), "Search should produce results");
+    assert!(!dist_lines.is_empty(), "Dist should produce results");
+    
+    // Extract ANI values from both outputs and compare
+    let mut search_anis: Vec<f32> = Vec::new();
+    let mut dist_anis: Vec<f32> = Vec::new();
+    
+    for line in search_lines {
+        if !line.trim().is_empty() {
+            let fields: Vec<&str> = line.split('\t').collect();
+            if fields.len() >= 3 {
+                if let Ok(ani) = fields[2].parse::<f32>() {
+                    search_anis.push(ani);
+                }
+            }
+        }
+    }
+    
+    for line in dist_lines {
+        if !line.trim().is_empty() {
+            let fields: Vec<&str> = line.split('\t').collect();
+            if fields.len() >= 3 {
+                if let Ok(ani) = fields[2].parse::<f32>() {
+                    dist_anis.push(ani);
+                }
+            }
+        }
+    }
+    
+    // Both should have the same number of results
+    assert_eq!(search_anis.len(), dist_anis.len(), 
+               "Search and dist should produce same number of results. Search: {}, Dist: {}", 
+               search_anis.len(), dist_anis.len());
+    
+    // Sort both vectors for comparison
+    search_anis.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    dist_anis.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    
+    // Compare ANI values (should be nearly identical)
+    for (search_ani, dist_ani) in search_anis.iter().zip(dist_anis.iter()) {
+        let diff = (search_ani - dist_ani).abs();
+        assert!(diff < 0.01, 
+                "ANI values should be nearly identical. Search: {}, Dist: {}, Diff: {}", 
+                search_ani, dist_ani, diff);
+    }
+    
+    // Clean up test directories
+    let _ = Command::new("rm")
+        .arg("-rf")
+        .arg(sketch_dir)
+        .arg(search_output)
+        .arg(dist_output)
+        .spawn();
+}
+
