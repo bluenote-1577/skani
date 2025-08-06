@@ -615,7 +615,7 @@ fn test_consolidated_database_functionality() {
     assert.success().code(0);
 
     // Verify consolidated database files exist
-    assert!(std::path::Path::new("./tests/results/test_consolidated_db/test_consolidated_db.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/sketches.db").exists());
     assert!(std::path::Path::new("./tests/results/test_consolidated_db/index.db").exists());
     assert!(std::path::Path::new("./tests/results/test_consolidated_db/markers.bin").exists());
 
@@ -722,7 +722,7 @@ fn test_consolidated_database_multiple_files() {
     assert.success().code(0);
 
     // Verify database files exist
-    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/test_multi_consolidated_db.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/sketches.db").exists());
     assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/index.db").exists());
     assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/markers.bin").exists());
 

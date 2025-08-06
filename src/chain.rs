@@ -545,11 +545,11 @@ fn calculate_ani(
 
 #[inline]
 pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &MapParams) -> f64 {
-    if anchor_curr.query_phase != anchor_past.query_phase
-        || anchor_curr.ref_phase != anchor_past.ref_phase
-    {
-        return f64::MIN;
-    }
+    // if anchor_curr.query_phase != anchor_past.query_phase
+    //     || anchor_curr.ref_phase != anchor_past.ref_phase
+    // {
+    //     return f64::MIN;
+    // }
     if anchor_curr.reverse_match != anchor_past.reverse_match {
         return f64::MIN;
     }
@@ -650,35 +650,48 @@ fn get_anchors(
     //    let kmer_seeds_query = &query_sketch.kmer_seeds_k[k];
     let mut anchors = vec![];
     let mut query_kmers_with_hits = 0;
-    for (canon_kmer, query_pos) in kmer_seeds_query.iter() {
-        if query_pos.len() > map_params.index_chain_band{
+    for (canon_kmer, _query_tagged) in kmer_seeds_query.iter() {
+        // Get query positions using the new API
+        let query_positions_iter = if switched {
+            ref_sketch.get_seed_positions(*canon_kmer)
+        } else {
+            query_sketch.get_seed_positions(*canon_kmer)
+        };
+        
+        if query_positions_iter.len() > map_params.index_chain_band{
             continue;
         }
+        
+        // Get query positions using Cow
+        let query_positions = query_positions_iter;
         let contains = kmer_seeds_ref.contains_key(canon_kmer);
 
         if !contains {
-            for qpos in query_pos.iter() {
+            for qpos in query_positions.iter() {
                 query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
         } else {
-            let ref_pos = &kmer_seeds_ref[canon_kmer];
+            // Get reference positions using the new API  
+            let ref_positions = if switched {
+                query_sketch.get_seed_positions(*canon_kmer)
+            } else {
+                ref_sketch.get_seed_positions(*canon_kmer)
+            };
 
-            if ref_pos.len() > map_params.index_chain_band{
+            if ref_positions.len() > map_params.index_chain_band{
                 continue;
             }
 
-            for qpos in query_pos.iter() {
+            for qpos in query_positions.iter() {
                 query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
 
             query_kmers_with_hits += 1;
-            for qpos in query_pos {
-                for rpos in ref_pos {
+            for qpos in query_positions.iter() {
+                for rpos in ref_positions.iter() {
                     anchors.push(Anchor::new(
                         &(rpos.pos, rpos.contig_index()),
                         &(qpos.pos, qpos.contig_index()),
-                        0,  // phase - now always 0
-                        0,  // phase - now always 0
                         rpos.canonical() != qpos.canonical(),
                     ));
                 }

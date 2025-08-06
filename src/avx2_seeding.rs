@@ -1,4 +1,3 @@
-use smallvec::SmallVec;
 use std::arch::x86_64::*;
 use crate::params::*;
 use crate::types::*;
@@ -42,8 +41,7 @@ pub unsafe fn avx2_fmh_seeds(
         new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
     }
     let marker_k = K_MARKER_DNA;
-    let kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
-    let marker_seeds = &mut new_sketch.marker_seeds;
+    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     let marker_c = sketch_params.marker_c;
@@ -180,16 +178,14 @@ pub unsafe fn avx2_fmh_seeds(
             //            if m1 !={
             if v1 < threshold_unsigned && resume_inds[0] <= i {
                 const IND: i32 = 0;
-                let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[IND as usize] as SeedBits)
-                    .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition::new(
-                    i as GnPosition,
-                    contig_index,
-                    canonical[IND as usize],
-                ));
+                new_sketch.add_seed_position(
+                    canonical_seeds[IND as usize] as SeedBits,
+                    SeedPosition::new(
+                        i as GnPosition,
+                        contig_index,
+                        canonical[IND as usize],
+                    )
+                );
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -199,22 +195,20 @@ pub unsafe fn avx2_fmh_seeds(
                 };
                 //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                 if v1 < threshold_marker_unsigned {
-                    marker_seeds.insert(canonical_kmer_marker as u64);
+                    new_sketch.marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             //            if m2 != 0 {
             if v2 < threshold_unsigned && resume_inds[1] <= i {
                 const IND: i32 = 1;
-                let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[IND as usize] as SeedBits)
-                    .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition::new(
-                    i as GnPosition + (len as i32 * IND) as GnPosition,
-                    contig_index,
-                    canonical[IND as usize],
-                ));
+                new_sketch.add_seed_position(
+                    canonical_seeds[IND as usize] as SeedBits,
+                    SeedPosition::new(
+                        i as GnPosition + (len as i32 * IND) as GnPosition,
+                        contig_index,
+                        canonical[IND as usize],
+                    )
+                );
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -224,22 +218,20 @@ pub unsafe fn avx2_fmh_seeds(
                 };
                 //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                 if v2 < threshold_marker_unsigned {
-                    marker_seeds.insert(canonical_kmer_marker as u64);
+                    new_sketch.marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             //            if m3 != 0 {
             if v3 < threshold_unsigned && resume_inds[2] <= i{
                 const IND: i32 = 2;
-                let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[IND as usize] as SeedBits)
-                    .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition::new(
-                    i as GnPosition + (len as i32 * IND) as GnPosition,
-                    contig_index,
-                    canonical[IND as usize],
-                ));
+                new_sketch.add_seed_position(
+                    canonical_seeds[IND as usize] as SeedBits,
+                    SeedPosition::new(
+                        i as GnPosition + (len as i32 * IND) as GnPosition,
+                        contig_index,
+                        canonical[IND as usize],
+                    )
+                );
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -249,22 +241,20 @@ pub unsafe fn avx2_fmh_seeds(
                 };
                 //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                 if v3 < threshold_marker_unsigned {
-                    marker_seeds.insert(canonical_kmer_marker as u64);
+                    new_sketch.marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
             //            if m4 != 0 {
             if v4 < threshold_unsigned && resume_inds[3] <= i{
                 const IND: i32 = 3;
-                let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                let kmer_positions = kmer_seeds
-                    .entry(canonical_seeds[IND as usize] as SeedBits)
-                    .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition::new(
-                    i as GnPosition + (len as i32 * IND) as GnPosition,
-                    contig_index,
-                    canonical[IND as usize],
-                ));
+                new_sketch.add_seed_position(
+                    canonical_seeds[IND as usize] as SeedBits,
+                    SeedPosition::new(
+                        i as GnPosition + (len as i32 * IND) as GnPosition,
+                        contig_index,
+                        canonical[IND as usize],
+                    )
+                );
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -274,7 +264,7 @@ pub unsafe fn avx2_fmh_seeds(
                 };
                 //                if _mm256_extract_epi64(hash_256, IND) < threshold_marker {
                 if v4 < threshold_marker_unsigned {
-                    marker_seeds.insert(canonical_kmer_marker as u64);
+                    new_sketch.marker_seeds.insert(canonical_kmer_marker as u64);
                 }
             }
         }

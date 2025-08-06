@@ -31,14 +31,8 @@ pub struct SketchDbReader {
 impl SketchDbWriter {
     /// Create a new consolidated sketch database writer
     pub fn new(output_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        // Extract database name from output directory path
-        let db_name = Path::new(output_dir)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("sketch_db")
-            .to_string();
-        
-        let concat_path = format!("{}/{}.db", output_dir, db_name);
+                
+        let concat_path = format!("{}/sketches.db", output_dir);
         let concat_file = BufWriter::new(File::create(concat_path)?);
         
         Ok(SketchDbWriter {
@@ -104,11 +98,7 @@ impl SketchDbReader {
         }
 
         // Memory map the main database file
-        let db_name = Path::new(database_dir)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("sketch_db");
-        let concat_path = format!("{}/{}.db", database_dir, db_name);
+        let concat_path = format!("{}/sketches.db", database_dir);
         let concat_file = File::open(concat_path)?;
         let mmap = unsafe { memmap2::Mmap::map(&concat_file)? };
 
@@ -179,11 +169,7 @@ impl SketchDbReader {
 
 /// Check if a directory contains a consolidated sketch database
 pub fn is_consolidated_db(database_dir: &str) -> bool {
-    let db_name = Path::new(database_dir)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("sketch_db");
-    let concat_path = format!("{}/{}.db", database_dir, db_name);
+    let concat_path = format!("{}/sketches.db", database_dir);
     let index_path = format!("{}/index.db", database_dir);
     Path::new(&concat_path).exists() && Path::new(&index_path).exists()
 }

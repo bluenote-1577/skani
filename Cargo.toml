@@ -31,6 +31,7 @@ simple-logging= "2"
 log = "0.4"
 rayon = "1.5"
 smallvec = { version = "1", features = ["union","serde","write"] }
+#smallvec = { version = "1", features = ["serde","write"] }
 serde = "1"
 bincode = "1"
 intervallum = "1"

@@ -1,7 +1,6 @@
 use crate::params::*;
 use crate::types::*;
 use rust_lapper::{Interval, Lapper};
-use smallvec::SmallVec;
 
 #[inline]
 fn _position_min<T: Ord>(slice: &[T]) -> Option<usize> {
@@ -124,7 +123,7 @@ pub fn fmh_seeds_aa_with_orf(
     if seed && new_sketch.kmer_seeds_k.is_none() {
         new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
     }
-    let kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
+    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
@@ -201,17 +200,14 @@ pub fn fmh_seeds_aa_with_orf(
                     if hash < threshold {
                         if seed {
                             //dbg!(rolling_aa_kmer, rolling_aa_kmer as SeedBits);
-                            let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                            let kmer_positions = kmer_seeds
-                                .entry(rolling_aa_kmer as SeedBits)
-                                .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                            //                            .or_insert(vec![]);
-
-                            kmer_positions.push(SeedPosition::new(
-                                i as GnPosition,
-                                contig_index,
-                                !rc,
-                            ));
+                            new_sketch.add_seed_position(
+                                rolling_aa_kmer as SeedBits,
+                                SeedPosition::new(
+                                    i as GnPosition,
+                                    contig_index,
+                                    !rc,
+                                )
+                            );
                         }
                         if hash < marker_threshold && j >= marker_k * 3 - 1 {
                             new_sketch.marker_seeds.insert(marker_rolling_aa_kmer);
@@ -237,8 +233,7 @@ pub fn fmh_seeds(
         new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
     }
     let marker_k = K_MARKER_DNA;
-    let kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
-    let marker_seeds = &mut new_sketch.marker_seeds;
+    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     if k > 16 {
@@ -304,17 +299,14 @@ pub fn fmh_seeds(
         let hash_seed = mm_hash64(canonical_kmer_seed);
         if hash_seed < threshold && resume_ind <= i {
             if seed {
-                let kmer_seeds = &mut kmer_seeds_k.as_mut().unwrap();
-                let kmer_positions = kmer_seeds
-                    //Since we fix k = 15,can represent seeds as 32bits
-                    .entry(canonical_kmer_seed as SeedBits)
-                    .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
-                //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition::new(
-                    i as GnPosition,
-                    contig_index,
-                    canonical_seed,
-                ));
+                new_sketch.add_seed_position(
+                    canonical_kmer_seed as SeedBits,
+                    SeedPosition::new(
+                        i as GnPosition,
+                        contig_index,
+                        canonical_seed,
+                    )
+                );
             }
             let canonical_marker = rolling_kmer_f_marker < rolling_kmer_r_marker;
             let canonical_kmer_marker = if canonical_marker {
@@ -324,7 +316,7 @@ pub fn fmh_seeds(
             };
 
             if hash_seed < threshold_marker {
-                marker_seeds.insert(canonical_kmer_marker);
+                new_sketch.marker_seeds.insert(canonical_kmer_marker);
             }
         }
     }
@@ -333,15 +325,16 @@ pub fn fmh_seeds(
 //This function is unused right now. Originally used for
 //getting a repetitive k-mer masking threshold. We may
 //modify the masking procedure in the future, so leaving for now.
-pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>, c: usize) -> usize {
+pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>, sketch: &Sketch, c: usize) -> usize {
     if kmer_seeds.is_none() {
         usize::MAX
     } else {
         let kmer_seeds = kmer_seeds.as_ref().unwrap();
         let mut count_vec = vec![];
-        let kmer_seeds_ref = &kmer_seeds;
-        for ref_pos in kmer_seeds_ref.values() {
-            count_vec.push(ref_pos.len());
+        for (seed, _tagged_index) in kmer_seeds {
+            // Use the sketch's get_seed_positions to get the actual count
+            let positions_iter = sketch.get_seed_positions(*seed);
+            count_vec.push(positions_iter.len());
         }
         count_vec.sort();
         let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 5000 - 1];

@@ -31,6 +31,7 @@ use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
+use smallvec::smallvec;
 use crate::params::*;
 use partitions::*;
 use std::collections::{HashMap, HashSet};
@@ -55,7 +56,8 @@ pub type MarkerBits = u64;
 pub type SeedBits = u32;
 pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[u32; KMER_SK_SMALL_VEC_SIZE]>>;
 //pub type KmerToSketch = MMHashMap<MarkerBits, Vec<usize>>;
-pub type KmerSeeds = MMHashMap32<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
+pub type KmerSeeds = MMHashMap32<SeedBits, u64>; // Tagged index: bit 0 = single/multiple, bits 1-63 = data
+pub type MultiPositionStorage = Vec<SmallVec<[SeedPosition; 3]>>; // For cases with multiple SeedPositions
 //pub type KmerSeeds = MMHashMap<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 
 
@@ -129,8 +131,10 @@ pub struct SeedPosition{
 pub type ContigIndexCanonical = u32;
 
 impl SeedPosition {
-    /// Create a new SeedPosition
+    /// Create a new SeedPosition with 30-bit contig index
     pub fn new(pos: GnPosition, contig_index: ContigIndex, canonical: bool) -> Self {
+        // Limit contig_index to 30 bits (0x3FFFFFFF)
+        assert!(contig_index < (1u32 << 30), "contig_index exceeds 30-bit limit");
         let contig_index_canonical = (contig_index << 1) | (canonical as u32);
         Self {
             pos,
@@ -139,16 +143,19 @@ impl SeedPosition {
     }
     
     /// Extract the canonical flag from the packed field
+    #[inline]
     pub fn canonical(&self) -> bool {
         (self.contig_index_canonical & 1) != 0
     }
     
-    /// Extract the contig index from the packed field
+    /// Extract the contig index from the packed field (30 bits)
+    #[inline]
     pub fn contig_index(&self) -> ContigIndex {
         self.contig_index_canonical >> 1
     }
     
     /// Set the canonical flag
+    #[inline]
     pub fn set_canonical(&mut self, canonical: bool) {
         if canonical {
             self.contig_index_canonical |= 1;
@@ -157,10 +164,73 @@ impl SeedPosition {
         }
     }
     
-    /// Set the contig index
+    /// Set the contig index (30 bits max)
+    #[inline]
     pub fn set_contig_index(&mut self, contig_index: ContigIndex) {
+        debug_assert!(contig_index < (1u32 << 30), "contig_index exceeds 30-bit limit");
         let canonical_bit = self.contig_index_canonical & 1;
         self.contig_index_canonical = (contig_index << 1) | canonical_bit;
+    }
+    
+    /// Pack SeedPosition into 63 bits for tagged index
+    #[inline]
+    pub fn pack_to_u64(&self) -> u64 {
+        // pos: 32 bits, contig_index_canonical: 31 bits (30 + 1 canonical)
+        ((self.pos as u64) << 31) | (self.contig_index_canonical as u64)
+    }
+    
+    /// Unpack SeedPosition from 63 bits
+    #[inline]
+    pub fn unpack_from_u64(packed: u64) -> Self {
+        let pos = (packed >> 31) as GnPosition;
+        let contig_index_canonical = (packed & 0x7FFFFFFF) as ContigIndexCanonical;
+        Self {
+            pos,
+            contig_index_canonical,
+        }
+    }
+}
+
+use std::borrow::Cow;
+
+
+/// Tagged index utilities for KmerSeeds
+pub struct TaggedIndex;
+
+impl TaggedIndex {
+    const SINGLE_BIT: u64 = 1;
+    
+    /// Create tagged index for single SeedPosition
+    #[inline]
+    pub fn single(seed_position: &SeedPosition) -> u64 {
+        Self::SINGLE_BIT | (seed_position.pack_to_u64() << 1)
+    }
+    
+    /// Create tagged index for multiple positions (index into MultiPositionStorage)
+    #[inline]
+    pub fn multiple(storage_index: usize) -> u64 {
+        (storage_index as u64) << 1 // bit 0 = 0 for multiple
+    }
+    
+    /// Check if tagged index represents single SeedPosition
+    #[inline]
+    pub fn is_single(tagged_index: u64) -> bool {
+        (tagged_index & Self::SINGLE_BIT) != 0
+    }
+    
+    /// Extract single SeedPosition from tagged index
+    #[inline]
+    pub fn get_single(tagged_index: u64) -> SeedPosition {
+        debug_assert!(Self::is_single(tagged_index));
+        let packed = tagged_index >> 1;
+        SeedPosition::unpack_from_u64(packed)
+    }
+    
+    /// Extract storage index for multiple positions
+    #[inline]
+    pub fn get_storage_index(tagged_index: u64) -> usize {
+        debug_assert!(!Self::is_single(tagged_index));
+        (tagged_index >> 1) as usize
     }
 }
 
@@ -174,6 +244,7 @@ impl SeedPosition {
 pub struct Sketch {
     pub file_name: String,
     pub kmer_seeds_k: Option<KmerSeeds>,
+    pub multi_position_storage: MultiPositionStorage, // Storage for multiple SeedPositions
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
@@ -196,11 +267,54 @@ pub struct Sketch {
 }
 
 impl Sketch{
+    /// Add a SeedPosition to the KmerSeeds using tagged index system
+    pub fn add_seed_position(&mut self, seed: SeedBits, position: SeedPosition) {
+        if let Some(kmer_seeds) = &mut self.kmer_seeds_k {
+            match kmer_seeds.get_mut(&seed) {
+                Some(tagged_index) => {
+                    // Check if it's currently a single position
+                    if TaggedIndex::is_single(*tagged_index) {
+                        // Convert to multiple: create new vec with existing + new position
+                        let existing = TaggedIndex::get_single(*tagged_index);
+                        let storage_index = self.multi_position_storage.len();
+                        self.multi_position_storage.push(smallvec![existing, position]);
+                        *tagged_index = TaggedIndex::multiple(storage_index);
+                    } else {
+                        // Already multiple: add to existing vec
+                        let storage_index = TaggedIndex::get_storage_index(*tagged_index);
+                        self.multi_position_storage[storage_index].push(position);
+                    }
+                }
+                None => {
+                    // First position for this seed: store as single
+                    kmer_seeds.insert(seed, TaggedIndex::single(&position));
+                }
+            }
+        }
+    }
+    
+    /// Get SeedPositions for a seed using Cow
+    pub fn get_seed_positions(&self, seed: SeedBits) -> Cow<[SeedPosition]> {
+        if let Some(kmer_seeds) = &self.kmer_seeds_k {
+            if let Some(&tagged_index) = kmer_seeds.get(&seed) {
+                if TaggedIndex::is_single(tagged_index) {
+                    let single_pos = TaggedIndex::get_single(tagged_index);
+                    return Cow::Owned(vec![single_pos]);
+                } else {
+                    let storage_index = TaggedIndex::get_storage_index(tagged_index);
+                    return Cow::Borrowed(&self.multi_position_storage[storage_index]);
+                }
+            }
+        }
+        Cow::Borrowed(&[])
+    }
+    
     pub fn get_markers_only(sketch: &Sketch) -> Sketch{
         
         Sketch{
             file_name : sketch.file_name.clone(),
             kmer_seeds_k : None,
+            multi_position_storage: Vec::new(),
             contigs: sketch.contigs.clone(),
             total_sequence_length : sketch.total_sequence_length,
             contig_lengths : vec![],
@@ -249,6 +363,7 @@ impl Default for Sketch {
         Sketch {
             file_name: String::new(),
             kmer_seeds_k: None,
+            multi_position_storage: Vec::new(),
             contigs: vec![],
             total_sequence_length: 0,
             contig_lengths: vec![],
@@ -375,8 +490,6 @@ pub struct Anchor {
     pub query_pos: GnPosition,
     pub ref_contig: ContigIndex,
     pub ref_pos: GnPosition,
-    pub ref_phase: u8,
-    pub query_phase: u8,
     pub reverse_match: bool,
 }
 
@@ -405,8 +518,6 @@ impl Anchor {
     pub fn new(
         rpos: &(GnPosition, ContigIndex),
         qpos: &(GnPosition, ContigIndex),
-        ref_phase: u8,
-        query_phase: u8,
         reverse: bool,
     ) -> Anchor {
         Anchor {
@@ -414,8 +525,6 @@ impl Anchor {
             ref_contig: rpos.1,
             query_pos: qpos.0,
             query_contig: qpos.1,
-            ref_phase,
-            query_phase,
             reverse_match: reverse,
         }
     }
