@@ -122,9 +122,46 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
 #[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct SeedPosition{
     pub pos: GnPosition,
-    pub canonical: bool,
-    pub contig_index: ContigIndex,
-    pub phase: u8
+    pub contig_index_canonical: ContigIndexCanonical, // packed: contig_index + canonical bit
+}
+
+// Type alias for packed contig index with canonical bit in LSB
+pub type ContigIndexCanonical = u32;
+
+impl SeedPosition {
+    /// Create a new SeedPosition
+    pub fn new(pos: GnPosition, contig_index: ContigIndex, canonical: bool) -> Self {
+        let contig_index_canonical = (contig_index << 1) | (canonical as u32);
+        Self {
+            pos,
+            contig_index_canonical,
+        }
+    }
+    
+    /// Extract the canonical flag from the packed field
+    pub fn canonical(&self) -> bool {
+        (self.contig_index_canonical & 1) != 0
+    }
+    
+    /// Extract the contig index from the packed field
+    pub fn contig_index(&self) -> ContigIndex {
+        self.contig_index_canonical >> 1
+    }
+    
+    /// Set the canonical flag
+    pub fn set_canonical(&mut self, canonical: bool) {
+        if canonical {
+            self.contig_index_canonical |= 1;
+        } else {
+            self.contig_index_canonical &= !1;
+        }
+    }
+    
+    /// Set the contig index
+    pub fn set_contig_index(&mut self, contig_index: ContigIndex) {
+        let canonical_bit = self.contig_index_canonical & 1;
+        self.contig_index_canonical = (contig_index << 1) | canonical_bit;
+    }
 }
 
 //impl Hash for SeedPosition{

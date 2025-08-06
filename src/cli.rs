@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand, Args};
 #[derive(Parser)]
 #[clap(
     name = "skani",
-    version = "0.2.2",
+    version = "0.3.0",
     about = "fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*",
     arg_required_else_help = true, disable_help_subcommand = true
 )]

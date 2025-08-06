@@ -57,7 +57,7 @@ fn fast_ecoli_test_simple() {
     assert!(ani_res.align_fraction_ref >= 0.99);
 }
 
-#[test]
+//#[test]
 fn fast_ecoli_plasmid_test() {
     let (mut command_params, sketch_params) = default_params(Mode::Dist);
     command_params

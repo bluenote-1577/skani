@@ -185,12 +185,11 @@ pub unsafe fn avx2_fmh_seeds(
                     .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition,
-                    canonical: canonical[IND as usize],
+                kmer_positions.push(SeedPosition::new(
+                    i as GnPosition,
                     contig_index,
-                    phase: 0,
-                });
+                    canonical[IND as usize],
+                ));
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -211,12 +210,11 @@ pub unsafe fn avx2_fmh_seeds(
                     .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
-                    canonical: canonical[IND as usize],
+                kmer_positions.push(SeedPosition::new(
+                    i as GnPosition + (len as i32 * IND) as GnPosition,
                     contig_index,
-                    phase: 0,
-                });
+                    canonical[IND as usize],
+                ));
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -237,12 +235,11 @@ pub unsafe fn avx2_fmh_seeds(
                     .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition {
-                    canonical: canonical[IND as usize],
-                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
+                kmer_positions.push(SeedPosition::new(
+                    i as GnPosition + (len as i32 * IND) as GnPosition,
                     contig_index,
-                    phase: 0,
-                });
+                    canonical[IND as usize],
+                ));
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {
@@ -263,12 +260,11 @@ pub unsafe fn avx2_fmh_seeds(
                     .entry(canonical_seeds[IND as usize] as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition + (len as i32 * IND) as GnPosition,
-                    canonical: canonical[IND as usize],
+                kmer_positions.push(SeedPosition::new(
+                    i as GnPosition + (len as i32 * IND) as GnPosition,
                     contig_index,
-                    phase: 0,
-                });
+                    canonical[IND as usize],
+                ));
                 let canonical_marker = _mm256_extract_epi64(compare_marker, IND) != 0;
                 let canonical_kmer_marker;
                 if canonical_marker {

@@ -207,12 +207,11 @@ pub fn fmh_seeds_aa_with_orf(
                                 .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                             //                            .or_insert(vec![]);
 
-                            kmer_positions.push(SeedPosition {
-                                pos: i as GnPosition,
-                                canonical: !rc,
+                            kmer_positions.push(SeedPosition::new(
+                                i as GnPosition,
                                 contig_index,
-                                phase,
-                            });
+                                !rc,
+                            ));
                         }
                         if hash < marker_threshold && j >= marker_k * 3 - 1 {
                             new_sketch.marker_seeds.insert(marker_rolling_aa_kmer);
@@ -311,12 +310,11 @@ pub fn fmh_seeds(
                     .entry(canonical_kmer_seed as SeedBits)
                     .or_insert(SmallVec::<[SeedPosition; SMALL_VEC_SIZE]>::new());
                 //                    .or_insert(vec![]);
-                kmer_positions.push(SeedPosition {
-                    pos: i as GnPosition,
-                    canonical: canonical_seed,
+                kmer_positions.push(SeedPosition::new(
+                    i as GnPosition,
                     contig_index,
-                    phase: 0,
-                });
+                    canonical_seed,
+                ));
             }
             let canonical_marker = rolling_kmer_f_marker < rolling_kmer_r_marker;
             let canonical_kmer_marker = if canonical_marker {

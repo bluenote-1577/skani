@@ -658,7 +658,7 @@ fn get_anchors(
 
         if !contains {
             for qpos in query_pos.iter() {
-                query_positions_all[qpos.contig_index as usize].push(qpos.pos);
+                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
         } else {
             let ref_pos = &kmer_seeds_ref[canon_kmer];
@@ -668,18 +668,18 @@ fn get_anchors(
             }
 
             for qpos in query_pos.iter() {
-                query_positions_all[qpos.contig_index as usize].push(qpos.pos);
+                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
 
             query_kmers_with_hits += 1;
             for qpos in query_pos {
                 for rpos in ref_pos {
                     anchors.push(Anchor::new(
-                        &(rpos.pos, rpos.contig_index),
-                        &(qpos.pos, qpos.contig_index),
-                        rpos.phase,
-                        qpos.phase,
-                        rpos.canonical != qpos.canonical,
+                        &(rpos.pos, rpos.contig_index()),
+                        &(qpos.pos, qpos.contig_index()),
+                        0,  // phase - now always 0
+                        0,  // phase - now always 0
+                        rpos.canonical() != qpos.canonical(),
                     ));
                 }
             }

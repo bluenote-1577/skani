@@ -525,7 +525,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         warn!("Amino acid mode (AAI) detected. This mode is not stable.");
     }
 
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.fasta_files.is_empty() {
         ref_files = args.fasta_files.clone();
     } else if let Some(list_file) = &args.fasta_list {
@@ -546,7 +546,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<usize>().unwrap())
         .unwrap_or(def_c.parse().unwrap());
 
-    let mut marker_c = args.marker_c.as_ref()
+    let marker_c = args.marker_c.as_ref()
         .map(|s| s.parse::<usize>().unwrap())
         .unwrap_or(MARKER_C_DEFAULT.parse().unwrap());
 
@@ -627,7 +627,7 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
     let rescue_small = !args.faster_small && !args.small_genomes;
 
     // Parse reference files
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.reference.is_empty() {
         ref_files = args.reference.clone();
     } else if !args.references.is_empty() {
@@ -782,7 +782,7 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
 
     let rescue_small = !args.faster_small && !args.small_genomes;
 
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.fasta_files.is_empty() {
         ref_files = args.fasta_files.clone();
     } else if let Some(list_file) = &args.fasta_list {

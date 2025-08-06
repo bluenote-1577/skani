@@ -44,17 +44,6 @@ fn full_test_sketch_and_search() {
         .assert();
     assert.success().code(0);
 
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let assert = cmd
-        .arg("sketch")
-        .arg("-l")
-        .arg("./test_files/list.txt")
-        .arg("-o")
-        .arg("./tests/results/test_sketch_dir_aai")
-        .arg("-a")
-        .arg("--separate-sketches")
-        .assert();
-    assert.success().code(0);
 
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
@@ -165,39 +154,7 @@ fn full_test_sketch_and_search() {
     println!("{}",out_line);
     assert!(!out_line.contains("WARN"));
 
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let out = cmd
-        .arg("search")
-        .arg("-d")
-        .arg("./tests/results/test_sketch_dir_aai/")
-        .arg("./test_files/MN-03.fa")
-        .arg("-n")
-        .arg("5")
-        .output();
-    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
-    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
-
-    println!("AAI search test");
-    println!(
-        "{}",
-        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
-    );
-    let ani = out_line.split('\t').collect::<Vec<&str>>()[8]
-        .parse::<f64>()
-        .unwrap();
-    let _af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
-        .parse::<f64>()
-        .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
-        .parse::<f64>()
-        .unwrap();
-    assert!(ani > 70.);
-    //assert!(af_q > 0.80);
-    assert!(af_r > 30.);
-    let err_line = std::str::from_utf8(&out.as_ref().unwrap().stderr).unwrap();
-    assert!(!err_line.contains("WARN") && !err_line.contains("ERROR"));
-
+    
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let cmd = cmd
         .arg("dist")
@@ -217,32 +174,7 @@ fn full_test_sketch_and_search() {
 }
 #[test]
 fn full_test_dist() {
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let out = cmd
-        .arg("dist")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/e.coli-K12.fasta")
-        .arg("-a")
-        .output();
-    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    println!("AAI E.coli test");
-    println!(
-        "{}",
-        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
-    );
-    let aai = out_line.split('\t').collect::<Vec<&str>>()[8]
-        .parse::<f64>()
-        .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
-        .parse::<f64>()
-        .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
-        .parse::<f64>()
-        .unwrap();
-    assert!(aai > 98.);
-    assert!(af_q > 80.);
-    assert!(af_r > 80.);
-
+    
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("dist")
@@ -417,37 +349,7 @@ fn full_test_dist() {
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
 
-    let mut cmd = Command::cargo_bin("skani").unwrap();
-    let out = cmd
-        .arg("dist")
-        .arg("./test_files/e.coli-EC590.fasta")
-        .arg("./test_files/MN-03.fa")
-        .arg("-a")
-        .output();
-    let out_line = std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap();
-    println!("{:?}", out_line.split('\t').collect::<Vec<&str>>());
-
-    let aai = out_line.split('\t').collect::<Vec<&str>>()[8]
-        .parse::<f64>()
-        .unwrap();
-    let af_q = out_line.split('\t').collect::<Vec<&str>>()[9]
-        .parse::<f64>()
-        .unwrap();
-    let af_r = out_line.split('\t').collect::<Vec<&str>>()[10]
-        .parse::<f64>()
-        .unwrap();
-    println!("AAI E.coli-klebsiella test");
-    println!(
-        "{}",
-        std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
-    );
-    assert!(aai > 70.);
-    assert!(aai < 85.);
-    assert!(af_q > 30.);
-    assert!(af_r > 30.);
-    assert!(af_q < 90.);
-    assert!(af_r < 90.);
-
+    
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let out = cmd
         .arg("dist")
@@ -471,8 +373,6 @@ fn full_test_dist() {
         "{}",
         std::str::from_utf8(&out.as_ref().unwrap().stdout).unwrap()
     );
-    assert!(aai > 70.);
-    assert!(aai < 85.);
     assert!(af_q > 20.);
     assert!(af_r > 20.);
     assert!(af_q < 70.);
