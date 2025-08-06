@@ -123,6 +123,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                             command_params.detailed_out,
                             command_params.diagonal,
                             !*locked,
+                            command_params.short_header,
                         );
                         if *locked == true {
                             *locked = false;
@@ -145,6 +146,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             command_params.detailed_out,
             command_params.diagonal,
             !*first.lock().unwrap(),
+            command_params.short_header,
         );
     } else {
         file_io::write_phyllip_matrix(

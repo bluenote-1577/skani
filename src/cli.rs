@@ -163,6 +163,10 @@ pub struct DistArgs {
     /// Print additional info including contig N50s and more
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
+    
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
 
     /// Slower skani mode; 4x slower and more memory. Gives much more accurate AF for distant genomes. More accurate ANI for VERY fragmented assemblies (< 3kb N50), but less accurate ANI otherwise. Alias for -c 30.
     #[clap(long = "slow", help_heading = "PRESETS")]
@@ -275,6 +279,10 @@ pub struct TriangleArgs {
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
     
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
+    
     /// Output 100 - ANI instead of ANI, creating a distance instead of a similarity matrix. No effect if using --sparse or -E.
     #[clap(long = "distance", help_heading = "OUTPUT")]
     pub distance: bool,
@@ -381,6 +389,10 @@ pub struct SearchArgs {
     /// Print additional info including contig N50s and more
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
+    
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
     
     /// Only output ANI values where one genome has aligned fraction > than this value. [default: 15]
     #[clap(long = "min-af", help_heading = "OUTPUT")]

@@ -1,8 +1,9 @@
-### v0.3.0 released - TODO
+### v0.3.0 released - 2025-08 (Breaking changes)
 
 #### Major
 
-* Changed sketching output. Now all sketches are concatenated into a searchable database file by default. Original behavior can be resotored via `--separate-files`. 
+* Engineering changes: skani takes ~30-40% less memory than before but is ~5-10% slower. Results should still be identical to before. 
+* BREAKING: Changed sketching output. Now all sketches are concatenated into a searchable database file by default. Original behavior can be resotored via `--separate-files`. 
 * Refactored the commandline backend. Small deviations in commandline behavior may be present, hopefully not big bugs were introduced. 
 
 ### v0.2.2 released - 2024-07-04

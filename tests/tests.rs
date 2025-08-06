@@ -30,7 +30,8 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         detailed_out: false,
         distance: false,
         rescue_small: true,
-        separate_sketches: false
+        separate_sketches: false,
+        short_header: false,
     };
 
     let sketch_params = SketchParams::new(1000, 125, 15, false, false);

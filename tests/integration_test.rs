@@ -761,3 +761,131 @@ fn test_consolidated_database_multiple_files() {
         .spawn();
 }
 
+#[test]
+fn test_short_header_functionality() {
+    // Use existing test files with long headers containing whitespace
+    let fasta1_path = "./test_files/e.coli-K12.fasta";
+    let fasta2_path = "./test_files/e.coli-EC590.fasta";
+    
+    // Test 1: dist command without --short-header (should show full headers)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("dist")
+        .arg(&fasta1_path)
+        .arg(&fasta2_path)
+        .output()
+        .expect("Failed to execute skani dist");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "dist command failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence"), 
+            "Full header should be present without --short-header: {}", stdout);
+    assert!(stdout.contains("NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome"), 
+            "Full header should be present without --short-header: {}", stdout);
+    
+    // Test 2: dist command with --short-header (should show only first part)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("dist")
+        .arg(&fasta1_path)
+        .arg(&fasta2_path)
+        .arg("--short-header")
+        .output()
+        .expect("Failed to execute skani dist with --short-header");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "dist command with --short-header failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1"), "Short header should contain accession: {}", stdout);
+    assert!(stdout.contains("NZ_CP016182.2"), "Short header should contain accession: {}", stdout);
+    assert!(!stdout.contains("Escherichia coli str. K-12 substr. W3110"), 
+            "Description should be truncated with --short-header: {}", stdout);
+    assert!(!stdout.contains("complete sequence"), 
+            "Description should be truncated with --short-header: {}", stdout);
+    
+    // Test 3: triangle command without --short-header
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("triangle")
+        .arg(&fasta1_path)
+        .arg(&fasta2_path)
+        .arg("--sparse")
+        .output()
+        .expect("Failed to execute skani triangle");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "triangle command failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence"), 
+            "Full header should be present in triangle output: {}", stdout);
+    
+    // Test 4: triangle command with --short-header
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("triangle")
+        .arg(&fasta1_path)
+        .arg(&fasta2_path)
+        .arg("--sparse")
+        .arg("--short-header")
+        .output()
+        .expect("Failed to execute skani triangle with --short-header");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "triangle command with --short-header failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1"), "Triangle short header should contain accession: {}", stdout);
+    assert!(!stdout.contains("Escherichia coli str. K-12 substr. W3110"), 
+            "Triangle description should be truncated with --short-header: {}", stdout);
+    
+    // Test 5: Create a sketch database for search testing
+    let sketch_dir = "./tests/results/short_header_sketches";
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let assert = cmd
+        .arg("sketch")
+        .arg(&fasta1_path)
+        .arg(&fasta2_path)
+        .arg("-o")
+        .arg(&sketch_dir)
+        .arg("--separate-sketches")
+        .assert();
+    assert.success();
+    
+    // Test 6: search command without --short-header
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg(&sketch_dir)
+        .arg(&fasta1_path)
+        .output()
+        .expect("Failed to execute skani search");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "search command failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1 Escherichia coli str. K-12 substr. W3110, complete sequence") ||
+            stdout.contains("NZ_CP016182.2 Escherichia coli strain EC590 chromosome, complete genome"), 
+            "Full header should be present in search output: {}", stdout);
+    
+    // Test 7: search command with --short-header
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("search")
+        .arg("-d")
+        .arg(&sketch_dir)
+        .arg(&fasta1_path)
+        .arg("--short-header")
+        .output()
+        .expect("Failed to execute skani search with --short-header");
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "search command with --short-header failed: {}", stdout);
+    assert!(stdout.contains("NC_007779.1") || stdout.contains("NZ_CP016182.2"), 
+            "Search short header should contain accession: {}", stdout);
+    assert!(!stdout.contains("Escherichia coli str. K-12 substr. W3110") && 
+            !stdout.contains("complete sequence"), 
+            "Search description should be truncated with --short-header: {}", stdout);
+    
+    // Clean up test sketch directory
+    Command::new("rm")
+        .arg("-rf")
+        .arg(sketch_dir)
+        .spawn();
+}
+

@@ -117,6 +117,7 @@ pub struct CommandParams{
     pub distance: bool,
     pub rescue_small: bool,
     pub separate_sketches: bool,
+    pub short_header: bool,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {

@@ -193,6 +193,15 @@ impl SeedPosition {
 
 use std::borrow::Cow;
 
+/// Truncate contig name to first part (before first whitespace) if short_header is enabled
+pub fn truncate_contig_name(name: &str, short_header: bool) -> String {
+    if short_header {
+        name.split_whitespace().next().unwrap_or(name).to_string()
+    } else {
+        name.to_string()
+    }
+}
+
 
 /// Tagged index utilities for KmerSeeds
 pub struct TaggedIndex;
