@@ -117,16 +117,7 @@ impl SketchDbReader {
             let end = start + length as usize;
             
             // Time the mmap slice access (potential disk I/O)
-            let mmap_start = Instant::now();
             let bytes = &self.mmap[start..end];
-            let mmap_time = mmap_start.elapsed();
-            
-            // Force page fault by accessing first and last bytes
-            let page_fault_start = Instant::now();
-            let first = bytes[0];
-            let last = bytes[bytes.len() - 1];
-            let page_fault_time = page_fault_start.elapsed();
-            let store = last as i32 - first as i32;
             
             // Time the deserialization (memory copy + parsing)
             let deserialize_start = Instant::now();
@@ -134,17 +125,7 @@ impl SketchDbReader {
             let deserialize_time = deserialize_start.elapsed();
             
             let total_time = total_start.elapsed();
-            
-            info!("Timing for sketch '{}' ({}KB): mmap_slice={:.2}ms, page_fault={:.2}ms, deserialize={:.2}ms, total={:.2}ms", 
-                file_name, 
-                length / 1024,
-                mmap_time.as_secs_f64() * 1000.0,
-                page_fault_time.as_secs_f64() * 1000.0,
-                deserialize_time.as_secs_f64() * 1000.0,
-                total_time.as_secs_f64() * 1000.0
-            );
-            log::debug!("{}", store);
-            
+                        
             Ok((params, sketch))
         } else {
             Err(format!("Sketch not found: {}", file_name).into())
