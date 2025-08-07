@@ -16,10 +16,15 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-### v0.2.2 - 2024-07-04
+> [!IMPORTANT]
+> 
+> Skani v0.3.x is now released. v0.3 has breaking changes compared to versions <= 0.2.x. 
 
-* Added the `--small-genomes` preset that is an alias for `-c 30 -m 200 --faster-small`
-* Fixed some bugs
+### v0.3.0 - 2025-08-10
+
+* BREAKING: old `.sketch` files no longer work.
+* New `skani sketch` functionality. Creates a single database instead of individual `.sketch` files by default. The previous behaviour can be obtained via `--separate-sketches` option.
+* Skani should now take 30-40% less memory, but 5-10% longer runtimes.
 
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
@@ -49,7 +54,7 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
 
-#### Option 2: Conda (source version: 0.2.1)
+#### Option 2: Conda (source version: 0.3)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
 ```sh
@@ -118,7 +123,7 @@ Some common use cases and parameter settings are outlined in the cookbook.
 
 ### [Pre-sketched databases for searching](https://github.com/bluenote-1577/skani/wiki/Pre%E2%80%90sketched-databases)
 
-Pre-sketched databases can be downloaded and quickly searched against. GTDB-R214 is currently supported. 
+Pre-sketched databases can be downloaded and quickly searched against. 
 
 ### [skani advanced usage information](https://github.com/bluenote-1577/skani/wiki/skani-advanced-usage-guide)
 
