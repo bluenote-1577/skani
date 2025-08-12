@@ -92,9 +92,6 @@ skani dist --qi -q assembly1.fa --ri -r assembly2.fa
 skani sketch genomes_to_search/* -o database
 skani search query1.fa query2.fa ... -d database
 
-# use sketch from "skani sketch" output as drop-in replacement
-skani dist database/query.fa.sketch database/ref.fa.sketch
-
 # construct similarity matrix/edge list for all genomes in folder
 skani triangle genome_folder/* > skani_ani_matrix.txt
 skani triangle genome_folder/* -E > skani_ani_edge_list.txt
