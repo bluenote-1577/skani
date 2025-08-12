@@ -4,6 +4,10 @@
 
 * Engineering changes: skani takes ~30-40% less memory than before but is ~5-10% slower. Results should still be identical to before. 
 * BREAKING: Changed sketching output. Now all sketches are concatenated into a searchable database file by default. Original behavior can be resotored via `--separate-files`. 
+* New command line options `--both-min-af` and `--short-header` 
+
+#### Minor
+
 * Refactored the commandline backend. Small deviations in commandline behavior may be present, hopefully not big bugs were introduced. 
 
 ### v0.2.2 released - 2024-07-04

@@ -1103,3 +1103,81 @@ fn test_sketch_search_individual_contigs_matches_dist() {
         .spawn();
 }
 
+#[test]
+fn test_both_min_af_functionality() {
+    // Test the new --both-min-af option behavior
+    // Case 1: o157 plasmid vs o157 ecoli should pass without --both-min-af but be filtered with it
+    // Case 2: o157 plasmid vs o157 plasmid should pass even with --both-min-af
+    
+    // Test Case 1: plasmid vs ecoli without --both-min-af (should have results)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("dist")
+        .arg("./test_files/o157_plasmid.fasta")
+        .arg("./test_files/e.coli-o157.fasta")
+        .output()
+        .unwrap();
+    
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(output.status.success(), "Command failed with stderr: {}", stderr);
+    
+    // Should have output lines (one header + one result line)
+    let lines: Vec<&str> = stdout.trim().split('\n').collect();
+    assert!(lines.len() >= 2, "Should have at least header and one result line, got: {}", stdout);
+    
+    // Test Case 2: plasmid vs ecoli with --both-min-af 50 (should be filtered out)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("dist")
+        .arg("./test_files/o157_plasmid.fasta")
+        .arg("./test_files/e.coli-o157.fasta")
+        .arg("--both-min-af")
+        .arg("50")
+        .output()
+        .unwrap();
+    
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(output.status.success(), "Command failed with stderr: {}", stderr);
+    
+    // Should only have header line (no results due to filtering)
+    let lines: Vec<&str> = stdout.trim().split('\n').filter(|line| !line.is_empty()).collect();
+    assert_eq!(lines.len(), 1, "Should have only header line with --both-min-af filtering, got: {}", stdout);
+    
+    // Test Case 3: plasmid vs plasmid with --both-min-af 50 (should NOT be filtered)
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let output = cmd
+        .arg("dist")
+        .arg("./test_files/o157_plasmid.fasta")
+        .arg("./test_files/o157_plasmid.fasta")
+        .arg("--both-min-af")
+        .arg("50")
+        .output()
+        .unwrap();
+    
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(output.status.success(), "Command failed with stderr: {}", stderr);
+    
+    // Should have output lines (header + result line) because both aligned fractions should be high
+    let lines: Vec<&str> = stdout.trim().split('\n').filter(|line| !line.is_empty()).collect();
+    assert!(lines.len() >= 2, "Should have header and result line for plasmid self-comparison, got: {}", stdout);
+    
+    // Verify the result line contains high aligned fractions
+    if lines.len() >= 2 {
+        let result_line = lines[1];
+        let fields: Vec<&str> = result_line.split('\t').collect();
+        // Fields should be: Ref-file, Query-file, ANI, Align-fraction-ref, Align-fraction-query, etc.
+        if fields.len() >= 5 {
+            let align_frac_ref: f64 = fields[3].parse().unwrap_or(0.0);
+            let align_frac_query: f64 = fields[4].parse().unwrap_or(0.0);
+            
+            assert!(align_frac_ref >= 50.0, "Reference aligned fraction should be >= 50%, got: {}", align_frac_ref);
+            assert!(align_frac_query >= 50.0, "Query aligned fraction should be >= 50%, got: {}", align_frac_query);
+        }
+    }
+    
+    println!("✓ --both-min-af functionality test passed!");
+}
+

@@ -24,6 +24,7 @@ fn default_params(mode: Mode) -> (CommandParams, SketchParams) {
         individual_contig_q: false,
         individual_contig_r: false,
         min_aligned_frac: 0.15,
+        both_min_aligned_frac: -0.01,
         keep_refs: false,
         est_ci: false,
         learned_ani: true,

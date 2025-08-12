@@ -204,6 +204,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let min_aligned_frac;
+    let both_min_aligned_frac;
     let est_ci;
     let detailed_out;
     if mode != Mode::Sketch {
@@ -218,10 +219,12 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             .parse::<f64>()
             .unwrap()
             / 100.;
+        both_min_aligned_frac = -0.01; // Default disabled for old CLI parsing
         est_ci = matches_subc.is_present(CONF_INTERVAL);
         detailed_out = matches_subc.is_present(DETAIL_OUT);
     } else {
         min_aligned_frac = 0.;
+        both_min_aligned_frac = -0.01;
         est_ci = false;
         detailed_out = false;
     }
@@ -360,6 +363,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci,
         learned_ani,
@@ -474,6 +478,7 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         individual_contig_q,
         individual_contig_r: false,
         min_aligned_frac,
+        both_min_aligned_frac: -0.01,
         keep_refs,
         est_ci,
         learned_ani,
@@ -606,6 +611,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: false,
         individual_contig_r: args.individual_contig,
         min_aligned_frac: 0.0,
+        both_min_aligned_frac: -0.01,
         keep_refs: false,
         est_ci: false,
         learned_ani: false,
@@ -712,6 +718,10 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(def_maf.parse().unwrap()) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let screen_val = args.s.as_ref()
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(0.0) / 100.0;
@@ -763,6 +773,7 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.qi,
         individual_contig_r: args.ri,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci: args.ci,
         learned_ani,
@@ -850,6 +861,10 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(def_maf.parse().unwrap()) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let screen_val = args.s.as_ref()
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(0.0) / 100.0;
@@ -891,6 +906,7 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.individual_contig,
         individual_contig_r: args.individual_contig,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci: args.ci,
         learned_ani,
@@ -947,6 +963,10 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(-100.0) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let learned_ani = !args.no_learned_ani;
 
     let command_params = CommandParams {
@@ -967,6 +987,7 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.qi,
         individual_contig_r: false,
         min_aligned_frac,
+        both_min_aligned_frac: -0.01,
         keep_refs: args.keep_refs,
         est_ci: args.ci,
         learned_ani,

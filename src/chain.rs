@@ -105,6 +105,8 @@ pub fn map_params_from_sketch <'a>(
             frac_cover_cutoff = D_FRAC_COVER_CUTOFF.parse::<f64>().unwrap()/100.;
         }
     }
+
+    let both_frac_cover_cutoff = command_params.both_min_aligned_frac;
     let length_cover_cutoff = 5000000;
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
     let index_chain_band = bp_chain_band/ref_sketch.c;
@@ -125,6 +127,7 @@ pub fn map_params_from_sketch <'a>(
         min_anchors,
         length_cutoff,
         frac_cover_cutoff,
+        both_frac_cover_cutoff,
         length_cover_cutoff,
         index_chain_band,
         k,
@@ -494,15 +497,23 @@ fn calculate_ani(
         ci.1,
     );
 
-    if map_params.amino_acid{
-        if covered_query < map_params.frac_cover_cutoff  || covered_ref < map_params.frac_cover_cutoff
+    if map_params.both_frac_cover_cutoff > 0.0 {
+        // When --both-min-af is specified, require BOTH genomes to have aligned fraction above threshold
+        if covered_query < map_params.both_frac_cover_cutoff || covered_ref < map_params.both_frac_cover_cutoff {
+            final_ani = -1.;
+        }
+    } else {
+        // Original behavior: different logic for amino acid vs nucleotide
+        if map_params.amino_acid{
+            if covered_query < map_params.frac_cover_cutoff  || covered_ref < map_params.frac_cover_cutoff
+            {
+                final_ani = -1.;
+            }
+        }
+        else if covered_query < map_params.frac_cover_cutoff  && covered_ref < map_params.frac_cover_cutoff
         {
             final_ani = -1.;
         }
-    }
-    else if covered_query < map_params.frac_cover_cutoff  && covered_ref < map_params.frac_cover_cutoff
-    {
-        final_ani = -1.;
     }
 
     let mut sorted_contigs_q = query_sketch.contig_lengths.clone();

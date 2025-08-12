@@ -152,6 +152,10 @@ pub struct DistArgs {
     #[clap(long = "min-af", display_order = 100, help_heading = "OUTPUT")]
     pub min_af: Option<String>,
     
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", display_order = 101, help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
+    
     /// Max number of results to show for each query. [default: unlimited]
     #[clap(short = 'n', help_heading = "OUTPUT")]
     pub n: Option<String>,
@@ -270,6 +274,10 @@ pub struct TriangleArgs {
     /// Only output ANI values where one genome has aligned fraction > than this value. [default: 15]
     #[clap(long = "min-af", help_heading = "OUTPUT")]
     pub min_af: Option<String>,
+    
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
     
     /// Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution. Only works with --sparse or -E.
     #[clap(long = "ci", help_heading = "OUTPUT")]
@@ -397,6 +405,10 @@ pub struct SearchArgs {
     /// Only output ANI values where one genome has aligned fraction > than this value. [default: 15]
     #[clap(long = "min-af", help_heading = "OUTPUT")]
     pub min_af: Option<String>,
+    
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
     
     /// Max number of results to show for each query. [default: unlimited]
     #[clap(short = 'n', help_heading = "OUTPUT")]
