@@ -575,7 +575,13 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
     let aprpf64 = anchor_past.ref_pos as f64;
 
     let d_q = (acqpf64 - apqpf64).abs();
-    let d_r = (acrpf64 - aprpf64).abs();
+
+    let d_r;
+    if anchor_curr.reverse_match {
+        d_r = aprpf64 - acrpf64;
+    } else {
+        d_r = acrpf64 - aprpf64;
+    }
 
     if d_q > D_MAX_LIN_LENGTH || d_r > D_MAX_LIN_LENGTH {
         return f64::MIN;
