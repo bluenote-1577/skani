@@ -1,7 +1,7 @@
 use crate::types::*;
 use gbdt::gradient_boost::GBDT;
 
-pub const VERSION: &str = "0.2.2";
+pub const VERSION: &str = "0.3.0";
 
 pub const GB_IN_BYTES: usize = 1_073_741_824;
 pub const SMALL_VEC_SIZE: usize = 1;
@@ -79,6 +79,7 @@ pub struct MapParams<'a> {
     pub min_anchors: usize,
     pub length_cutoff: usize,
     pub frac_cover_cutoff: f64,
+    pub both_frac_cover_cutoff: f64,
     pub length_cover_cutoff: usize,
     pub index_chain_band: usize,
     pub k: usize,
@@ -110,12 +111,15 @@ pub struct CommandParams{
     pub individual_contig_q: bool,
     pub individual_contig_r: bool,
     pub min_aligned_frac: f64,
+    pub both_min_aligned_frac: f64,
     pub keep_refs: bool,
     pub est_ci: bool,
     pub learned_ani: bool,
     pub detailed_out: bool,
     pub distance: bool,
     pub rescue_small: bool,
+    pub separate_sketches: bool,
+    pub short_header: bool,
 }
 
 pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
@@ -129,7 +133,7 @@ pub fn fragment_length_formula(_n: usize, aa: bool) -> usize {
 //    return (n as f64).sqrt() as usize * 3;
 }
 
-#[derive(Default,  PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Default,  PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub struct SketchParams {
     pub c: usize,
     pub k: usize,

@@ -16,3 +16,7 @@ pub mod regression;
 pub mod avx2_seeding;
 #[cfg(feature = "cli")]
 pub mod parse;
+#[cfg(feature = "cli")]
+pub mod cli;
+#[cfg(feature = "cli")]
+pub mod sketch_db;

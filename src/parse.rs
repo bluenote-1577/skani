@@ -1,3 +1,4 @@
+use crate::cli::{Cli, Commands, DistArgs, SearchArgs, SketchArgs, TriangleArgs};
 use crate::cmd_line::*;
 use crate::params::*;
 use crate::regression;
@@ -203,6 +204,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let min_aligned_frac;
+    let both_min_aligned_frac;
     let est_ci;
     let detailed_out;
     if mode != Mode::Sketch {
@@ -217,10 +219,12 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             .parse::<f64>()
             .unwrap()
             / 100.;
+        both_min_aligned_frac = -0.01; // Default disabled for old CLI parsing
         est_ci = matches_subc.is_present(CONF_INTERVAL);
         detailed_out = matches_subc.is_present(DETAIL_OUT);
     } else {
         min_aligned_frac = 0.;
+        both_min_aligned_frac = -0.01;
         est_ci = false;
         detailed_out = false;
     }
@@ -359,12 +363,15 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci,
         learned_ani,
         detailed_out,
         distance,
         rescue_small,
+        separate_sketches: false,
+        short_header: false,
     };
 
     (sketch_params, command_params)
@@ -471,12 +478,15 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         individual_contig_q,
         individual_contig_r: false,
         min_aligned_frac,
+        both_min_aligned_frac: -0.01,
         keep_refs,
         est_ci,
         learned_ani,
         detailed_out,
         distance: false,
-        rescue_small: false
+        rescue_small: false,
+        separate_sketches: false,
+        short_header: false,
     };
 
     if command_params.ref_files.is_empty() {
@@ -487,4 +497,520 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
 
 
     (SketchParams::default(), command_params)
+}
+
+pub fn parse_params_from_cli(cli: &Cli) -> (SketchParams, CommandParams) {
+    match &cli.command {
+        Commands::Sketch(args) => parse_sketch_args(args),
+        Commands::Dist(args) => parse_dist_args(args),
+        Commands::Triangle(args) => parse_triangle_args(args),
+        Commands::Search(args) => parse_search_args(args),
+    }
+}
+
+fn setup_logging_and_threads(threads: &str, debug: bool, trace: bool) {
+    let threads = threads.parse::<usize>().unwrap();
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build_global()
+        .unwrap();
+
+    simple_logging::log_to_stderr(LevelFilter::Info);
+    if debug {
+        simple_logging::log_to_stderr(LevelFilter::Debug);
+    }
+    if trace {
+        simple_logging::log_to_stderr(LevelFilter::Trace);
+    }
+}
+
+fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
+    setup_logging_and_threads(&args.threads, args.debug, args.trace);
+
+    let amino_acid = args.aai;
+    if amino_acid {
+        warn!("Amino acid mode (AAI) detected. This mode is not stable.");
+    }
+
+    let ref_files;
+    if !args.fasta_files.is_empty() {
+        ref_files = args.fasta_files.clone();
+    } else if let Some(list_file) = &args.fasta_list {
+        ref_files = read_file_list(list_file);
+    } else {
+        error!("No reference inputs found.");
+        std::process::exit(1);
+    }
+
+    let def_k = if amino_acid { DEFAULT_K_AAI } else { DEFAULT_K };
+    let def_c = if amino_acid { DEFAULT_C_AAI } else { DEFAULT_C };
+    
+    let k = args.k.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_k.parse().unwrap());
+
+    let mut c = args.c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_c.parse().unwrap());
+
+    let marker_c = args.marker_c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(MARKER_C_DEFAULT.parse().unwrap());
+
+    // Handle presets
+    if args.fast && args.slow {
+        panic!("Both --slow and --fast were set. This is not allowed.");
+    }
+    if args.fast {
+        if args.c.is_some() {
+            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+        }
+        c = FAST_C;
+    }
+    if args.slow {
+        if args.c.is_some() {
+            warn!("-c value is set but --slow is also set. Using --slow mode instead (-c 30)");
+        }
+        c = SLOW_C;
+    }
+    if args.medium {
+        if args.c.is_some() {
+            warn!("-c value is set but --medium is also set. Using --medium mode instead (-c 70)");
+        }
+        c = MEDIUM_C;
+    }
+
+    let sketch_params = SketchParams::new(marker_c, c, k, false, amino_acid);
+
+    let mut refs_are_sketch = !ref_files.is_empty();
+    for ref_file in ref_files.iter() {
+        if !ref_file.contains(".sketch")
+            && !ref_file.contains(".marker")
+            && !ref_file.contains("markers.bin")
+        {
+            refs_are_sketch = false;
+            break;
+        }
+    }
+
+    let command_params = CommandParams {
+        screen: false,
+        screen_val: 0.0,
+        mode: Mode::Sketch,
+        out_file_name: args.output.clone(),
+        ref_files,
+        query_files: vec![],
+        refs_are_sketch,
+        queries_are_sketch: false,
+        robust: false,
+        median: false,
+        sparse: false,
+        full_matrix: false,
+        diagonal: false,
+        max_results: usize::MAX,
+        individual_contig_q: false,
+        individual_contig_r: args.individual_contig,
+        min_aligned_frac: 0.0,
+        both_min_aligned_frac: -0.01,
+        keep_refs: false,
+        est_ci: false,
+        learned_ani: false,
+        detailed_out: false,
+        distance: false,
+        rescue_small: false,
+        separate_sketches: args.separate_sketches,
+        short_header: false,
+    };
+
+    (sketch_params, command_params)
+}
+
+fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
+    setup_logging_and_threads(&args.threads, args.debug, args.trace);
+
+    let amino_acid = args.aai;
+    if amino_acid {
+        warn!("Amino acid mode (AAI) detected. This mode is not stable.");
+    }
+
+    let rescue_small = !args.faster_small && !args.small_genomes;
+
+    // Parse reference files
+    let ref_files;
+    if !args.reference.is_empty() {
+        ref_files = args.reference.clone();
+    } else if !args.references.is_empty() {
+        ref_files = args.references.clone();
+    } else if let Some(list_file) = &args.reference_list {
+        ref_files = read_file_list(list_file);
+    } else {
+        error!("No reference inputs found.");
+        std::process::exit(1);
+    }
+
+    // Parse query files
+    let mut query_files = Vec::new();
+    if let Some(query) = &args.query {
+        query_files.push(query.clone());
+    }
+    if !args.queries.is_empty() {
+        query_files.extend(args.queries.clone());
+    }
+    if let Some(list_file) = &args.query_list {
+        query_files.extend(read_file_list(list_file));
+    }
+
+    let max_results = args.n.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(1000000000000);
+
+    let def_k = if amino_acid { DEFAULT_K_AAI } else { DEFAULT_K };
+    let def_c = if amino_acid { DEFAULT_C_AAI } else { DEFAULT_C };
+    
+    let k = args.k.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_k.parse().unwrap());
+
+    let mut c = args.c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_c.parse().unwrap());
+
+    let mut marker_c = args.marker_c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(MARKER_C_DEFAULT.parse().unwrap());
+
+    // Handle presets
+    if args.fast && args.slow {
+        panic!("Both --slow and --fast were set. This is not allowed.");
+    }
+    if args.fast {
+        if args.c.is_some() {
+            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+        }
+        c = FAST_C;
+    }
+    if args.slow {
+        if args.c.is_some() {
+            warn!("-c value is set but --slow is also set. Using --slow mode instead (-c 30)");
+        }
+        c = SLOW_C;
+    }
+    if args.medium {
+        if args.c.is_some() {
+            warn!("-c value is set but --medium is also set. Using --medium mode instead (-c 70)");
+        }
+        c = MEDIUM_C;
+    }
+    if args.small_genomes {
+        if args.c.is_some() || args.marker_c.is_some() {
+            warn!("-c or -m value is set but --small-genomes is also set. Using -c 30 and -m 200 instead.");
+        }
+        c = SLOW_C;
+        marker_c = SMALL_M;
+    }
+
+    let def_maf = if amino_acid {
+        D_FRAC_COVER_CUTOFF_AA
+    } else {
+        D_FRAC_COVER_CUTOFF
+    };
+    let min_aligned_frac = args.min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(def_maf.parse().unwrap()) / 100.0;
+
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
+    let screen_val = args.s.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(0.0) / 100.0;
+
+    let sketch_params = SketchParams::new(marker_c, c, k, false, amino_acid);
+
+    let mut refs_are_sketch = !ref_files.is_empty();
+    for ref_file in ref_files.iter() {
+        if !ref_file.contains(".sketch")
+            && !ref_file.contains(".marker")
+            && !ref_file.contains("markers.bin")
+        {
+            refs_are_sketch = false;
+            break;
+        }
+    }
+
+    let mut queries_are_sketch = !query_files.is_empty();
+    for query_file in query_files.iter() {
+        if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
+            queries_are_sketch = false;
+            break;
+        }
+    }
+
+    let screen = (query_files.len() > FULL_INDEX_THRESH || args.qi) && !args.no_marker_index;
+
+    let learned_ani = if args.no_learned_ani {
+        false
+    } else {
+        regression::use_learned_ani(c, args.qi, args.ri, args.median)
+    };
+
+    let command_params = CommandParams {
+        screen,
+        screen_val,
+        mode: Mode::Dist,
+        out_file_name: args.output.clone().unwrap_or_default(),
+        ref_files,
+        query_files,
+        refs_are_sketch,
+        queries_are_sketch,
+        robust: args.robust,
+        median: args.median,
+        sparse: false,
+        full_matrix: false,
+        diagonal: false,
+        max_results,
+        individual_contig_q: args.qi,
+        individual_contig_r: args.ri,
+        min_aligned_frac,
+        both_min_aligned_frac,
+        keep_refs: false,
+        est_ci: args.ci,
+        learned_ani,
+        detailed_out: args.detailed,
+        distance: false,
+        rescue_small,
+        separate_sketches: false,
+        short_header: args.short_header,
+    };
+
+    (sketch_params, command_params)
+}
+
+fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
+    setup_logging_and_threads(&args.threads, args.debug, args.trace);
+
+    let amino_acid = args.aai;
+    if amino_acid {
+        warn!("Amino acid mode (AAI) detected. This mode is not stable.");
+    }
+
+    let rescue_small = !args.faster_small && !args.small_genomes;
+
+    let ref_files;
+    if !args.fasta_files.is_empty() {
+        ref_files = args.fasta_files.clone();
+    } else if let Some(list_file) = &args.fasta_list {
+        ref_files = read_file_list(list_file);
+    } else {
+        error!("No reference inputs found.");
+        std::process::exit(1);
+    }
+
+    let def_k = if amino_acid { DEFAULT_K_AAI } else { DEFAULT_K };
+    let def_c = if amino_acid { DEFAULT_C_AAI } else { DEFAULT_C };
+    
+    let k = args.k.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_k.parse().unwrap());
+
+    let mut c = args.c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(def_c.parse().unwrap());
+
+    let mut marker_c = args.marker_c.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(MARKER_C_DEFAULT.parse().unwrap());
+
+    // Handle presets
+    if args.fast && args.slow {
+        panic!("Both --slow and --fast were set. This is not allowed.");
+    }
+    if args.fast {
+        if args.c.is_some() {
+            warn!("-c value is set but --fast is also set. Using --fast mode instead (-c 200)");
+        }
+        c = FAST_C;
+    }
+    if args.slow {
+        if args.c.is_some() {
+            warn!("-c value is set but --slow is also set. Using --slow mode instead (-c 30)");
+        }
+        c = SLOW_C;
+    }
+    if args.medium {
+        if args.c.is_some() {
+            warn!("-c value is set but --medium is also set. Using --medium mode instead (-c 70)");
+        }
+        c = MEDIUM_C;
+    }
+    if args.small_genomes {
+        if args.c.is_some() || args.marker_c.is_some() {
+            warn!("-c or -m value is set but --small-genomes is also set. Using -c 30 and -m 200 instead.");
+        }
+        c = SLOW_C;
+        marker_c = SMALL_M;
+    }
+
+    let def_maf = if amino_acid {
+        D_FRAC_COVER_CUTOFF_AA
+    } else {
+        D_FRAC_COVER_CUTOFF
+    };
+    let min_aligned_frac = args.min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(def_maf.parse().unwrap()) / 100.0;
+
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
+    let screen_val = args.s.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(0.0) / 100.0;
+
+    let sketch_params = SketchParams::new(marker_c, c, k, false, amino_acid);
+
+    let mut refs_are_sketch = !ref_files.is_empty();
+    for ref_file in ref_files.iter() {
+        if !ref_file.contains(".sketch")
+            && !ref_file.contains(".marker")
+            && !ref_file.contains("markers.bin")
+        {
+            refs_are_sketch = false;
+            break;
+        }
+    }
+
+    let learned_ani = if args.no_learned_ani {
+        false
+    } else {
+        regression::use_learned_ani(c, args.individual_contig, args.individual_contig, args.median)
+    };
+
+    let command_params = CommandParams {
+        screen: true,
+        screen_val,
+        mode: Mode::Triangle,
+        out_file_name: args.output.clone().unwrap_or_default(),
+        ref_files,
+        query_files: vec![],
+        refs_are_sketch,
+        queries_are_sketch: false,
+        robust: args.robust,
+        median: args.median,
+        sparse: args.sparse,
+        full_matrix: args.full_matrix,
+        diagonal: args.diagonal,
+        max_results: usize::MAX,
+        individual_contig_q: args.individual_contig,
+        individual_contig_r: args.individual_contig,
+        min_aligned_frac,
+        both_min_aligned_frac,
+        keep_refs: false,
+        est_ci: args.ci,
+        learned_ani,
+        detailed_out: args.detailed,
+        distance: args.distance,
+        rescue_small,
+        separate_sketches: false,
+        short_header: args.short_header,
+    };
+
+    (sketch_params, command_params)
+}
+
+fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
+    setup_logging_and_threads(&args.threads, args.debug, args.trace);
+
+    let mut query_files = Vec::new();
+    if !args.query.is_empty() {
+        query_files.extend(args.query.clone());
+    }
+    if !args.queries.is_empty() {
+        query_files.extend(args.queries.clone());
+    }
+    if let Some(list_file) = &args.query_list {
+        query_files.extend(read_file_list(list_file));
+    }
+
+    let max_results = args.n.as_ref()
+        .map(|s| s.parse::<usize>().unwrap())
+        .unwrap_or(10000000);
+
+    let paths = fs::read_dir(&args.database)
+        .expect("Issue with folder specified by -d option; exiting");
+    let ref_files: Vec<String> = paths
+        .into_iter()
+        .map(|x| x.unwrap().path().to_str().unwrap().to_string())
+        .collect();
+
+    let mut queries_are_sketch = !query_files.is_empty();
+    for query_file in query_files.iter() {
+        if !query_file.contains(".sketch") && !query_file.contains("markers.bin") {
+            queries_are_sketch = false;
+            break;
+        }
+    }
+
+    let screen_val = args.s.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(0.0) / 100.0;
+
+    let screen = (query_files.len() > FULL_INDEX_THRESH || args.qi) && !args.no_marker_index;
+
+    let min_aligned_frac = args.min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-100.0) / 100.0;
+
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
+    let learned_ani = !args.no_learned_ani;
+
+    let command_params = CommandParams {
+        screen,
+        screen_val,
+        mode: Mode::Search,
+        out_file_name: args.output.clone().unwrap_or_default(),
+        ref_files,
+        query_files,
+        refs_are_sketch: true,
+        queries_are_sketch,
+        robust: args.robust,
+        median: args.median,
+        sparse: false,
+        full_matrix: false,
+        diagonal: false,
+        max_results,
+        individual_contig_q: args.qi,
+        individual_contig_r: false,
+        min_aligned_frac,
+        both_min_aligned_frac: -0.01,
+        keep_refs: args.keep_refs,
+        est_ci: args.ci,
+        learned_ani,
+        detailed_out: args.detailed,
+        distance: false,
+        rescue_small: false,
+        separate_sketches: false,
+        short_header: args.short_header,
+    };
+
+    if command_params.ref_files.is_empty() {
+        error!("No valid reference fastas or sketches found.");
+        std::process::exit(1);
+    }
+
+    (SketchParams::default(), command_params)
+}
+
+fn read_file_list(file_path: &str) -> Vec<String> {
+    let file = File::open(file_path)
+        .unwrap_or_else(|_| panic!("File {} could not be opened properly. Make sure this file exists. Exiting.", file_path));
+    let reader = BufReader::new(file);
+    reader.lines()
+        .map(|line| line.unwrap().trim().to_string())
+        .collect()
 }
