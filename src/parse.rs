@@ -204,6 +204,7 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
     }
 
     let min_aligned_frac;
+    let both_min_aligned_frac;
     let est_ci;
     let detailed_out;
     if mode != Mode::Sketch {
@@ -218,10 +219,12 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
             .parse::<f64>()
             .unwrap()
             / 100.;
+        both_min_aligned_frac = -0.01; // Default disabled for old CLI parsing
         est_ci = matches_subc.is_present(CONF_INTERVAL);
         detailed_out = matches_subc.is_present(DETAIL_OUT);
     } else {
         min_aligned_frac = 0.;
+        both_min_aligned_frac = -0.01;
         est_ci = false;
         detailed_out = false;
     }
@@ -360,12 +363,15 @@ pub fn parse_params(matches: &ArgMatches) -> (SketchParams, CommandParams) {
         individual_contig_q,
         individual_contig_r,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci,
         learned_ani,
         detailed_out,
         distance,
         rescue_small,
+        separate_sketches: false,
+        short_header: false,
     };
 
     (sketch_params, command_params)
@@ -472,12 +478,15 @@ pub fn parse_params_search(matches_subc: &ArgMatches) -> (SketchParams, CommandP
         individual_contig_q,
         individual_contig_r: false,
         min_aligned_frac,
+        both_min_aligned_frac: -0.01,
         keep_refs,
         est_ci,
         learned_ani,
         detailed_out,
         distance: false,
-        rescue_small: false
+        rescue_small: false,
+        separate_sketches: false,
+        short_header: false,
     };
 
     if command_params.ref_files.is_empty() {
@@ -523,7 +532,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         warn!("Amino acid mode (AAI) detected. This mode is not stable.");
     }
 
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.fasta_files.is_empty() {
         ref_files = args.fasta_files.clone();
     } else if let Some(list_file) = &args.fasta_list {
@@ -544,7 +553,7 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<usize>().unwrap())
         .unwrap_or(def_c.parse().unwrap());
 
-    let mut marker_c = args.marker_c.as_ref()
+    let marker_c = args.marker_c.as_ref()
         .map(|s| s.parse::<usize>().unwrap())
         .unwrap_or(MARKER_C_DEFAULT.parse().unwrap());
 
@@ -602,12 +611,15 @@ fn parse_sketch_args(args: &SketchArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: false,
         individual_contig_r: args.individual_contig,
         min_aligned_frac: 0.0,
+        both_min_aligned_frac: -0.01,
         keep_refs: false,
         est_ci: false,
         learned_ani: false,
         detailed_out: false,
         distance: false,
         rescue_small: false,
+        separate_sketches: args.separate_sketches,
+        short_header: false,
     };
 
     (sketch_params, command_params)
@@ -624,7 +636,7 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
     let rescue_small = !args.faster_small && !args.small_genomes;
 
     // Parse reference files
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.reference.is_empty() {
         ref_files = args.reference.clone();
     } else if !args.references.is_empty() {
@@ -706,6 +718,10 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(def_maf.parse().unwrap()) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let screen_val = args.s.as_ref()
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(0.0) / 100.0;
@@ -757,12 +773,15 @@ fn parse_dist_args(args: &DistArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.qi,
         individual_contig_r: args.ri,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci: args.ci,
         learned_ani,
         detailed_out: args.detailed,
         distance: false,
         rescue_small,
+        separate_sketches: false,
+        short_header: args.short_header,
     };
 
     (sketch_params, command_params)
@@ -778,7 +797,7 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
 
     let rescue_small = !args.faster_small && !args.small_genomes;
 
-    let mut ref_files = Vec::new();
+    let ref_files;
     if !args.fasta_files.is_empty() {
         ref_files = args.fasta_files.clone();
     } else if let Some(list_file) = &args.fasta_list {
@@ -842,6 +861,10 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(def_maf.parse().unwrap()) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let screen_val = args.s.as_ref()
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(0.0) / 100.0;
@@ -883,12 +906,15 @@ fn parse_triangle_args(args: &TriangleArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.individual_contig,
         individual_contig_r: args.individual_contig,
         min_aligned_frac,
+        both_min_aligned_frac,
         keep_refs: false,
         est_ci: args.ci,
         learned_ani,
         detailed_out: args.detailed,
         distance: args.distance,
         rescue_small,
+        separate_sketches: false,
+        short_header: args.short_header,
     };
 
     (sketch_params, command_params)
@@ -937,6 +963,10 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         .map(|s| s.parse::<f64>().unwrap())
         .unwrap_or(-100.0) / 100.0;
 
+    let both_min_aligned_frac = args.both_min_af.as_ref()
+        .map(|s| s.parse::<f64>().unwrap())
+        .unwrap_or(-1.0) / 100.0;
+
     let learned_ani = !args.no_learned_ani;
 
     let command_params = CommandParams {
@@ -957,12 +987,15 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.qi,
         individual_contig_r: false,
         min_aligned_frac,
+        both_min_aligned_frac: -0.01,
         keep_refs: args.keep_refs,
         est_ci: args.ci,
         learned_ani,
         detailed_out: args.detailed,
         distance: false,
         rescue_small: false,
+        separate_sketches: false,
+        short_header: args.short_header,
     };
 
     if command_params.ref_files.is_empty() {

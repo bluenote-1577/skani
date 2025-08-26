@@ -22,7 +22,7 @@ fn write_header(writer: &mut impl Write, id_str: &str, ci: bool, verbose: bool) 
     }
 }
 
-fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, verbose: bool) {
+fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, verbose: bool, short_header: bool) {
     if !ci && !verbose {
         writeln!(
             writer,
@@ -32,8 +32,8 @@ fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, ver
             100,
             100,
             100,
-            sketch.contigs[0],
-            sketch.contigs[0],
+            truncate_contig_name(&sketch.contigs[0], short_header),
+            truncate_contig_name(&sketch.contigs[0], short_header),
         )
         .unwrap();
     } else if !verbose {
@@ -45,8 +45,8 @@ fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, ver
             100,
             100,
             100,
-            sketch.contigs[0],
-            sketch.contigs[0],
+            truncate_contig_name(&sketch.contigs[0], short_header),
+            truncate_contig_name(&sketch.contigs[0], short_header),
             100,
             100,
         )
@@ -60,8 +60,8 @@ fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, ver
             100,
             100,
             100,
-            sketch.contigs[0],
-            sketch.contigs[0],
+            truncate_contig_name(&sketch.contigs[0], short_header),
+            truncate_contig_name(&sketch.contigs[0], short_header),
             sketch.contigs.len(),
             sketch.contigs.len(),
             100,
@@ -80,7 +80,7 @@ fn write_ani_res_perfect(writer: &mut impl Write, sketch: &Sketch, ci: bool, ver
     }
 }
 
-fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verbose: bool) {
+fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verbose: bool, short_header: bool) {
     if !ci && !verbose {
         writeln!(
             writer,
@@ -90,8 +90,8 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verb
             ani_res.ani * 100.,
             ani_res.align_fraction_ref * 100.,
             ani_res.align_fraction_query * 100.,
-            ani_res.ref_contig,
-            ani_res.query_contig,
+            truncate_contig_name(&ani_res.ref_contig, short_header),
+            truncate_contig_name(&ani_res.query_contig, short_header),
         )
         .unwrap();
     } else if !verbose {
@@ -103,8 +103,8 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verb
             ani_res.ani * 100.,
             ani_res.align_fraction_ref * 100.,
             ani_res.align_fraction_query * 100.,
-            ani_res.ref_contig,
-            ani_res.query_contig,
+            truncate_contig_name(&ani_res.ref_contig, short_header),
+            truncate_contig_name(&ani_res.query_contig, short_header),
             ani_res.ci_lower * 100.,
             ani_res.ci_upper * 100.,
         )
@@ -118,8 +118,8 @@ fn write_ani_res(writer: &mut impl Write, ani_res: &AniEstResult, ci: bool, verb
             ani_res.ani * 100.,
             ani_res.align_fraction_ref * 100.,
             ani_res.align_fraction_query * 100.,
-            ani_res.ref_contig,
-            ani_res.query_contig,
+            truncate_contig_name(&ani_res.ref_contig, short_header),
+            truncate_contig_name(&ani_res.query_contig, short_header),
             ani_res.num_contigs_r,
             ani_res.num_contigs_q,
             ani_res.ci_lower * 100.,
@@ -546,7 +546,8 @@ pub fn write_sparse_matrix(
     est_ci: bool,
     detailed_out: bool,
     diag: bool,
-    append: bool
+    append: bool,
+    short_header: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     if file_name.is_empty() {
@@ -558,13 +559,13 @@ pub fn write_sparse_matrix(
         //        write!(&mut handle,"Ref_file\tQuery_file\t{}\tAlign_fraction_ref\tAlign_fraction_query\t{}_95_percentile\t{}_5_percentile\tRef_name\tQuery_name\n", id_str, id_str, id_str).unwrap();
         if diag{
             for sketch in sketches.iter(){
-                write_ani_res_perfect(&mut handle, sketch, est_ci, detailed_out);
+                write_ani_res_perfect(&mut handle, sketch, est_ci, detailed_out, short_header);
             }
         }
         for i in anis.keys() {
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write_ani_res(&mut handle, ani_res, est_ci, detailed_out);
+                    write_ani_res(&mut handle, ani_res, est_ci, detailed_out, short_header);
                 }
             }
         }
@@ -587,17 +588,17 @@ pub fn write_sparse_matrix(
 
         if diag{
             for sketch in sketches.iter(){
-                write_ani_res_perfect(&mut ani_file, sketch, est_ci, detailed_out);
+                write_ani_res_perfect(&mut ani_file, sketch, est_ci, detailed_out, short_header);
             }
         }
 
         for i in anis.keys() {
             if diag{
-                write_ani_res_perfect(&mut ani_file, &sketches[*i], est_ci, detailed_out);
+                write_ani_res_perfect(&mut ani_file, &sketches[*i], est_ci, detailed_out, short_header);
             }
             for (j, ani_res) in anis[i].iter() {
                 if !(anis[i][j].ani == -1. || anis[i][j].ani.is_nan()) {
-                    write_ani_res(&mut ani_file, ani_res, est_ci, detailed_out);
+                    write_ani_res(&mut ani_file, ani_res, est_ci, detailed_out, short_header);
                 }
             }
         }
@@ -612,6 +613,7 @@ pub fn write_query_ref_list(
     est_ci: bool,
     detailed_out: bool,
     append: bool,
+    short_header: bool,
 ) {
     let id_str = if aai { "AAI" } else { "ANI" };
     let mut query_file_result_map = FxHashMap::default();
@@ -645,7 +647,7 @@ pub fn write_query_ref_list(
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, anis[i], est_ci, detailed_out);
+                write_ani_res(&mut handle, anis[i], est_ci, detailed_out, short_header);
             }
         }
     } else {
@@ -669,7 +671,7 @@ pub fn write_query_ref_list(
 
             anis.sort_by(|y, x| x.ani.partial_cmp(&y.ani).unwrap());
             for i in 0..usize::min(n, anis.len()) {
-                write_ani_res(&mut handle, anis[i], est_ci, detailed_out);
+                write_ani_res(&mut handle, anis[i], est_ci, detailed_out, short_header);
             }
         }
     }
@@ -700,7 +702,8 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
                     locked.push(temp_ref_sketch);
                 } else if sketch_file != "markers.bin" {
                     error!(
-                        "{} is not a valid .sketch file or is corrupted.",
+                        "{} is not a valid .sketch file or is corrupted. Skani v0.3+ is not compatible with older sketch files. 
+                        Please re-run `skani sketch --separate-files` to generate new sketch files.",
                         sketch_file
                     );
                 }

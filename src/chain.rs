@@ -105,6 +105,8 @@ pub fn map_params_from_sketch <'a>(
             frac_cover_cutoff = D_FRAC_COVER_CUTOFF.parse::<f64>().unwrap()/100.;
         }
     }
+
+    let both_frac_cover_cutoff = command_params.both_min_aligned_frac;
     let length_cover_cutoff = 5000000;
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
     let index_chain_band = bp_chain_band/ref_sketch.c;
@@ -125,6 +127,7 @@ pub fn map_params_from_sketch <'a>(
         min_anchors,
         length_cutoff,
         frac_cover_cutoff,
+        both_frac_cover_cutoff,
         length_cover_cutoff,
         index_chain_band,
         k,
@@ -494,15 +497,23 @@ fn calculate_ani(
         ci.1,
     );
 
-    if map_params.amino_acid{
-        if covered_query < map_params.frac_cover_cutoff  || covered_ref < map_params.frac_cover_cutoff
+    if map_params.both_frac_cover_cutoff > 0.0 {
+        // When --both-min-af is specified, require BOTH genomes to have aligned fraction above threshold
+        if covered_query < map_params.both_frac_cover_cutoff || covered_ref < map_params.both_frac_cover_cutoff {
+            final_ani = -1.;
+        }
+    } else {
+        // Original behavior: different logic for amino acid vs nucleotide
+        if map_params.amino_acid{
+            if covered_query < map_params.frac_cover_cutoff  || covered_ref < map_params.frac_cover_cutoff
+            {
+                final_ani = -1.;
+            }
+        }
+        else if covered_query < map_params.frac_cover_cutoff  && covered_ref < map_params.frac_cover_cutoff
         {
             final_ani = -1.;
         }
-    }
-    else if covered_query < map_params.frac_cover_cutoff  && covered_ref < map_params.frac_cover_cutoff
-    {
-        final_ani = -1.;
     }
 
     let mut sorted_contigs_q = query_sketch.contig_lengths.clone();
@@ -545,11 +556,11 @@ fn calculate_ani(
 
 #[inline]
 pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &MapParams) -> f64 {
-    if anchor_curr.query_phase != anchor_past.query_phase
-        || anchor_curr.ref_phase != anchor_past.ref_phase
-    {
-        return f64::MIN;
-    }
+    // if anchor_curr.query_phase != anchor_past.query_phase
+    //     || anchor_curr.ref_phase != anchor_past.ref_phase
+    // {
+    //     return f64::MIN;
+    // }
     if anchor_curr.reverse_match != anchor_past.reverse_match {
         return f64::MIN;
     }
@@ -557,12 +568,14 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
     {
         return f64::MIN;
     }
+
     let acqpf64 = anchor_curr.query_pos as f64;
     let apqpf64 = anchor_past.query_pos as f64;
     let acrpf64 = anchor_curr.ref_pos as f64;
     let aprpf64 = anchor_past.ref_pos as f64;
 
     let d_q = (acqpf64 - apqpf64).abs();
+
     let d_r;
     if anchor_curr.reverse_match {
         d_r = aprpf64 - acrpf64;
@@ -650,36 +663,49 @@ fn get_anchors(
     //    let kmer_seeds_query = &query_sketch.kmer_seeds_k[k];
     let mut anchors = vec![];
     let mut query_kmers_with_hits = 0;
-    for (canon_kmer, query_pos) in kmer_seeds_query.iter() {
-        if query_pos.len() > map_params.index_chain_band{
+    for (canon_kmer, _query_tagged) in kmer_seeds_query.iter() {
+        // Get query positions using the new API
+        let query_positions_iter = if switched {
+            ref_sketch.get_seed_positions(*canon_kmer)
+        } else {
+            query_sketch.get_seed_positions(*canon_kmer)
+        };
+        
+        if query_positions_iter.len() > map_params.index_chain_band{
             continue;
         }
+        
+        // Get query positions using Cow
+        let query_positions = query_positions_iter;
         let contains = kmer_seeds_ref.contains_key(canon_kmer);
 
         if !contains {
-            for qpos in query_pos.iter() {
-                query_positions_all[qpos.contig_index as usize].push(qpos.pos);
+            for qpos in query_positions.iter() {
+                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
         } else {
-            let ref_pos = &kmer_seeds_ref[canon_kmer];
+            // Get reference positions using the new API  
+            let ref_positions = if switched {
+                query_sketch.get_seed_positions(*canon_kmer)
+            } else {
+                ref_sketch.get_seed_positions(*canon_kmer)
+            };
 
-            if ref_pos.len() > map_params.index_chain_band{
+            if ref_positions.len() > map_params.index_chain_band{
                 continue;
             }
 
-            for qpos in query_pos.iter() {
-                query_positions_all[qpos.contig_index as usize].push(qpos.pos);
+            for qpos in query_positions.iter() {
+                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
 
             query_kmers_with_hits += 1;
-            for qpos in query_pos {
-                for rpos in ref_pos {
+            for qpos in query_positions.iter() {
+                for rpos in ref_positions.iter() {
                     anchors.push(Anchor::new(
-                        &(rpos.pos, rpos.contig_index),
-                        &(qpos.pos, qpos.contig_index),
-                        rpos.phase,
-                        qpos.phase,
-                        rpos.canonical != qpos.canonical,
+                        &(rpos.pos, rpos.contig_index()),
+                        &(qpos.pos, qpos.contig_index()),
+                        rpos.canonical() != qpos.canonical(),
                     ));
                 }
             }

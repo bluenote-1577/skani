@@ -47,6 +47,11 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         error!("No genomes/sketches found.");
         std::process::exit(1)
     }
+
+    if ref_sketches.len() > 500 && !command_params.sparse {
+        warn!("> 500 genomes detected. The output matrix will be large. Consider using -E or --sparse for a tsv output instead.");
+    }
+
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);
     let counter: Mutex<usize> = Mutex::new(0);
     let first: Mutex<bool> = Mutex::new(true);
@@ -123,6 +128,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
                             command_params.detailed_out,
                             command_params.diagonal,
                             !*locked,
+                            command_params.short_header,
                         );
                         if *locked == true {
                             *locked = false;
@@ -145,6 +151,7 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
             command_params.detailed_out,
             command_params.diagonal,
             !*first.lock().unwrap(),
+            command_params.short_header,
         );
     } else {
         file_io::write_phyllip_matrix(

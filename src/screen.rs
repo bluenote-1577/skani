@@ -36,13 +36,13 @@ pub fn check_small_contigs(ref_sketches: &Vec<Sketch>, query_sketches: &Vec<Sket
 }
 
 //Used in search, but not in dist,triangle
-pub fn screen_refs_filenames<'a>(
+pub fn screen_refs_indices(
     identity: f64,
     kmer_to_sketch: &KmerToSketch,
     query_sketch: &Sketch,
     sketch_params: &SketchParams,
-    ref_sketches: &'a Vec<Sketch>
-) -> Vec<&'a String>{
+    ref_sketches: &Vec<Sketch>
+) -> Vec<usize>{
     let mut count_hash_map = FxHashMap::default();
     for marker in query_sketch.marker_seeds.iter() {
         if kmer_to_sketch.contains_key(marker) {
@@ -70,7 +70,7 @@ pub fn screen_refs_filenames<'a>(
                     query_sketch.marker_seeds.len(),
                 ) as f64) as usize,1)
         })
-        .map(|x| &ref_sketches[**x.0 as usize].file_name)
+        .map(|x| **x.0 as usize)
         .collect();
     ret
 

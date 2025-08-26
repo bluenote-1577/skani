@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand, Args};
 #[derive(Parser)]
 #[clap(
     name = "skani",
-    version = "0.2.2",
+    version = "0.3.0",
     about = "fast, robust ANI calculation and database searching for metagenomic contigs and assemblies. \n\nQuick ANI calculation:\nskani dist genome1.fa genome2.fa \n\nMemory-efficient database search:\nskani sketch genomes/* -o database; skani search -d database query1.fa query2.fa ...\n\nAll-to-all comparison:\nskani triangle genomes/*",
     arg_required_else_help = true, disable_help_subcommand = true
 )]
@@ -49,11 +49,11 @@ pub struct SketchArgs {
     #[clap(short = 'l', help_heading = "INPUT/OUTPUT", group = "input_group")]
     pub fasta_list: Option<String>,
     
-    /// Use individual sequences instead the entire file for multi-fastas. CURRENTLY DOES NOT WORK WITH `skani search`.
+    /// Use individual sequences instead the entire file for multi-fastas. 
     #[clap(short = 'i', help_heading = "INPUT/OUTPUT")]
     pub individual_contig: bool,
     
-    /// Output folder where sketch files are placed. Creates a folder if it does not exist, and overwrites the contents in folder if it does.
+    /// Output folder where sketch files are placed. 
     #[clap(short = 'o', required = true, display_order = 1, help_heading = "INPUT/OUTPUT")]
     pub output: String,
 
@@ -68,6 +68,10 @@ pub struct SketchArgs {
     /// Faster skani mode; 2x faster and less memory. Less accurate AF and less accurate ANI for distant genomes, but works ok for high N50 and > 95% ANI. Alias for -c 200.
     #[clap(long = "fast", help_heading = "PRESETS")]
     pub fast: bool,
+
+    /// Create separate .sketch files instead of consolidated database format. DOES NOT WORK WITH -i. 
+    #[clap(long = "separate-sketches", help_heading = "INPUT/OUTPUT")]
+    pub separate_sketches: bool,
 
     /// Use amino acid to calculate AAI instead. [default: ANI]
     #[clap(short = 'a', long = "aai", hide = true, help_heading = "SKETCH PARAMETERS")]
@@ -148,6 +152,10 @@ pub struct DistArgs {
     #[clap(long = "min-af", display_order = 100, help_heading = "OUTPUT")]
     pub min_af: Option<String>,
     
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", display_order = 101, help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
+    
     /// Max number of results to show for each query. [default: unlimited]
     #[clap(short = 'n', help_heading = "OUTPUT")]
     pub n: Option<String>,
@@ -159,6 +167,10 @@ pub struct DistArgs {
     /// Print additional info including contig N50s and more
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
+    
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
 
     /// Slower skani mode; 4x slower and more memory. Gives much more accurate AF for distant genomes. More accurate ANI for VERY fragmented assemblies (< 3kb N50), but less accurate ANI otherwise. Alias for -c 30.
     #[clap(long = "slow", help_heading = "PRESETS")]
@@ -263,6 +275,10 @@ pub struct TriangleArgs {
     #[clap(long = "min-af", help_heading = "OUTPUT")]
     pub min_af: Option<String>,
     
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
+    
     /// Output [5%,95%] ANI confidence intervals using percentile bootstrap on the putative ANI distribution. Only works with --sparse or -E.
     #[clap(long = "ci", help_heading = "OUTPUT")]
     pub ci: bool,
@@ -270,6 +286,10 @@ pub struct TriangleArgs {
     /// Print additional info including contig N50s and more
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
+    
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
     
     /// Output 100 - ANI instead of ANI, creating a distance instead of a similarity matrix. No effect if using --sparse or -E.
     #[clap(long = "distance", help_heading = "OUTPUT")]
@@ -378,9 +398,17 @@ pub struct SearchArgs {
     #[clap(long = "detailed", help_heading = "OUTPUT")]
     pub detailed: bool,
     
+    /// Only display the first part of contig names (before first whitespace)
+    #[clap(long = "short-header", help_heading = "OUTPUT")]
+    pub short_header: bool,
+    
     /// Only output ANI values where one genome has aligned fraction > than this value. [default: 15]
     #[clap(long = "min-af", help_heading = "OUTPUT")]
     pub min_af: Option<String>,
+    
+    /// Only output ANI values where both genomes have aligned fraction > than this value. [default: disabled]
+    #[clap(long = "both-min-af", help_heading = "OUTPUT")]
+    pub both_min_af: Option<String>,
     
     /// Max number of results to show for each query. [default: unlimited]
     #[clap(short = 'n', help_heading = "OUTPUT")]

@@ -165,7 +165,8 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
                     sketch_params.use_aa,
                     command_params.est_ci,
                     command_params.detailed_out,
-                    !*fw
+                    !*fw,
+                    command_params.short_header,
                 );
                 if *fw == true{
                     *fw = false;
@@ -182,7 +183,8 @@ pub fn dist(command_params: CommandParams, mut sketch_params: SketchParams) {
         sketch_params.use_aa,
         command_params.est_ci,
         command_params.detailed_out,
-        !*first_write.lock().unwrap()
+        !*first_write.lock().unwrap(),
+        command_params.short_header,
     );
     info!("ANI calculation time: {}", now.elapsed().as_secs_f32());
 }
