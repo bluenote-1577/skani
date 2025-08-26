@@ -987,7 +987,7 @@ fn parse_search_args(args: &SearchArgs) -> (SketchParams, CommandParams) {
         individual_contig_q: args.qi,
         individual_contig_r: false,
         min_aligned_frac,
-        both_min_aligned_frac: -0.01,
+        both_min_aligned_frac: both_min_aligned_frac,
         keep_refs: args.keep_refs,
         est_ci: args.ci,
         learned_ani,
