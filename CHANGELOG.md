@@ -1,3 +1,8 @@
+### v0.3.1 - 2025-10-11
+
+### Minor
+* Fixed `--both-min-af` bug in `skani search`
+
 ### v0.3.0 released - 2025-08 (Breaking changes)
 
 #### Major
