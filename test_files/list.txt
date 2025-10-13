@@ -5,6 +5,7 @@ test_files/e.coli-K12.fasta
 test_files/e.coli-o157.fasta
 test_files/e.coli-W.fasta
 test_files/e.coli-W.fasta.gz
+test_files/e.coli-W.fasta.zst
 test_files/o157_plasmid.fasta
 test_files/o157_reads.fastq
 test_files/test.fasta
