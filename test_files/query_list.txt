@@ -1,4 +1,5 @@
 ./test_files/o157_reads.fastq
 ./test_files/e.coli-EC590.fasta
 ./test_files/e.coli-W.fasta.gz
+./test_files/e.coli-W.fasta.zst
 ./test_files/GCF_005706655.1_ASM570665v1_genomic.fna
