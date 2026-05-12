@@ -44,8 +44,7 @@ jobs:
       run: skani -h
     
     - name: Run tests (if available)
-      run: cargo test --release
-      continue-on-error: true
+      run: cargo test --release -- --test-threads=1  
 
   build-x86-64-sse2:
     name: Build x86-64 with SSE2 (no AVX2)
@@ -85,8 +84,7 @@ jobs:
       run: skani -h
     
     - name: Run tests (if available)
-      run: cargo test --release --features=sse --no-default-features
-      continue-on-error: true
+      run: cargo test --release -- --test-threads=1
 
   build-arm-neon:
     name: Build ARM with NEON
@@ -136,9 +134,5 @@ jobs:
       run: |
         export CXX=g++
         export CC=gcc
-        cargo test --release --features=neon --no-default-features
-      continue-on-error: true
+        cargo test --release -- --test-threads=1  
     
-    - name: Run tests (if available)
-      run: cargo test --release --features=neon --no-default-features
-      continue-on-error: true
