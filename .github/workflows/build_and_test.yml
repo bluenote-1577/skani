@@ -79,7 +79,7 @@ jobs:
           ${{ runner.os }}-cargo-sse2-
     
     - name: Build skani (SSE2 only)
-      run: cargo install --path . --features=sse --no-default-features
+      run: cargo install --path . 
     
     - name: Test skani installation
       run: skani -h
