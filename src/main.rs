@@ -23,7 +23,10 @@ fn main() {
     let (sketch_params, command_params) = parse::parse_params_from_cli(&cli);
 
     let cmd_txt = env::args().into_iter().collect::<Vec<String>>().join(" ");
-    let log_str = &cmd_txt[0..usize::min(cmd_txt.len(), 250)];
+    let log_str = match cmd_txt.char_indices().nth(250) {
+        Some((i, _)) => &cmd_txt[..i],
+        None => &cmd_txt,
+    };
     if cmd_txt.len() > 250{
         log::info!("{} ...", log_str);
     }

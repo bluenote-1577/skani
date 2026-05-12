@@ -1,14 +1,18 @@
 use assert_cmd::prelude::*; 
 use tsv::*;
  // Used for writing assertions
-use std::process::Command; // Run programs
+use std::{process::Command, thread}; // Run programs
                            //
 #[test]
 fn full_test_sketch_and_search() {
     Command::new("rm")
-        .arg("-r")
-        .args(["./tests/results/test_sketch_dir2", "./tests/results/test_sketch_dir1","./tests/results/test_sketch_dir3", "./tests/results/test_sketch_dir", "./tests/results/test_sketch_dir_aai"])
-        .spawn();
+        .arg("-rf")
+        .args(["./tests/results/test_sketch_dir2", 
+        "./tests/results/test_sketch_dir1",
+        "./tests/results/test_sketch_dir3", 
+        "./tests/results/test_sketch_dir", 
+        "./tests/results/test_sketch_dir_aai"]).spawn();
+    thread::sleep(std::time::Duration::from_secs(1));
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("sketch")
@@ -993,7 +997,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
         .spawn();
     
     // Step 1: Sketch e.coli-o157.fasta with individual contigs (-i)
-    let sketch_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let sketch_cmd = cmd
         .arg("sketch")
         .arg("./test_files/e.coli-o157.fasta")
         .arg("-o")
@@ -1006,7 +1011,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
             "skani sketch -i should succeed: {}", String::from_utf8_lossy(&sketch_cmd.stderr));
     
     // Step 2: Search with individual query contigs (--qi)
-    let search_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let search_cmd = cmd
         .arg("search")
         .arg("-d")
         .arg(sketch_dir)
@@ -1023,7 +1029,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
             "skani search --qi should succeed: {}", String::from_utf8_lossy(&search_cmd.stderr));
     
     // Step 3: Run dist with individual contigs for both query and reference (--qi --ri)
-    let dist_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let dist_cmd = cmd
         .arg("dist")
         .arg("./test_files/e.coli-o157.fasta")
         .arg("./test_files/e.coli-o157.fasta")

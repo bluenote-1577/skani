@@ -1,6 +1,5 @@
 use skani::chain::*;
 use skani::seeding::*;
-use skani::avx2_seeding::*;
 use skani::regression::*;
 use skani::file_io::*;
 use skani::params::*;
@@ -128,7 +127,10 @@ fn fast_eukaryote_test() {
 }
 
 #[test]
+#[cfg(target_arch = "x86_64")]
 fn fast_avx2_vs_normal_code(){
+    if !is_x86_feature_detected!("avx2") { return; }
+    use skani::avx2_seeding::*;
     let str1 = b"ATCAGATTTAAAAAAAAATTTTGCTAGCTGATCGATCGATCGATGTGTATATATTAAAAGAGAGAGAGGGGGGGGAAAAAAAAAAAAACTGATCGATCGATGCTAGCTAGTCAGTCGATG";
     let (_command_params, mut sketch_params) = default_params(Mode::Dist);
     sketch_params.c = 10;

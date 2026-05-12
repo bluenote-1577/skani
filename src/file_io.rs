@@ -327,7 +327,7 @@ pub fn fastx_to_multiple_sketch_rewrite(
                             seeding::fmh_seeds(
                                         &seq,
                                         sketch_params,
-                                        j as u32,
+                                        0_u32,
                                         &mut new_sketch,
                                         seed,
                                     );

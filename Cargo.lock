@@ -1642,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "skani"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "assert_cmd",
  "bincode",
