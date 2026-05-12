@@ -130,7 +130,7 @@ jobs:
         export CXX=g++
         export CC=gcc
         # Native ARM64 build on Apple Silicon
-        cargo install --path . --features=neon --no-default-features
+        cargo install --path . 
     
     - name: Run tests (if available)
       run: |
