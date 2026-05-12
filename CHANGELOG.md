@@ -1,3 +1,13 @@
+### v0.3.2 - 2026-05-12
+
+### Major
+
+- Commands with `-i` specified (triangle, sketch, etc) would not work on non-x86 platforms due to a logic error. This is now fixed.
+
+### Minor
+
+- UTF-8 indexing issue should be fixed when file paths have multibyte characters
+
 ### v0.3.1 - 2025-10-11
 
 ### Minor
