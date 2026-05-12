@@ -16,16 +16,6 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-> [!IMPORTANT]
-> 
-> Skani v0.3.x is now released. v0.3 has breaking changes compared to versions <= 0.2.x. 
-
-### v0.3.0 - 2025-08-10
-
-* BREAKING: old `.sketch` files no longer work.
-* New `skani sketch` functionality. Creates a single database instead of individual `.sketch` files by default. The previous behaviour can be obtained via `--separate-sketches` option.
-* Skani should now take 30-40% less memory, but 5-10% longer runtimes.
-
 See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
 
 ##  Install
