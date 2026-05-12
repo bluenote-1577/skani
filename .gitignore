@@ -2,3 +2,4 @@
 /refs
 callgrind*
 CLAUDE.md
+/tests/results/

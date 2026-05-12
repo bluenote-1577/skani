@@ -1,14 +1,18 @@
 use assert_cmd::prelude::*; 
 use tsv::*;
  // Used for writing assertions
-use std::process::Command; // Run programs
+use std::{process::Command, thread}; // Run programs
                            //
 #[test]
 fn full_test_sketch_and_search() {
     Command::new("rm")
-        .arg("-r")
-        .args(["./tests/results/test_sketch_dir2", "./tests/results/test_sketch_dir1","./tests/results/test_sketch_dir3", "./tests/results/test_sketch_dir", "./tests/results/test_sketch_dir_aai"])
-        .spawn();
+        .arg("-rf")
+        .args(["./tests/results/test_sketch_dir2", 
+        "./tests/results/test_sketch_dir1",
+        "./tests/results/test_sketch_dir3", 
+        "./tests/results/test_sketch_dir", 
+        "./tests/results/test_sketch_dir_aai"]).spawn();
+    thread::sleep(std::time::Duration::from_secs(1));
     let mut cmd = Command::cargo_bin("skani").unwrap();
     let assert = cmd
         .arg("sketch")

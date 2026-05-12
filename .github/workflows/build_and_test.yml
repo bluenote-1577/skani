@@ -1,0 +1,146 @@
+name: Build skani
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-x86-64-avx2:
+    name: Build x86-64 with AVX2
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc cmake
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.85.0
+    
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Build skani (default - AVX2)
+      run: cargo install --path .
+    
+    - name: Test skani installation
+      run: skani -h
+    
+    - name: Run tests (if available)
+      run: cargo test --release
+      continue-on-error: true
+
+  build-x86-64-sse2:
+    name: Build x86-64 with SSE2 (no AVX2)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc cmake
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.85.0
+    
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-sse2-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-sse2-
+    
+    - name: Build skani (SSE2 only)
+      run: cargo install --path . --features=sse --no-default-features
+    
+    - name: Test skani installation
+      run: skani -h
+    
+    - name: Run tests (if available)
+      run: cargo test --release --features=sse --no-default-features
+      continue-on-error: true
+
+  build-arm-neon:
+    name: Build ARM with NEON
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install system dependencies
+      run: |
+        # Install C++ compiler and development tools
+        xcode-select --install || true
+        brew install cmake gcc
+        # Ensure C++ standard library is available
+        export CXX=g++
+        export CC=gcc
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.85.0
+        # No need for cross-compilation target since we're building natively
+    
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-arm-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-arm-
+    
+    - name: Build skani (ARM NEON)
+      run: |
+        # Set C++ compiler environment variables
+        export CXX=g++
+        export CC=gcc
+        # Native ARM64 build on Apple Silicon
+        cargo install --path . --features=neon --no-default-features
+    
+    - name: Run tests (if available)
+      run: |
+        export CXX=g++
+        export CC=gcc
+        cargo test --release --features=neon --no-default-features
+      continue-on-error: true
+    
+    - name: Run tests (if available)
+      run: cargo test --release --features=neon --no-default-features
+      continue-on-error: true
