@@ -997,7 +997,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
         .spawn();
     
     // Step 1: Sketch e.coli-o157.fasta with individual contigs (-i)
-    let sketch_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let sketch_cmd = cmd
         .arg("sketch")
         .arg("./test_files/e.coli-o157.fasta")
         .arg("-o")
@@ -1010,7 +1011,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
             "skani sketch -i should succeed: {}", String::from_utf8_lossy(&sketch_cmd.stderr));
     
     // Step 2: Search with individual query contigs (--qi)
-    let search_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let search_cmd = cmd
         .arg("search")
         .arg("-d")
         .arg(sketch_dir)
@@ -1027,7 +1029,8 @@ fn test_sketch_search_individual_contigs_matches_dist() {
             "skani search --qi should succeed: {}", String::from_utf8_lossy(&search_cmd.stderr));
     
     // Step 3: Run dist with individual contigs for both query and reference (--qi --ri)
-    let dist_cmd = Command::new("./target/debug/skani")
+    let mut cmd = Command::cargo_bin("skani").unwrap();
+    let dist_cmd = cmd
         .arg("dist")
         .arg("./test_files/e.coli-o157.fasta")
         .arg("./test_files/e.coli-o157.fasta")
