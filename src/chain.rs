@@ -6,7 +6,6 @@ use crate::regression;
 
 use fxhash::FxHashMap;
 use log::*;
-use partitions::*;
 use std::mem;
 extern crate interval;
 use gcollections::ops::set::*;
@@ -1034,22 +1033,37 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
             &mut pointer_vec,
         );
 
-        //Union-find over the pointer forest. Built in the same order the DP
-        //visits the anchors (push i, then union i with its earlier
-        //predecessor), so the resulting partition - and therefore the
-        //`all_sets()` enumeration downstream - is unchanged.
-        let mut chain_part = partition_vec![];
-        for i in 0..anchor_chunk.len() {
-            chain_part.push(i);
-            if pointer_vec[i] != i {
-                chain_part.union(i, pointer_vec[i]);
-            }
+        //Resolve the pointer forest into components. `pointer_vec[i]` is
+        //either `i` or a strictly smaller index, so a single ascending sweep
+        //labels every anchor with its tree root (which is also that tree's
+        //minimum index) - the parent's label is always already known. The
+        //same sweep accumulates each component's size and its best-scoring
+        //member, which is everything `get_chain_intervals` needs.
+        let n = anchor_chunk.len();
+        let mut comp_vec = vec![0u32; n];
+        let mut comp_size = vec![0u32; n];
+        let mut comp_best = vec![0u32; n];
+        for i in 0..n {
+            let root = if pointer_vec[i] == i {
+                comp_best[i] = i as u32;
+                i
+            } else {
+                let root = comp_vec[pointer_vec[i]] as usize;
+                if score_vec[i] > score_vec[comp_best[root] as usize] {
+                    comp_best[root] = i as u32;
+                }
+                root
+            };
+            comp_vec[i] = root as u32;
+            comp_size[root] += 1;
         }
 
         chaining_results.push(ChainingResult {
             pointer_vec,
-            chain_part,
             score_vec,
+            comp_vec,
+            comp_size,
+            comp_best,
             num_chunks,
         });
     }
@@ -1104,36 +1118,28 @@ fn get_chain_intervals(
     map_params: &MapParams,
     chunk_id: usize,
 ) {
-    for set in cr.chain_part.all_sets() {
-        let mut small_chain = false;
-        let mut first_iter = true;
-        let mut max_score = i32::MIN;
-        let mut best_index = usize::MAX;
-        let mut num_anchors = 1;
-        for (index, _value) in set {
-            if first_iter {
-                if cr.chain_part.len_of_set(index) < map_params.min_anchors {
-                    small_chain = true;
-                    break;
-                }
-                first_iter = false;
-            }
-            if cr.score_vec[index] > max_score {
-                max_score = cr.score_vec[index];
-                best_index = index;
-            }
-        }
-        if small_chain {
+    //Components in ascending order of their root, which is the component's
+    //minimum index - the same order the union-find enumeration produced.
+    for root in 0..anchors.len() {
+        if cr.comp_vec[root] as usize != root {
             continue;
         }
+        if (cr.comp_size[root] as usize) < map_params.min_anchors {
+            continue;
+        }
+        let best_index = cr.comp_best[root] as usize;
+        let max_score = cr.score_vec[best_index];
+        let mut num_anchors = 1;
 
+        //The component can be a branching tree, so the chain itself is the
+        //path from the best-scoring anchor back to the root, which may be
+        //shorter than the component.
         let mut index = best_index;
         while cr.pointer_vec[index] != index {
             index = cr.pointer_vec[index];
             num_anchors += 1;
         }
-        small_chain = num_anchors < map_params.min_anchors;
-        if small_chain || max_score < map_params.min_score {
+        if num_anchors < map_params.min_anchors || max_score < map_params.min_score {
             continue;
         }
         let smallest_id = index;
