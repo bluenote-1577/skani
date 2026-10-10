@@ -32,7 +32,6 @@ use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
 use crate::params::*;
-use partitions::*;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::str;
@@ -976,10 +975,21 @@ impl KmerEnc {
     }
 }
 
+/// Result of the chaining DP for one chunk.
+///
+/// `pointer_vec[i]` is `i`'s best predecessor, or `i` itself when the chain
+/// starts there. Because a predecessor is always at a strictly smaller index,
+/// the pointers form a forest in which every tree's root is that tree's
+/// minimum index - so component membership is recoverable with a single
+/// forward sweep and needs no union-find. `comp_vec[i]` is that root;
+/// `comp_size` and `comp_best` are indexed *by root* and are meaningless at
+/// non-root positions.
 pub struct ChainingResult {
     pub pointer_vec: Vec<usize>,
-    pub chain_part: PartitionVec<usize>,
-    pub score_vec: Vec<f64>,
+    pub score_vec: Vec<i32>,
+    pub comp_vec: Vec<u32>,
+    pub comp_size: Vec<u32>,
+    pub comp_best: Vec<u32>,
     pub num_chunks: usize,
 }
 
@@ -996,9 +1006,9 @@ pub struct Anchor {
     pub reverse_match: bool,
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Clone, Default)]
+#[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Default)]
 pub struct ChainInterval {
-    pub score: f64,
+    pub score: i32,
     pub num_anchors: usize,
     pub interval_on_query: (GnPosition, GnPosition),
     pub interval_on_ref: (GnPosition, GnPosition),

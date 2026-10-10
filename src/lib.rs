@@ -17,6 +17,8 @@ pub mod regression;
 pub mod avx2_seeding;
 #[cfg(target_arch = "x86_64")]
 pub mod avx2_seed_search;
+#[cfg(target_arch = "x86_64")]
+pub mod avx2_chaining;
 #[cfg(feature = "cli")]
 pub mod parse;
 #[cfg(feature = "cli")]

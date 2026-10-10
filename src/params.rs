@@ -14,11 +14,15 @@ pub const DEFAULT_C: &str = "125";
 pub const DEFAULT_C_AAI: &str = "15";
 pub const DEFAULT_K: &str = "15";
 pub const DEFAULT_K_AAI: &str = "6";
-pub const D_MAX_GAP_LENGTH: f64 = 300.;
-pub const D_MAX_GAP_LENGTH_AAI: f64 = 50.;
-pub const D_MAX_LIN_LENGTH: f64 = 5000.;
-pub const D_ANCHOR_SCORE_ANI: f64 = 20.;
-pub const D_ANCHOR_SCORE_AAI: f64 = 20.;
+//Chaining scores are integer-valued by construction (anchor_score and all
+//gap/offset terms derive from integer genome positions), so the chaining DP
+//runs in i32. This is bit-identical to the previous f64 arithmetic and lets
+//the band be evaluated with integer SIMD.
+pub const D_MAX_GAP_LENGTH: i32 = 300;
+pub const D_MAX_GAP_LENGTH_AAI: i32 = 50;
+pub const D_MAX_LIN_LENGTH: i32 = 5000;
+pub const D_ANCHOR_SCORE_ANI: i32 = 20;
+pub const D_ANCHOR_SCORE_AAI: i32 = 20;
 pub const D_MIN_ANCHORS_ANI: usize = 3;
 pub const D_MIN_ANCHORS_AAI: usize = 5;
 pub const D_LENGTH_CUTOFF: usize = D_FRAGMENT_LENGTH;
@@ -40,6 +44,9 @@ pub const CHUNK_SIZE_AA: usize = 20000;
 pub const MIN_LENGTH_CONTIG: usize = 500;
 pub const MIN_LENGTH_COVER_AAI: usize = 500;
 pub const MIN_LENGTH_COVER: usize = 500;
+//Below these sizes a comparison sort beats setting up a radix sort.
+pub const RADIX_SORT_MIN_ANCHORS: usize = 256;
+pub const RADIX_SORT_MIN_POSITIONS: usize = 256;
 //Seed-search tuning for the merge-join in `chain::get_anchors`.
 //
 //A skip shorter than the floor is scanned rather than galloped: the probes of
@@ -47,14 +54,14 @@ pub const MIN_LENGTH_COVER: usize = 500;
 //search only adds branches and breaks the prefetcher's sequential stream. The
 //AVX2 floor is wider because 32 u32 seeds is two cache lines and four vector
 //compares.
-//Below these sizes a comparison sort beats setting up a radix sort.
-pub const RADIX_SORT_MIN_ANCHORS: usize = 256;
-pub const RADIX_SORT_MIN_POSITIONS: usize = 256;
 pub const SEED_GALLOP_FLOOR: usize = 4;
 pub const SEED_GALLOP_FLOOR_SIMD: usize = 32;
 //Binary search stops once the bracket is this small and finishes with a scan,
 //for the same reason.
 pub const SEED_LINEAR_FINISH: usize = 16;
+//Below this many anchors in a chunk the AVX2 chaining kernel's setup cost
+//outweighs the win, so the scalar path is used instead.
+pub const AVX2_CHAIN_MIN_ANCHORS: usize = 16;
 pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;
@@ -87,8 +94,8 @@ pub enum Mode {
 #[derive(Default)]
 pub struct MapParams<'a> {
     pub fragment_length: usize,
-    pub max_gap_length: f64,
-    pub anchor_score: f64,
+    pub max_gap_length: i32,
+    pub anchor_score: i32,
     pub min_anchors: usize,
     pub length_cutoff: usize,
     pub frac_cover_cutoff: f64,
@@ -97,7 +104,7 @@ pub struct MapParams<'a> {
     pub index_chain_band: usize,
     pub k: usize,
     pub amino_acid: bool,
-    pub min_score: f64,
+    pub min_score: i32,
     pub robust: bool,
     pub median: bool,
     pub bp_chain_band: usize,
