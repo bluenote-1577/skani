@@ -3,13 +3,12 @@
 #### Major
 
 * **Roughly 2x faster.** For all commands,`triangle / dist / search`. Results are unchanged (see the one exception under Minor).
-* **~30% less memory.** 295 MB -> 210 MB on the benchmark above; 1105 MB -> 812 MB with `--slow`. A resident sketch index is about half its former size.
+* **~30% less memory.**  A resident sketch index is about half its former size.
 * **BREAKING: the sketch format changed.** Sketches written by 0.4 **cannot be read by skani 0.3.x or earlier.** The consolidated database files are named `sketches.db2` and `index.db2` so that an older binary fails to find them rather than misreading them; if you point skani 0.3.x at a 0.4 database it will exit with `Problem reading .../markers.bin` and produce no output.
-* **Old sketches still work.** 0.4 reads pre-0.4 `.sketch` files, databases and `markers.bin`, and prints one warning per run. They are converted on every load, so re-running `skani sketch` is worth it: loading is substantially faster afterwards.
+* **Old sketches still work, but with performance penalty.** skani v0.4 reads pre-0.4 `.sketch` files, databases and `markers.bin`, and prints one warning per run. Old sketchesare converted on every load, so re-running `skani sketch` is worth it: loading is substantially faster afterwards.
 
 #### Minor
 
-* Chain scores are now computed in integer arithmetic rather than floating point. This is exact, not an approximation, but it removes an unspecified tie-break: when two anchors tie for the best chain score, the winner used to depend on the internal iteration order of the union-find structure skani used. In testing this changed 1 output row in 4950 at `--medium`, by 0.01 ANI. Other modes were unaffected.
 * Dropped the `partitions` dependency.
 
 ### v0.3.2 - 2026-05-12
