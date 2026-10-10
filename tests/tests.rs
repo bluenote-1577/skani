@@ -141,8 +141,12 @@ fn fast_avx2_vs_normal_code(){
     }
 
     fmh_seeds(str1, &sketch_params, 0, &mut new_sketch2, true);
+    //The flat seed index is only sorted at the end of sketching, and the AVX2
+    //and scalar seeders emit their seeds in a different order, so both sketches
+    //have to be finalized before they can be compared.
+    new_sketch1.finalize_seed_index();
+    new_sketch2.finalize_seed_index();
     assert!(new_sketch1 == new_sketch2);
-    //println!("{:?}", new_sketch1.kmer_seeds_k.unwrap());
 }
 
 
@@ -155,5 +159,6 @@ fn fast_NNN_test_code(){
     sketch_params.c = 30;
     let mut new_sketch1 = Sketch::default();
     fmh_seeds(str1, &sketch_params, 0, &mut new_sketch1, true);
-    assert!(new_sketch1.kmer_seeds_k.unwrap().len() == 0);
+    new_sketch1.finalize_seed_index();
+    assert!(new_sketch1.num_distinct_seeds() == 0);
 }

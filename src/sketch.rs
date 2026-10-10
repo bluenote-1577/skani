@@ -79,7 +79,7 @@ fn sketch_separate_files(command_params: CommandParams, sketch_params: SketchPar
             }
             let mut file_bin = BufWriter::new(File::create(sketch_name).unwrap());
 
-            trace!("{} compress factor", sketch.total_sequence_length / sketch.kmer_seeds_k.as_ref().unwrap().len());
+            trace!("{} compress factor", sketch.total_sequence_length / sketch.num_distinct_seeds());
             trace!("{} marker compress factor", sketch.total_sequence_length / sketch.marker_seeds.len());
 
             bincode::serialize_into(&mut file_bin, &(&sketch_params, sketch)).unwrap();
@@ -123,7 +123,7 @@ fn sketch_consolidated_db(command_params: CommandParams, sketch_params: SketchPa
         
         // Consume sketches from the channel
         for (sketch, marker_sketch) in receiver {
-            trace!("{} compress factor", sketch.total_sequence_length / sketch.kmer_seeds_k.as_ref().unwrap().len());
+            trace!("{} compress factor", sketch.total_sequence_length / sketch.num_distinct_seeds());
             trace!("{} marker compress factor", sketch.total_sequence_length / sketch.marker_seeds.len());
 
             // Add sketch to consolidated database

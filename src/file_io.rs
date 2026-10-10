@@ -237,6 +237,8 @@ pub fn fastx_to_sketches(
             }
             if is_valid && j > 0{
                 {
+                    //All contigs have been seeded; sort the flat seed index once.
+                    new_sketch.finalize_seed_index();
                     let mut locked = ref_sketches.lock().unwrap();
                     locked.push(new_sketch);
                 }
@@ -334,10 +336,12 @@ pub fn fastx_to_multiple_sketch_rewrite(
                             }
                         }
                         new_sketch.contig_order = j;
+                        //One sketch per contig here, so this contig is done.
+                        new_sketch.finalize_seed_index();
 
 //                        if new_sketch.total_sequence_length > REPET_KMER_THRESHOLD {
 //                            new_sketch.repetitive_kmers =
-//                                seeding::get_repetitive_kmers(&new_sketch.kmer_seeds_k, new_sketch.c);
+//                                seeding::get_repetitive_kmers(&new_sketch, new_sketch.c);
 //                        }
 
                         let mut locked = ref_sketches.lock().unwrap();

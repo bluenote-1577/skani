@@ -605,14 +605,70 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
 
 
 
+/// End of the run of entries sharing `entries[start].seed`.
+///
+/// Runs are almost always one or two entries long, so a linear scan beats any
+/// kind of search and stays inside the cache line we already touched.
+#[inline]
+fn seed_run_end(entries: &[SeedEntry], start: usize) -> usize {
+    let seed = entries[start].seed;
+    let mut end = start + 1;
+    while end < entries.len() && entries[end].seed == seed {
+        end += 1;
+    }
+    end
+}
+
+/// First index at or after `from` whose seed is `>= target`.
+///
+/// Exponential ("galloping") search followed by a binary search over the bracket.
+/// For two indices of similar size this costs about as much as the linear scan it
+/// replaces; when one genome is far smaller than the other it turns the skip over
+/// the big index from O(n) into O(log n) per matched seed.
+#[inline]
+fn gallop_to_seed(entries: &[SeedEntry], from: usize, target: SeedBits) -> usize {
+    let n = entries.len();
+    let mut lo = from;
+    let mut step = 1;
+    while lo < n && entries[lo].seed < target {
+        let hi = usize::min(lo + step, n);
+        if hi == n || entries[hi].seed >= target {
+            //The answer lies in (lo, hi].
+            return lo + 1 + entries[lo + 1..hi].partition_point(|e| e.seed < target);
+        }
+        lo = hi;
+        step *= 2;
+    }
+    lo
+}
+
+/// Per-contig buffers for the query seed positions, pre-sized from the contig
+/// lengths so that the common case does not re-grow them. Purely an allocation
+/// optimization; the contents are unaffected.
+fn new_query_position_buffers(
+    num_contigs: usize,
+    contig_lengths: &[GnPosition],
+    c: usize,
+) -> Vec<Vec<GnPosition>> {
+    let mut buffers = Vec::with_capacity(num_contigs);
+    let compression = usize::max(c, 1);
+    for i in 0..num_contigs {
+        let expected = contig_lengths.get(i).map_or(0, |len| *len as usize / compression);
+        buffers.push(Vec::with_capacity(expected + 16));
+    }
+    buffers
+}
+
 fn get_anchors(
     ref_sketch: &Sketch,
     query_sketch: &Sketch,
     map_params: &MapParams,
 ) -> (AnchorChunks, bool) {
     let k = map_params.k;
-    let kmer_seeds_ref;
-    let kmer_seeds_query;
+    let seeds_ref: &[SeedEntry];
+    let seeds_query: &[SeedEntry];
+    let num_distinct_ref;
+    let num_distinct_query;
     let mut query_positions_all;
     let switched;
     if ref_sketch.contig_lengths.is_empty() || query_sketch.contig_lengths.is_empty(){
@@ -649,59 +705,83 @@ fn get_anchors(
     if switch_qr(mean_ctg_len_r,mean_ctg_len_q, query_length_markers_proxy, ref_length_markers_proxy, &query_sketch.file_name, &ref_sketch.file_name){
         switched = true;
 
-        kmer_seeds_ref = query_sketch.kmer_seeds_k.as_ref().unwrap();
-        kmer_seeds_query = ref_sketch.kmer_seeds_k.as_ref().unwrap();
-        query_positions_all = vec![vec![]; ref_sketch.contigs.len()];
+        let (ref_index, query_index) = (
+            query_sketch.seed_index.as_ref().unwrap(),
+            ref_sketch.seed_index.as_ref().unwrap(),
+        );
+        seeds_ref = ref_index.entries();
+        seeds_query = query_index.entries();
+        num_distinct_ref = ref_index.num_distinct_seeds();
+        num_distinct_query = query_index.num_distinct_seeds();
+        query_positions_all =
+            new_query_position_buffers(ref_sketch.contigs.len(), &ref_sketch.contig_lengths, ref_sketch.c);
     } else {
         switched = false;
 
-        kmer_seeds_ref = ref_sketch.kmer_seeds_k.as_ref().unwrap();
-        kmer_seeds_query = query_sketch.kmer_seeds_k.as_ref().unwrap();
-        query_positions_all = vec![vec![]; query_sketch.contigs.len()];
+        let (ref_index, query_index) = (
+            ref_sketch.seed_index.as_ref().unwrap(),
+            query_sketch.seed_index.as_ref().unwrap(),
+        );
+        seeds_ref = ref_index.entries();
+        seeds_query = query_index.entries();
+        num_distinct_ref = ref_index.num_distinct_seeds();
+        num_distinct_query = query_index.num_distinct_seeds();
+        query_positions_all = new_query_position_buffers(
+            query_sketch.contigs.len(),
+            &query_sketch.contig_lengths,
+            query_sketch.c,
+        );
     }
-    //    let kmer_seeds_ref = &ref_sketch.kmer_seeds_k[k];
-    //    let kmer_seeds_query = &query_sketch.kmer_seeds_k[k];
-    let mut anchors = vec![];
+
+    //Merge-join of the two flat, seed-sorted indices. Both sides are walked
+    //monotonically, so every access to either index is sequential; the ref side
+    //gallops when it has to skip a long stretch of seeds the query does not have,
+    //which is what makes comparing a tiny genome against a huge one cheap.
+    //
+    //The control flow below reproduces the old hash-probe loop exactly:
+    //  * a query seed occurring more than `index_chain_band` times is dropped
+    //    outright, and its positions are NOT recorded;
+    //  * that query-side check happens before the ref side is consulted;
+    //  * if the seed is present in the ref but occurs there more than
+    //    `index_chain_band` times, the seed is dropped and its query positions
+    //    are again NOT recorded (whereas a query seed simply absent from the ref
+    //    does get its positions recorded).
+    let band = map_params.index_chain_band;
+    let mut anchors = Vec::with_capacity(usize::min(seeds_query.len(), seeds_ref.len()));
     let mut query_kmers_with_hits = 0;
-    for (canon_kmer, _query_tagged) in kmer_seeds_query.iter() {
-        // Get query positions using the new API
-        let query_positions_iter = if switched {
-            ref_sketch.get_seed_positions(*canon_kmer)
-        } else {
-            query_sketch.get_seed_positions(*canon_kmer)
-        };
-        
-        if query_positions_iter.len() > map_params.index_chain_band{
+    let mut qi = 0;
+    let mut ri = 0;
+    while qi < seeds_query.len() {
+        let seed = seeds_query[qi].seed;
+        let q_end = seed_run_end(seeds_query, qi);
+
+        if q_end - qi > band {
+            qi = q_end;
             continue;
         }
-        
-        // Get query positions using Cow
-        let query_positions = query_positions_iter;
-        let contains = kmer_seeds_ref.contains_key(canon_kmer);
 
-        if !contains {
-            for qpos in query_positions.iter() {
-                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
-            }
-        } else {
-            // Get reference positions using the new API  
-            let ref_positions = if switched {
-                query_sketch.get_seed_positions(*canon_kmer)
-            } else {
-                ref_sketch.get_seed_positions(*canon_kmer)
-            };
+        if ri < seeds_ref.len() && seeds_ref[ri].seed < seed {
+            ri = gallop_to_seed(seeds_ref, ri, seed);
+        }
 
-            if ref_positions.len() > map_params.index_chain_band{
+        if ri < seeds_ref.len() && seeds_ref[ri].seed == seed {
+            let r_end = seed_run_end(seeds_ref, ri);
+            if r_end - ri > band {
+                qi = q_end;
+                ri = r_end;
                 continue;
             }
 
-            for qpos in query_positions.iter() {
+            for qentry in seeds_query[qi..q_end].iter() {
+                let qpos = &qentry.position;
                 query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
 
             query_kmers_with_hits += 1;
-            for qpos in query_positions.iter() {
-                for rpos in ref_positions.iter() {
+            for qentry in seeds_query[qi..q_end].iter() {
+                let qpos = &qentry.position;
+                for rentry in seeds_ref[ri..r_end].iter() {
+                    let rpos = &rentry.position;
                     anchors.push(Anchor::new(
                         &(rpos.pos, rpos.contig_index()),
                         &(qpos.pos, qpos.contig_index()),
@@ -709,7 +789,14 @@ fn get_anchors(
                     ));
                 }
             }
+            ri = r_end;
+        } else {
+            for qentry in seeds_query[qi..q_end].iter() {
+                let qpos = &qentry.position;
+                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
+            }
         }
+        qi = q_end;
     }
     if anchors.is_empty() {
         debug!(
@@ -724,12 +811,12 @@ fn get_anchors(
     }
     debug!(
         "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}, Ref_file {}, Query_file {}",
-        kmer_seeds_ref.len(),
-        kmer_seeds_query.len(),
+        num_distinct_ref,
+        num_distinct_query,
         anchors.len(),
         query_kmers_with_hits,
         f64::powf(
-            (query_kmers_with_hits as f64) / (kmer_seeds_query.len() as f64),
+            (query_kmers_with_hits as f64) / (num_distinct_query as f64),
             1. / (k as f64)
         ),
         ref_sketch.file_name,

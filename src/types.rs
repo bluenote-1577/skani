@@ -31,7 +31,6 @@ use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 // bytecheck can be used to validate your data if you want
 use smallvec::SmallVec;
-use smallvec::smallvec;
 use crate::params::*;
 use partitions::*;
 use std::collections::{HashMap, HashSet};
@@ -56,9 +55,12 @@ pub type MarkerBits = u64;
 pub type SeedBits = u32;
 pub type KmerToSketch = MMHashMap<MarkerBits, SmallVec<[u32; KMER_SK_SMALL_VEC_SIZE]>>;
 //pub type KmerToSketch = MMHashMap<MarkerBits, Vec<usize>>;
+//LEGACY ON-DISK TYPES. The in-memory seed index is `SeedIndex` (a flat, sorted
+//vector); these two types only exist so that `.sketch` files, `sketches.db` and
+//`markers.bin` keep exactly the same bincode layout as skani <= 0.3.2. They are
+//used by `SketchSerde` and converted to/from `SeedIndex` on load/store.
 pub type KmerSeeds = MMHashMap32<SeedBits, u64>; // Tagged index: bit 0 = single/multiple, bits 1-63 = data
 pub type MultiPositionStorage = Vec<SmallVec<[SeedPosition; 3]>>; // For cases with multiple SeedPositions
-//pub type KmerSeeds = MMHashMap<SeedBits, SmallVec<[SeedPosition;SMALL_VEC_SIZE]>>;
 
 
 //Implement minimap2 hashing, will test later.
@@ -121,7 +123,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     key
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Copy, Serialize, Deserialize, Debug)]
 pub struct SeedPosition{
     pub pos: GnPosition,
     pub contig_index_canonical: ContigIndexCanonical, // packed: contig_index + canonical bit
@@ -191,7 +193,123 @@ impl SeedPosition {
     }
 }
 
-use std::borrow::Cow;
+/// One (seed, position) record of the flat seed index.
+///
+/// 12 bytes, and the derived `Ord` orders by `(seed, pos, contig_index_canonical)`,
+/// which is exactly the order the index is kept in.
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Copy, Debug)]
+pub struct SeedEntry {
+    pub seed: SeedBits,
+    pub position: SeedPosition,
+}
+
+/// Flat, sorted, per-genome seed index.
+///
+/// Replaces the old `HashMap<u32, tagged-index>` + `Vec<SmallVec<[SeedPosition; 3]>>`
+/// pair. All `(seed, position)` records live in one contiguous allocation sorted by
+/// `(seed, pos, contig)`, so equal seeds form a contiguous run. Anchor generation
+/// between two genomes is then a sequential merge-join over two such vectors instead
+/// of a hash probe per seed, and there is no per-lookup allocation at all.
+///
+/// Build order: `push()` while sketching each contig, then `finalize()` once per
+/// genome. `finalize()` is what establishes the sorted invariant; everything that
+/// reads the index requires a finalized one.
+#[derive(Eq, PartialEq, Clone, Default, Debug)]
+pub struct SeedIndex {
+    entries: Vec<SeedEntry>,
+    num_distinct_seeds: u32,
+    finalized: bool,
+}
+
+impl SeedIndex {
+    /// Append a record. Cheap; ordering is established later by `finalize`.
+    #[inline]
+    pub fn push(&mut self, seed: SeedBits, position: SeedPosition) {
+        debug_assert!(!self.finalized, "pushing into an already finalized SeedIndex");
+        self.entries.push(SeedEntry { seed, position });
+    }
+
+    /// Sort the records and cache the distinct-seed count. Idempotent.
+    pub fn finalize(&mut self) {
+        if self.finalized {
+            return;
+        }
+        //Sorting on the whole entry (not just the seed) keeps the index
+        //independent of the sort algorithm and of the order in which contigs
+        //and SIMD lanes happened to emit their seeds.
+        self.entries.sort_unstable();
+        self.entries.shrink_to_fit();
+        let mut distinct = 0u32;
+        let mut prev: Option<SeedBits> = None;
+        for e in self.entries.iter() {
+            if prev != Some(e.seed) {
+                distinct += 1;
+                prev = Some(e.seed);
+            }
+        }
+        self.num_distinct_seeds = distinct;
+        self.finalized = true;
+    }
+
+    /// Records, sorted by `(seed, pos, contig)`. Only valid after `finalize`.
+    #[inline]
+    pub fn entries(&self) -> &[SeedEntry] {
+        debug_assert!(self.finalized, "SeedIndex read before finalize()");
+        &self.entries
+    }
+
+    /// Number of distinct seeds (the old `kmer_seeds_k.len()`).
+    #[inline]
+    pub fn num_distinct_seeds(&self) -> usize {
+        self.num_distinct_seeds as usize
+    }
+
+    /// Build from the legacy tagged-hash-map representation found in `.sketch` files.
+    fn from_legacy(kmer_seeds: KmerSeeds, multi_position_storage: &MultiPositionStorage) -> Self {
+        let mut index = SeedIndex::default();
+        index.entries.reserve(kmer_seeds.len());
+        for (seed, tagged_index) in kmer_seeds.into_iter() {
+            if TaggedIndex::is_single(tagged_index) {
+                index.push(seed, TaggedIndex::get_single(tagged_index));
+            } else {
+                let storage_index = TaggedIndex::get_storage_index(tagged_index);
+                for position in multi_position_storage[storage_index].iter() {
+                    index.push(seed, *position);
+                }
+            }
+        }
+        index.finalize();
+        index
+    }
+
+    /// Render back into the legacy tagged-hash-map representation so that written
+    /// `.sketch` files stay readable by older skani versions.
+    fn to_legacy(&self) -> (KmerSeeds, MultiPositionStorage) {
+        debug_assert!(self.finalized, "SeedIndex serialized before finalize()");
+        let mut kmer_seeds =
+            KmerSeeds::with_capacity_and_hasher(self.num_distinct_seeds(), MMBuildHasher32::default());
+        let mut multi_position_storage = MultiPositionStorage::new();
+        let entries = &self.entries;
+        let mut i = 0;
+        while i < entries.len() {
+            let seed = entries[i].seed;
+            let mut j = i + 1;
+            while j < entries.len() && entries[j].seed == seed {
+                j += 1;
+            }
+            if j - i == 1 {
+                kmer_seeds.insert(seed, TaggedIndex::single(&entries[i].position));
+            } else {
+                let storage_index = multi_position_storage.len();
+                multi_position_storage
+                    .push(entries[i..j].iter().map(|e| e.position).collect());
+                kmer_seeds.insert(seed, TaggedIndex::multiple(storage_index));
+            }
+            i = j;
+        }
+        (kmer_seeds, multi_position_storage)
+    }
+}
 
 /// Truncate contig name to first part (before first whitespace) if short_header is enabled
 pub fn truncate_contig_name(name: &str, short_header: bool) -> String {
@@ -250,10 +368,10 @@ impl TaggedIndex {
 //}
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
+#[serde(from = "SketchSerde", into = "SketchSerde")]
 pub struct Sketch {
     pub file_name: String,
-    pub kmer_seeds_k: Option<KmerSeeds>,
-    pub multi_position_storage: MultiPositionStorage, // Storage for multiple SeedPositions
+    pub seed_index: Option<SeedIndex>,
     pub contigs: Vec<String>,
     pub total_sequence_length: usize,
     pub contig_lengths: Vec<GnPosition>,
@@ -277,54 +395,38 @@ pub struct Sketch {
 }
 
 impl Sketch{
-    /// Add a SeedPosition to the KmerSeeds using tagged index system
+    /// Append a (seed, position) record to this sketch's flat seed index.
+    ///
+    /// Records are appended unsorted; `finalize_seed_index` must be called once
+    /// the genome (or individual contig, in `-i` mode) has been fully sketched.
+    #[inline]
     pub fn add_seed_position(&mut self, seed: SeedBits, position: SeedPosition) {
-        if let Some(kmer_seeds) = &mut self.kmer_seeds_k {
-            match kmer_seeds.get_mut(&seed) {
-                Some(tagged_index) => {
-                    // Check if it's currently a single position
-                    if TaggedIndex::is_single(*tagged_index) {
-                        // Convert to multiple: create new vec with existing + new position
-                        let existing = TaggedIndex::get_single(*tagged_index);
-                        let storage_index = self.multi_position_storage.len();
-                        self.multi_position_storage.push(smallvec![existing, position]);
-                        *tagged_index = TaggedIndex::multiple(storage_index);
-                    } else {
-                        // Already multiple: add to existing vec
-                        let storage_index = TaggedIndex::get_storage_index(*tagged_index);
-                        self.multi_position_storage[storage_index].push(position);
-                    }
-                }
-                None => {
-                    // First position for this seed: store as single
-                    kmer_seeds.insert(seed, TaggedIndex::single(&position));
-                }
-            }
+        if let Some(seed_index) = &mut self.seed_index {
+            seed_index.push(seed, position);
         }
     }
-    
-    /// Get SeedPositions for a seed using Cow
-    pub fn get_seed_positions(&self, seed: SeedBits) -> Cow<[SeedPosition]> {
-        if let Some(kmer_seeds) = &self.kmer_seeds_k {
-            if let Some(&tagged_index) = kmer_seeds.get(&seed) {
-                if TaggedIndex::is_single(tagged_index) {
-                    let single_pos = TaggedIndex::get_single(tagged_index);
-                    return Cow::Owned(vec![single_pos]);
-                } else {
-                    let storage_index = TaggedIndex::get_storage_index(tagged_index);
-                    return Cow::Borrowed(&self.multi_position_storage[storage_index]);
-                }
-            }
+
+    /// Sort and freeze the seed index. Must be called after sketching and before
+    /// the sketch is used for mapping. Idempotent and a no-op for marker-only
+    /// sketches, which carry no seed index.
+    pub fn finalize_seed_index(&mut self) {
+        if let Some(seed_index) = &mut self.seed_index {
+            seed_index.finalize();
         }
-        Cow::Borrowed(&[])
     }
-    
+
+    /// Number of distinct seeds in this sketch (0 if it has no seed index).
+    pub fn num_distinct_seeds(&self) -> usize {
+        self.seed_index
+            .as_ref()
+            .map_or(0, |index| index.num_distinct_seeds())
+    }
+
     pub fn get_markers_only(sketch: &Sketch) -> Sketch{
-        
+
         Sketch{
             file_name : sketch.file_name.clone(),
-            kmer_seeds_k : None,
-            multi_position_storage: Vec::new(),
+            seed_index : None,
             contigs: sketch.contigs.clone(),
             total_sequence_length : sketch.total_sequence_length,
             contig_lengths : vec![],
@@ -351,6 +453,85 @@ impl Sketch{
     }
 }
 
+/// On-disk image of a `Sketch`.
+///
+/// This mirrors the pre-flat-index `Sketch` layout field for field, in the same
+/// order, with the same types. bincode writes struct fields positionally and
+/// stores no names or lengths, so serializing this type produces exactly the
+/// byte stream that skani <= 0.3.2 produced, and deserializing it accepts
+/// exactly what those versions wrote. `Sketch` is serialized through it via
+/// `#[serde(from/into)]`, so `.sketch` files, `sketches.db` and `markers.bin`
+/// remain compatible in both directions; the flat `SeedIndex` is built on load
+/// and rendered back out on store.
+#[derive(Serialize, Deserialize)]
+struct SketchSerde {
+    file_name: String,
+    kmer_seeds_k: Option<KmerSeeds>,
+    multi_position_storage: MultiPositionStorage,
+    contigs: Vec<String>,
+    total_sequence_length: usize,
+    contig_lengths: Vec<GnPosition>,
+    repetitive_kmers: usize,
+    marker_seeds: MMHashSet<MarkerBits>,
+    marker_c: usize,
+    c: usize,
+    k: usize,
+    contig_order: usize,
+    individual_contig: bool,
+    amino_acid: bool,
+}
+
+impl From<SketchSerde> for Sketch {
+    fn from(disk: SketchSerde) -> Sketch {
+        let seed_index = disk
+            .kmer_seeds_k
+            .map(|kmer_seeds| SeedIndex::from_legacy(kmer_seeds, &disk.multi_position_storage));
+        Sketch {
+            file_name: disk.file_name,
+            seed_index,
+            contigs: disk.contigs,
+            total_sequence_length: disk.total_sequence_length,
+            contig_lengths: disk.contig_lengths,
+            repetitive_kmers: disk.repetitive_kmers,
+            marker_seeds: disk.marker_seeds,
+            marker_c: disk.marker_c,
+            c: disk.c,
+            k: disk.k,
+            contig_order: disk.contig_order,
+            individual_contig: disk.individual_contig,
+            amino_acid: disk.amino_acid,
+        }
+    }
+}
+
+impl From<Sketch> for SketchSerde {
+    fn from(sketch: Sketch) -> SketchSerde {
+        let (kmer_seeds_k, multi_position_storage) = match &sketch.seed_index {
+            Some(seed_index) => {
+                let (kmer_seeds, storage) = seed_index.to_legacy();
+                (Some(kmer_seeds), storage)
+            }
+            None => (None, MultiPositionStorage::new()),
+        };
+        SketchSerde {
+            file_name: sketch.file_name,
+            kmer_seeds_k,
+            multi_position_storage,
+            contigs: sketch.contigs,
+            total_sequence_length: sketch.total_sequence_length,
+            contig_lengths: sketch.contig_lengths,
+            repetitive_kmers: sketch.repetitive_kmers,
+            marker_seeds: sketch.marker_seeds,
+            marker_c: sketch.marker_c,
+            c: sketch.c,
+            k: sketch.k,
+            contig_order: sketch.contig_order,
+            individual_contig: sketch.individual_contig,
+            amino_acid: sketch.amino_acid,
+        }
+    }
+}
+
 impl PartialOrd for Sketch {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -373,8 +554,7 @@ impl Default for Sketch {
     fn default() -> Self {
         Sketch {
             file_name: String::new(),
-            kmer_seeds_k: None,
-            multi_position_storage: Vec::new(),
+            seed_index: None,
             contigs: vec![],
             total_sequence_length: 0,
             contig_lengths: vec![],
