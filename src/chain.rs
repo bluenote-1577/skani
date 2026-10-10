@@ -1186,7 +1186,16 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
                 i
             } else {
                 let root = comp_vec[pointer_vec[i]] as usize;
-                if score_vec[i] > score_vec[comp_best[root] as usize] {
+                //`>=`, not `>`: on a tie the higher index wins. The sweep
+                //visits indices in ascending order, so this keeps the last
+                //maximum -- which is what the PartitionVec enumeration this
+                //replaced arrived at via its link order. Getting this
+                //backwards is not a crash, it silently shifts chain endpoints:
+                //with `>` it changed 7% of pairs on a set of 2000 real MAGs
+                //(max 2.05 ANI) and dropped 14 of them below the alignment
+                //fraction cutoff, while being almost invisible on clean
+                //synthetic genomes.
+                if score_vec[i] >= score_vec[comp_best[root] as usize] {
                     comp_best[root] = i as u32;
                 }
                 root
