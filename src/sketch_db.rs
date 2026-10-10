@@ -43,8 +43,12 @@ impl SketchDbWriter {
 
     /// Add a sketch to the consolidated database
     pub fn add_sketch(&mut self, sketch_params: &SketchParams, sketch: &Sketch) -> Result<(), Box<dyn std::error::Error>> {
-        // Serialize the sketch data
-        let serialized = bincode::serialize(&(sketch_params, sketch))?;
+        // Serialize the sketch data. Each record carries its own format header,
+        // exactly like a standalone .sketch file, so a record can be classified
+        // from its own bytes without consulting anything else in the database.
+        // The header is part of the record, so index offsets and lengths cover it.
+        let mut serialized = sketch_header_bytes().to_vec();
+        bincode::serialize_into(&mut serialized, &(sketch_params, sketch))?;
         let length = serialized.len() as u64;
 
         // Record the index entry
@@ -113,10 +117,28 @@ impl SketchDbReader {
             // Time the mmap slice access (potential disk I/O)
             let bytes = &self.mmap[start..end];
             
-            // Time the deserialization (memory copy + parsing)
-            let (params, sketch) = bincode::deserialize(bytes)?;
-                        
-            Ok((params, sketch))
+            // Time the deserialization (memory copy + parsing). Each record is
+            // self-describing: a current one opens with the format header, a
+            // pre-0.4 one opens straight into SketchParams.
+            match detect_sketch_format(bytes) {
+                SketchFormat::Native => {
+                    let (params, sketch) = bincode::deserialize(&bytes[SKETCH_HEADER_LEN..])?;
+                    Ok((params, sketch))
+                }
+                SketchFormat::Legacy => {
+                    warn_legacy_sketch_format();
+                    let (params, sketch): (SketchParams, LegacySketch) =
+                        bincode::deserialize(bytes)?;
+                    Ok((params, sketch.0))
+                }
+                SketchFormat::Unsupported(version) => Err(format!(
+                    "Sketch database record {} was written by a newer version of skani \
+                     (sketch format {}). Please upgrade skani or re-run `skani sketch`.",
+                    index,
+                    version.map_or("unknown".to_string(), |v| v.to_string())
+                )
+                .into()),
+            }
         } else {
             Err(format!("Sketch index out of bounds: {}", index).into())
         }

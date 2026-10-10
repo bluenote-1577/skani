@@ -313,7 +313,37 @@ impl SeedIndex {
         self.num_distinct_seeds as usize
     }
 
-    /// Build from the legacy tagged-hash-map representation found in `.sketch` files.
+    /// Rebuild a finalized index straight from its on-disk parallel arrays.
+    ///
+    /// The native on-disk layout *is* the in-memory layout, so this is a move of
+    /// two already-sorted vectors: no hashing, no sorting, no re-derivation of
+    /// the distinct count. This is the whole point of the native format.
+    pub fn from_parts(
+        seeds: Vec<SeedBits>,
+        positions: Vec<SeedPosition>,
+        num_distinct_seeds: u32,
+    ) -> Self {
+        debug_assert_eq!(seeds.len(), positions.len());
+        SeedIndex {
+            seeds,
+            positions,
+            build: Vec::new(),
+            num_distinct_seeds,
+            finalized: true,
+        }
+    }
+
+    /// The cached distinct-seed count, for the native writer. Unlike
+    /// `num_distinct_seeds` this hands back the stored `u32` as-is rather than
+    /// widening it, since that is the width it occupies on disk.
+    #[inline]
+    pub fn distinct_for_io(&self) -> u32 {
+        self.num_distinct_seeds
+    }
+
+    /// Build from the legacy tagged-hash-map representation found in pre-0.4
+    /// `.sketch` files. This is the slow path: a hash map walk followed by a
+    /// full sort of every record.
     fn from_legacy(kmer_seeds: KmerSeeds, multi_position_storage: &MultiPositionStorage) -> Self {
         let mut index = SeedIndex::default();
         index.build.reserve(kmer_seeds.len());
@@ -331,11 +361,6 @@ impl SeedIndex {
         index
     }
 
-    /// Number of distinct seeds that occur more than once, i.e. the length of the
-    /// legacy `multi_position_storage` vector this index would render into.
-    fn num_multi_seeds(&self) -> usize {
-        self.runs().filter(|run| run.positions.len() > 1).count()
-    }
 }
 
 /// One distinct seed and all of its positions.
@@ -428,8 +453,135 @@ impl TaggedIndex {
 //    }
 //}
 
+
+//ON-DISK FORMAT VERSIONING
+//
+//A `.sketch` file, one record inside `sketches.db`, and `markers.bin` are all
+//just `bincode::serialize(&(SketchParams, <payload>))`. bincode is not
+//self-describing: struct fields are written positionally with no names, no
+//tags and no length, so nothing inside a file written by skani <= 0.3.x says
+//which layout it is in. Worse, handing such a file to a parser that expects a
+//different layout does not fail cleanly - it happily decodes garbage. New
+//files therefore carry an explicit header, and old files are recognised by its
+//absence.
+//
+//Layout of a new file: 8 magic bytes, then a u32 little-endian format version,
+//then the bincode stream exactly as before. The magic is written as raw bytes
+//rather than through bincode so that its on-disk spelling cannot be changed by
+//bincode's integer encoding options.
+//
+//WHY THE MAGIC CANNOT COLLIDE WITH A LEGACY FILE
+//
+//A legacy stream begins with `SketchParams`, whose first field is `c: usize`.
+//bincode's default options encode `usize` as a fixed-width little-endian u64,
+//so the first eight bytes of every legacy file are precisely `c` in
+//little-endian. That is not a guess: files written by released skani 0.3.1 and
+//by 0.3.2 both begin `7d 00 00 00 00 00 00 00`, i.e. c = 125, the default.
+//
+//`SKETCH_MAGIC` ends in the byte 0xFF, and little-endian puts that last byte in
+//the *most significant* byte of the u64. So for a legacy file to open with our
+//magic, its `c` would have to be at least 0xFF00_0000_0000_0000, i.e. about
+//1.8e19. `c` is the seed compression factor: it is parsed from `-c`, is a few
+//hundred in practice, and skani rejects values outside a small range. Even
+//ignoring validation entirely, a `c` anywhere near 2^32 would ask for one seed
+//every four billion bases, which no genome and no accepted command line can
+//produce. The remaining seven magic bytes ("SKANIsk") would have to match on
+//top of that. The collision is not improbable, it is unreachable.
+pub const SKETCH_MAGIC: [u8; 8] = *b"SKANIsk\xFF";
+
+/// Version of the native on-disk sketch layout this build writes and reads.
+pub const SKETCH_FORMAT_VERSION: u32 = 1;
+
+/// Bytes of header in front of the bincode stream of a native-format file.
+pub const SKETCH_HEADER_LEN: usize = SKETCH_MAGIC.len() + 4;
+
+/// What the bytes at the front of a serialized sketch stream say about it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SketchFormat {
+    /// Current layout. The bincode stream starts at `SKETCH_HEADER_LEN`.
+    Native,
+    /// No header at all: written by skani <= 0.3.x. The bincode stream starts at
+    /// byte 0 and decodes through the legacy on-disk types.
+    Legacy,
+    /// Our magic, but a version this build does not know. `None` means the
+    /// header itself was truncated.
+    Unsupported(Option<u32>),
+}
+
+/// The native-format header, ready to be written in front of a bincode stream.
+pub fn sketch_header_bytes() -> [u8; SKETCH_HEADER_LEN] {
+    let mut header = [0u8; SKETCH_HEADER_LEN];
+    header[..SKETCH_MAGIC.len()].copy_from_slice(&SKETCH_MAGIC);
+    header[SKETCH_MAGIC.len()..].copy_from_slice(&SKETCH_FORMAT_VERSION.to_le_bytes());
+    header
+}
+
+/// Write the native-format header. Every writer calls this before its bincode
+/// stream; nothing writes the legacy layout any more.
+pub fn write_sketch_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
+    writer.write_all(&sketch_header_bytes())
+}
+
+/// Classify a stream from the bytes at its front. `prefix` may be the whole
+/// file, an mmap slice, or just the first `SKETCH_HEADER_LEN` bytes.
+pub fn detect_sketch_format(prefix: &[u8]) -> SketchFormat {
+    if prefix.len() < SKETCH_MAGIC.len() || prefix[..SKETCH_MAGIC.len()] != SKETCH_MAGIC {
+        //No magic. Per the argument above this can only be a pre-0.4 file (or
+        //not a sketch at all, in which case the legacy parse fails and the
+        //caller reports a corrupt file, exactly as before).
+        return SketchFormat::Legacy;
+    }
+    if prefix.len() < SKETCH_HEADER_LEN {
+        return SketchFormat::Unsupported(None);
+    }
+    let mut version_bytes = [0u8; 4];
+    version_bytes.copy_from_slice(&prefix[SKETCH_MAGIC.len()..SKETCH_HEADER_LEN]);
+    let version = u32::from_le_bytes(version_bytes);
+    if version == SKETCH_FORMAT_VERSION {
+        SketchFormat::Native
+    } else {
+        SketchFormat::Unsupported(Some(version))
+    }
+}
+
+/// Pull the header off the front of a reader, returning it with the number of
+/// bytes actually read. A short read only happens for a file smaller than the
+/// header. The bytes are *consumed*, so a caller that then wants to parse the
+/// stream as legacy must chain them back on in front of the reader.
+pub fn read_sketch_header<R: std::io::Read>(
+    reader: &mut R,
+) -> std::io::Result<([u8; SKETCH_HEADER_LEN], usize)> {
+    let mut header = [0u8; SKETCH_HEADER_LEN];
+    let mut filled = 0;
+    while filled < header.len() {
+        match reader.read(&mut header[filled..])? {
+            0 => break,
+            n => filled += n,
+        }
+    }
+    Ok((header, filled))
+}
+
+static LEGACY_FORMAT_WARNED: std::sync::Once = std::sync::Once::new();
+
+/// Emit the pre-0.4 format notice at most once per process.
+///
+/// The sketch loading paths are rayon-parallel and a user may be loading
+/// hundreds of thousands of old sketches, so this has to be both thread-safe
+/// and once per *run* rather than once per sketch. `Once` gives us both.
+pub fn warn_legacy_sketch_format() {
+    LEGACY_FORMAT_WARNED.call_once(|| {
+        log::warn!(
+            "Loading sketches in the pre-0.4 skani format. They still work and give \
+             identical results, but they have to be converted on every load. Re-running \
+             `skani sketch` on these genomes rewrites them in the current format and \
+             makes loading substantially faster."
+        );
+    });
+}
+
 #[derive(Eq, PartialEq, Deserialize, Clone)]
-#[serde(from = "SketchSerde")]
+#[serde(from = "SketchNative")]
 pub struct Sketch {
     pub file_name: String,
     pub seed_index: Option<SeedIndex>,
@@ -514,14 +666,112 @@ impl Sketch{
     }
 }
 
-/// On-disk image of a `Sketch`, used for reading.
+/// On-disk image of a `SeedIndex` in the native format: the two parallel arrays
+/// exactly as they live in memory, plus the cached distinct-seed count. Reading
+/// one is two length-prefixed bulk copies, with no hashing and no sort.
+#[derive(Deserialize)]
+struct SeedIndexNative {
+    seeds: Vec<SeedBits>,
+    positions: Vec<SeedPosition>,
+    num_distinct_seeds: u32,
+}
+
+/// Borrowed counterpart of `SeedIndexNative`, so writing copies nothing. A
+/// `&[T]` and a `Vec<T>` have the same bincode encoding, so the two agree.
+struct SeedIndexNativeRef<'a>(&'a SeedIndex);
+
+impl Serialize for SeedIndexNativeRef<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut index = serializer.serialize_struct("SeedIndexNative", 3)?;
+        index.serialize_field("seeds", self.0.seeds())?;
+        index.serialize_field("positions", self.0.positions())?;
+        index.serialize_field("num_distinct_seeds", &self.0.distinct_for_io())?;
+        index.end()
+    }
+}
+
+/// Writes the `seed_index` field as a real `Option`.
+///
+/// A marker-only sketch has no seed index at all, and that has to stay
+/// distinguishable on disk from a sketch whose index is genuinely empty -
+/// inferring it from "seeds, positions and the distinct count are all empty"
+/// conflates the two. bincode writes an `Option` as a one-byte tag, so being
+/// explicit costs one byte.
+struct NativeSeedIndexField<'a>(Option<&'a SeedIndex>);
+
+impl Serialize for NativeSeedIndexField<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0 {
+            None => serializer.serialize_none(),
+            Some(index) => serializer.serialize_some(&SeedIndexNativeRef(index)),
+        }
+    }
+}
+
+/// Native on-disk image of a `Sketch`, used for reading. Mirrors what
+/// `impl Serialize for Sketch` writes, field for field.
+#[derive(Deserialize)]
+struct SketchNative {
+    file_name: String,
+    seed_index: Option<SeedIndexNative>,
+    contigs: Vec<String>,
+    total_sequence_length: usize,
+    contig_lengths: Vec<GnPosition>,
+    repetitive_kmers: usize,
+    marker_seeds: MMHashSet<MarkerBits>,
+    marker_c: usize,
+    c: usize,
+    k: usize,
+    contig_order: usize,
+    individual_contig: bool,
+    amino_acid: bool,
+}
+
+impl From<SketchNative> for Sketch {
+    fn from(disk: SketchNative) -> Sketch {
+        Sketch {
+            file_name: disk.file_name,
+            seed_index: disk.seed_index.map(|index| {
+                SeedIndex::from_parts(index.seeds, index.positions, index.num_distinct_seeds)
+            }),
+            contigs: disk.contigs,
+            total_sequence_length: disk.total_sequence_length,
+            contig_lengths: disk.contig_lengths,
+            repetitive_kmers: disk.repetitive_kmers,
+            marker_seeds: disk.marker_seeds,
+            marker_c: disk.marker_c,
+            c: disk.c,
+            k: disk.k,
+            contig_order: disk.contig_order,
+            individual_contig: disk.individual_contig,
+            amino_acid: disk.amino_acid,
+        }
+    }
+}
+
+/// A `Sketch` read out of the pre-0.4 layout.
+///
+/// A type can only have one `Deserialize`, and `Sketch`'s is the native one, so
+/// the legacy path needs its own handle. Readers pick between
+/// `(SketchParams, Sketch)` and `(SketchParams, LegacySketch)` after inspecting
+/// the file header; nothing writes this layout any more.
+#[derive(Deserialize)]
+#[serde(from = "SketchSerde")]
+pub struct LegacySketch(pub Sketch);
+
+impl From<SketchSerde> for LegacySketch {
+    fn from(disk: SketchSerde) -> LegacySketch {
+        LegacySketch(Sketch::from(disk))
+    }
+}
+
+/// Legacy on-disk image of a `Sketch`, used for reading only.
 ///
 /// This mirrors the pre-flat-index `Sketch` layout field for field, in the same
 /// order, with the same types, so deserializing it accepts exactly what skani
-/// <= 0.3.2 wrote. `Sketch` deserializes through it via `#[serde(from)]` and the
-/// flat `SeedIndex` is built from the tagged hash map as the last step of the
-/// load. Writing goes the other way through `impl Serialize for Sketch`, which
-/// emits this same layout without materializing it.
+/// <= 0.3.2 wrote. The flat `SeedIndex` is then built from the tagged hash map
+/// as the last step of the load, which is the cost the native format removes.
 #[derive(Deserialize)]
 struct SketchSerde {
     file_name: String,
@@ -563,90 +813,21 @@ impl From<SketchSerde> for Sketch {
     }
 }
 
-/// Writes the legacy `kmer_seeds_k` field: `Option` of a map from seed to tagged
-/// index. Streamed straight out of the sorted index, so nothing is materialized.
-/// Storage indices are handed out in seed order, which is the same order
-/// `LegacyMultiStorage` emits the position vectors in.
-struct LegacyKmerSeeds<'a>(Option<&'a SeedIndex>);
-
-impl Serialize for LegacyKmerSeeds<'_> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self.0 {
-            None => serializer.serialize_none(),
-            Some(index) => serializer.serialize_some(&LegacyKmerSeedsMap(index)),
-        }
-    }
-}
-
-struct LegacyKmerSeedsMap<'a>(&'a SeedIndex);
-
-impl Serialize for LegacyKmerSeedsMap<'_> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeMap;
-        let mut map = serializer.serialize_map(Some(self.0.num_distinct_seeds()))?;
-        let mut storage_index = 0usize;
-        for run in self.0.runs() {
-            let tagged = if run.positions.len() == 1 {
-                TaggedIndex::single(&run.positions[0])
-            } else {
-                let tagged = TaggedIndex::multiple(storage_index);
-                storage_index += 1;
-                tagged
-            };
-            map.serialize_entry(&run.seed, &tagged)?;
-        }
-        map.end()
-    }
-}
-
-/// Writes the legacy `multi_position_storage` field: the position vectors of the
-/// seeds that occur more than once, in the order `LegacyKmerSeeds` numbered them.
-struct LegacyMultiStorage<'a>(Option<&'a SeedIndex>);
-
-impl Serialize for LegacyMultiStorage<'_> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeSeq;
-        let index = match self.0 {
-            None => return serializer.serialize_seq(Some(0))?.end(),
-            Some(index) => index,
-        };
-        let mut seq = serializer.serialize_seq(Some(index.num_multi_seeds()))?;
-        for run in index.runs().filter(|run| run.positions.len() > 1) {
-            seq.serialize_element(&LegacyPositions(run.positions))?;
-        }
-        seq.end()
-    }
-}
-
-/// One position vector. `SmallVec` serializes as a plain sequence, so this is
-/// byte-compatible with the `SmallVec<[SeedPosition; 3]>` it replaces.
-struct LegacyPositions<'a>(&'a [SeedPosition]);
-
-impl Serialize for LegacyPositions<'_> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeSeq;
-        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
-        for position in self.0.iter() {
-            seq.serialize_element(position)?;
-        }
-        seq.end()
-    }
-}
-
-/// Writes the pre-flat-index `Sketch` layout: same fields, same order, same
-/// types as `SketchSerde`, so the byte stream is exactly what skani <= 0.3.2
-/// produced and what it can still read back. The seed index is streamed out of
-/// its sorted form rather than being rebuilt as a hash map first, which also
-/// makes the written bytes deterministic (the old `HashMap` iteration order was
-/// not).
+/// Writes the native layout: the flat seed index as-is, so that loading it is
+/// a pair of bulk copies rather than a hash-map build followed by a sort.
+///
+/// Callers prepend `sketch_header_bytes()`; this impl emits only the bincode
+/// body. The written bytes are deterministic, since the index is already in
+/// sorted order (the old `HashMap` iteration order was not).
 impl Serialize for Sketch {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let index = self.seed_index.as_ref();
-        let mut sketch = serializer.serialize_struct("Sketch", 14)?;
+        let mut sketch = serializer.serialize_struct("Sketch", 13)?;
         sketch.serialize_field("file_name", &self.file_name)?;
-        sketch.serialize_field("kmer_seeds_k", &LegacyKmerSeeds(index))?;
-        sketch.serialize_field("multi_position_storage", &LegacyMultiStorage(index))?;
+        sketch.serialize_field(
+            "seed_index",
+            &NativeSeedIndexField(self.seed_index.as_ref()),
+        )?;
         sketch.serialize_field("contigs", &self.contigs)?;
         sketch.serialize_field("total_sequence_length", &self.total_sequence_length)?;
         sketch.serialize_field("contig_lengths", &self.contig_lengths)?;

@@ -9,7 +9,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rayon::prelude::*;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::sync::Mutex;
 
 fn write_header(writer: &mut impl Write, id_str: &str, ci: bool, verbose: bool) {
@@ -696,8 +696,40 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
                     error!("Problem reading sketch file {}. Perhaps your file path is wrong? Exiting.", sketch_file);
                     std::process::exit(1)
                 }
-                let reader = BufReader::new(f.unwrap());
-                let res: Result<(SketchParams, Sketch), _> = bincode::deserialize_from(reader);
+                let mut reader = BufReader::new(f.unwrap());
+                //bincode is positional and untagged, so the only way to tell a
+                //pre-0.4 file from a current one is the explicit header on the
+                //front of current ones. Peek it, then parse through whichever
+                //on-disk layout it names. A short/absent header means pre-0.4.
+                let (header, header_len) = match read_sketch_header(&mut reader) {
+                    Ok(peeked) => peeked,
+                    Err(_) => {
+                        error!("Problem reading sketch file {}. Exiting.", sketch_file);
+                        std::process::exit(1)
+                    }
+                };
+                let peeked = &header[..header_len];
+                let res: Result<(SketchParams, Sketch), _> = match detect_sketch_format(peeked) {
+                    SketchFormat::Native => bincode::deserialize_from(reader),
+                    SketchFormat::Legacy => {
+                        //Nothing was a header, so feed the peeked bytes back in
+                        //front of the stream and decode the old layout.
+                        warn_legacy_sketch_format();
+                        bincode::deserialize_from::<_, (SketchParams, LegacySketch)>(
+                            peeked.chain(reader),
+                        )
+                        .map(|(params, sketch)| (params, sketch.0))
+                    }
+                    SketchFormat::Unsupported(version) => {
+                        error!(
+                            "{} was written by a newer version of skani (sketch format {}). \
+                             Please upgrade skani or re-run `skani sketch`.",
+                            sketch_file,
+                            version.map_or("unknown".to_string(), |v| v.to_string())
+                        );
+                        std::process::exit(1)
+                    }
+                };
                 if res.is_ok() {
                     let (temp_sketch_param, temp_ref_sketch) = res.unwrap();
                     let mut locked = ret_sketch_params.lock().unwrap();
@@ -722,8 +754,36 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
 }
 
 pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec<Sketch>) {
-    let reader = BufReader::new(File::open(marker_file).unwrap());
-    let res: Result<(SketchParams, Vec<Sketch>), _> = bincode::deserialize_from(reader);
+    let mut reader = BufReader::new(File::open(marker_file).unwrap());
+    //markers.bin holds serialized `Sketch` values too (marker-only ones, with
+    //`seed_index: None`), so it is versioned exactly like a .sketch file.
+    let (header, header_len) = match read_sketch_header(&mut reader) {
+        Ok(peeked) => peeked,
+        Err(_) => {
+            error!("Problem reading {}. Exiting. ", marker_file);
+            std::process::exit(1)
+        }
+    };
+    let peeked = &header[..header_len];
+    let res: Result<(SketchParams, Vec<Sketch>), _> = match detect_sketch_format(peeked) {
+        SketchFormat::Native => bincode::deserialize_from(reader),
+        SketchFormat::Legacy => {
+            warn_legacy_sketch_format();
+            bincode::deserialize_from::<_, (SketchParams, Vec<LegacySketch>)>(peeked.chain(reader))
+                .map(|(params, sketches)| {
+                    (params, sketches.into_iter().map(|s| s.0).collect())
+                })
+        }
+        SketchFormat::Unsupported(version) => {
+            error!(
+                "{} was written by a newer version of skani (sketch format {}). \
+                 Please upgrade skani or re-run `skani sketch`.",
+                marker_file,
+                version.map_or("unknown".to_string(), |v| v.to_string())
+            );
+            std::process::exit(1)
+        }
+    };
     if res.is_ok() {
         res.unwrap()
     } else {

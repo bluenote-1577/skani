@@ -82,6 +82,7 @@ fn sketch_separate_files(command_params: CommandParams, sketch_params: SketchPar
             trace!("{} compress factor", sketch.total_sequence_length / sketch.num_distinct_seeds());
             trace!("{} marker compress factor", sketch.total_sequence_length / sketch.marker_seeds.len());
 
+            write_sketch_header(&mut file_bin).unwrap();
             bincode::serialize_into(&mut file_bin, &(&sketch_params, sketch)).unwrap();
 
             let mut locked = marker_sketches.lock().unwrap();
@@ -98,6 +99,7 @@ fn sketch_separate_files(command_params: CommandParams, sketch_params: SketchPar
         File::create(format!("{}/markers.bin", &command_params.out_file_name)).unwrap(),
     );
     let markers = marker_sketches.into_inner().unwrap();
+    write_sketch_header(&mut file_bin_marker).unwrap();
     bincode::serialize_into(&mut file_bin_marker, &(&sketch_params, markers)).unwrap();
 }
 
@@ -150,6 +152,7 @@ fn sketch_consolidated_db(command_params: CommandParams, sketch_params: SketchPa
         let mut file_bin_marker = BufWriter::new(
             File::create(format!("{}/markers.bin", &output_dir)).unwrap(),
         );
+        write_sketch_header(&mut file_bin_marker).unwrap();
         bincode::serialize_into(&mut file_bin_marker, &(&sketch_params_consumer, marker_sketches)).unwrap();
         
         sketch_count
