@@ -661,52 +661,72 @@ fn get_anchors(
     }
     //    let kmer_seeds_ref = &ref_sketch.kmer_seeds_k[k];
     //    let kmer_seeds_query = &query_sketch.kmer_seeds_k[k];
+    //The multi-position backing stores for whichever sketch is acting as query
+    //and which as reference. Resolving a tagged index against these directly
+    //avoids `get_seed_positions`, which heap-allocates a one-element Vec on
+    //every single-position lookup - and single-position seeds are the common
+    //case. `one_q`/`one_r` are the stack slots those lookups land in instead.
+    let q_storage = if switched {
+        &ref_sketch.multi_position_storage
+    } else {
+        &query_sketch.multi_position_storage
+    };
+    let r_storage = if switched {
+        &query_sketch.multi_position_storage
+    } else {
+        &ref_sketch.multi_position_storage
+    };
+    let mut one_q = [SeedPosition::default(); 1];
+    let mut one_r = [SeedPosition::default(); 1];
+
     let mut anchors = vec![];
     let mut query_kmers_with_hits = 0;
-    for (canon_kmer, _query_tagged) in kmer_seeds_query.iter() {
-        // Get query positions using the new API
-        let query_positions_iter = if switched {
-            ref_sketch.get_seed_positions(*canon_kmer)
+    //The tagged index is already in hand from iterating the map, so it is used
+    //directly rather than hashing `canon_kmer` a second time. The reference
+    //side is a single `get` instead of `contains_key` plus a second lookup.
+    for (canon_kmer, query_tagged) in kmer_seeds_query.iter() {
+        let query_positions: &[SeedPosition] = if TaggedIndex::is_single(*query_tagged) {
+            one_q[0] = TaggedIndex::get_single(*query_tagged);
+            &one_q[..]
         } else {
-            query_sketch.get_seed_positions(*canon_kmer)
+            &q_storage[TaggedIndex::get_storage_index(*query_tagged)][..]
         };
-        
-        if query_positions_iter.len() > map_params.index_chain_band{
+
+        if query_positions.len() > map_params.index_chain_band{
             continue;
         }
-        
-        // Get query positions using Cow
-        let query_positions = query_positions_iter;
-        let contains = kmer_seeds_ref.contains_key(canon_kmer);
 
-        if !contains {
-            for qpos in query_positions.iter() {
-                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
+        match kmer_seeds_ref.get(canon_kmer) {
+            None => {
+                for qpos in query_positions.iter() {
+                    query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
+                }
             }
-        } else {
-            // Get reference positions using the new API  
-            let ref_positions = if switched {
-                query_sketch.get_seed_positions(*canon_kmer)
-            } else {
-                ref_sketch.get_seed_positions(*canon_kmer)
-            };
+            Some(ref_tagged) => {
+                let ref_positions: &[SeedPosition] = if TaggedIndex::is_single(*ref_tagged) {
+                    one_r[0] = TaggedIndex::get_single(*ref_tagged);
+                    &one_r[..]
+                } else {
+                    &r_storage[TaggedIndex::get_storage_index(*ref_tagged)][..]
+                };
 
-            if ref_positions.len() > map_params.index_chain_band{
-                continue;
-            }
+                if ref_positions.len() > map_params.index_chain_band{
+                    continue;
+                }
 
-            for qpos in query_positions.iter() {
-                query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
-            }
+                for qpos in query_positions.iter() {
+                    query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
+                }
 
-            query_kmers_with_hits += 1;
-            for qpos in query_positions.iter() {
-                for rpos in ref_positions.iter() {
-                    anchors.push(Anchor::new(
-                        &(rpos.pos, rpos.contig_index()),
-                        &(qpos.pos, qpos.contig_index()),
-                        rpos.canonical() != qpos.canonical(),
-                    ));
+                query_kmers_with_hits += 1;
+                for qpos in query_positions.iter() {
+                    for rpos in ref_positions.iter() {
+                        anchors.push(Anchor::new(
+                            &(rpos.pos, rpos.contig_index()),
+                            &(qpos.pos, qpos.contig_index()),
+                            rpos.canonical() != qpos.canonical(),
+                        ));
+                    }
                 }
             }
         }

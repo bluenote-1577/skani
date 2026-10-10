@@ -121,7 +121,7 @@ pub fn mm_hash(bytes: &[u8]) -> usize {
     key
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Default, Clone, Copy, Serialize, Deserialize, Debug)]
 pub struct SeedPosition{
     pub pos: GnPosition,
     pub contig_index_canonical: ContigIndexCanonical, // packed: contig_index + canonical bit
