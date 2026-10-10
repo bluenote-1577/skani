@@ -806,7 +806,7 @@ pub struct ChainingResultANI {
     pub pointer_vec: Vec<usize>,
 }
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Default)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone, Copy)]
 pub struct Anchor {
     pub query_contig: ContigIndex,
     pub query_pos: GnPosition,

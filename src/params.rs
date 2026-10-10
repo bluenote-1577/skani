@@ -47,6 +47,9 @@ pub const MIN_LENGTH_COVER: usize = 500;
 //search only adds branches and breaks the prefetcher's sequential stream. The
 //AVX2 floor is wider because 32 u32 seeds is two cache lines and four vector
 //compares.
+//Below these sizes a comparison sort beats setting up a radix sort.
+pub const RADIX_SORT_MIN_ANCHORS: usize = 256;
+pub const RADIX_SORT_MIN_POSITIONS: usize = 256;
 pub const SEED_GALLOP_FLOOR: usize = 4;
 pub const SEED_GALLOP_FLOOR_SIMD: usize = 32;
 //Binary search stops once the bracket is this small and finishes with a scan,

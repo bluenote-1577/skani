@@ -874,9 +874,9 @@ fn get_anchors(
         );
         return (AnchorChunks::default(), true);
     }
-    anchors.sort_unstable();
+    crate::radix_sort::sort_anchors(&mut anchors);
     for query_position_vec in query_positions_all.iter_mut() {
-        query_position_vec.sort_unstable();
+        crate::radix_sort::sort_positions(query_position_vec);
     }
     debug!(
         "Ref seeds len {}, Query seeds len {}, Anchors {}, Seeds hit query {}, Est {}, Ref_file {}, Query_file {}",
