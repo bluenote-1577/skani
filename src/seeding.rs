@@ -326,18 +326,8 @@ pub fn get_repetitive_kmers(sketch: &Sketch, c: usize) -> usize {
     if sketch.seed_index.is_none() {
         usize::MAX
     } else {
-        let entries = sketch.seed_index.as_ref().unwrap().entries();
-        let mut count_vec = vec![];
-        let mut i = 0;
-        while i < entries.len() {
-            let seed = entries[i].seed;
-            let mut j = i + 1;
-            while j < entries.len() && entries[j].seed == seed {
-                j += 1;
-            }
-            count_vec.push(j - i);
-            i = j;
-        }
+        let index = sketch.seed_index.as_ref().unwrap();
+        let mut count_vec = index.runs().map(|run| run.len()).collect::<Vec<usize>>();
         count_vec.sort();
         let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 5000 - 1];
         let default_repet_cutoff = BP_CHAIN_BAND / c;

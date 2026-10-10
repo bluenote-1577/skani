@@ -258,6 +258,15 @@ impl SeedIndex {
         &self.entries
     }
 
+    /// The records grouped into one slice per distinct seed, in seed order.
+    pub fn runs(&self) -> SeedRuns<'_> {
+        debug_assert!(self.finalized, "SeedIndex read before finalize()");
+        SeedRuns {
+            entries: &self.entries,
+            next: 0,
+        }
+    }
+
     /// Number of distinct seeds (the old `kmer_seeds_k.len()`).
     #[inline]
     pub fn num_distinct_seeds(&self) -> usize {
@@ -282,32 +291,34 @@ impl SeedIndex {
         index
     }
 
-    /// Render back into the legacy tagged-hash-map representation so that written
-    /// `.sketch` files stay readable by older skani versions.
-    fn to_legacy(&self) -> (KmerSeeds, MultiPositionStorage) {
-        debug_assert!(self.finalized, "SeedIndex serialized before finalize()");
-        let mut kmer_seeds =
-            KmerSeeds::with_capacity_and_hasher(self.num_distinct_seeds(), MMBuildHasher32::default());
-        let mut multi_position_storage = MultiPositionStorage::new();
-        let entries = &self.entries;
-        let mut i = 0;
-        while i < entries.len() {
-            let seed = entries[i].seed;
-            let mut j = i + 1;
-            while j < entries.len() && entries[j].seed == seed {
-                j += 1;
-            }
-            if j - i == 1 {
-                kmer_seeds.insert(seed, TaggedIndex::single(&entries[i].position));
-            } else {
-                let storage_index = multi_position_storage.len();
-                multi_position_storage
-                    .push(entries[i..j].iter().map(|e| e.position).collect());
-                kmer_seeds.insert(seed, TaggedIndex::multiple(storage_index));
-            }
-            i = j;
+    /// Number of distinct seeds that occur more than once, i.e. the length of the
+    /// legacy `multi_position_storage` vector this index would render into.
+    fn num_multi_seeds(&self) -> usize {
+        self.runs().filter(|run| run.len() > 1).count()
+    }
+}
+
+/// Iterator over a `SeedIndex`'s records, grouped by seed.
+pub struct SeedRuns<'a> {
+    entries: &'a [SeedEntry],
+    next: usize,
+}
+
+impl<'a> Iterator for SeedRuns<'a> {
+    type Item = &'a [SeedEntry];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next >= self.entries.len() {
+            return None;
         }
-        (kmer_seeds, multi_position_storage)
+        let start = self.next;
+        let seed = self.entries[start].seed;
+        let mut end = start + 1;
+        while end < self.entries.len() && self.entries[end].seed == seed {
+            end += 1;
+        }
+        self.next = end;
+        Some(&self.entries[start..end])
     }
 }
 
@@ -367,8 +378,8 @@ impl TaggedIndex {
 //    }
 //}
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
-#[serde(from = "SketchSerde", into = "SketchSerde")]
+#[derive(Eq, PartialEq, Deserialize, Clone)]
+#[serde(from = "SketchSerde")]
 pub struct Sketch {
     pub file_name: String,
     pub seed_index: Option<SeedIndex>,
@@ -453,17 +464,15 @@ impl Sketch{
     }
 }
 
-/// On-disk image of a `Sketch`.
+/// On-disk image of a `Sketch`, used for reading.
 ///
 /// This mirrors the pre-flat-index `Sketch` layout field for field, in the same
-/// order, with the same types. bincode writes struct fields positionally and
-/// stores no names or lengths, so serializing this type produces exactly the
-/// byte stream that skani <= 0.3.2 produced, and deserializing it accepts
-/// exactly what those versions wrote. `Sketch` is serialized through it via
-/// `#[serde(from/into)]`, so `.sketch` files, `sketches.db` and `markers.bin`
-/// remain compatible in both directions; the flat `SeedIndex` is built on load
-/// and rendered back out on store.
-#[derive(Serialize, Deserialize)]
+/// order, with the same types, so deserializing it accepts exactly what skani
+/// <= 0.3.2 wrote. `Sketch` deserializes through it via `#[serde(from)]` and the
+/// flat `SeedIndex` is built from the tagged hash map as the last step of the
+/// load. Writing goes the other way through `impl Serialize for Sketch`, which
+/// emits this same layout without materializing it.
+#[derive(Deserialize)]
 struct SketchSerde {
     file_name: String,
     kmer_seeds_k: Option<KmerSeeds>,
@@ -504,31 +513,102 @@ impl From<SketchSerde> for Sketch {
     }
 }
 
-impl From<Sketch> for SketchSerde {
-    fn from(sketch: Sketch) -> SketchSerde {
-        let (kmer_seeds_k, multi_position_storage) = match &sketch.seed_index {
-            Some(seed_index) => {
-                let (kmer_seeds, storage) = seed_index.to_legacy();
-                (Some(kmer_seeds), storage)
-            }
-            None => (None, MultiPositionStorage::new()),
-        };
-        SketchSerde {
-            file_name: sketch.file_name,
-            kmer_seeds_k,
-            multi_position_storage,
-            contigs: sketch.contigs,
-            total_sequence_length: sketch.total_sequence_length,
-            contig_lengths: sketch.contig_lengths,
-            repetitive_kmers: sketch.repetitive_kmers,
-            marker_seeds: sketch.marker_seeds,
-            marker_c: sketch.marker_c,
-            c: sketch.c,
-            k: sketch.k,
-            contig_order: sketch.contig_order,
-            individual_contig: sketch.individual_contig,
-            amino_acid: sketch.amino_acid,
+/// Writes the legacy `kmer_seeds_k` field: `Option` of a map from seed to tagged
+/// index. Streamed straight out of the sorted index, so nothing is materialized.
+/// Storage indices are handed out in seed order, which is the same order
+/// `LegacyMultiStorage` emits the position vectors in.
+struct LegacyKmerSeeds<'a>(Option<&'a SeedIndex>);
+
+impl Serialize for LegacyKmerSeeds<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0 {
+            None => serializer.serialize_none(),
+            Some(index) => serializer.serialize_some(&LegacyKmerSeedsMap(index)),
         }
+    }
+}
+
+struct LegacyKmerSeedsMap<'a>(&'a SeedIndex);
+
+impl Serialize for LegacyKmerSeedsMap<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(self.0.num_distinct_seeds()))?;
+        let mut storage_index = 0usize;
+        for run in self.0.runs() {
+            let tagged = if run.len() == 1 {
+                TaggedIndex::single(&run[0].position)
+            } else {
+                let tagged = TaggedIndex::multiple(storage_index);
+                storage_index += 1;
+                tagged
+            };
+            map.serialize_entry(&run[0].seed, &tagged)?;
+        }
+        map.end()
+    }
+}
+
+/// Writes the legacy `multi_position_storage` field: the position vectors of the
+/// seeds that occur more than once, in the order `LegacyKmerSeeds` numbered them.
+struct LegacyMultiStorage<'a>(Option<&'a SeedIndex>);
+
+impl Serialize for LegacyMultiStorage<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeSeq;
+        let index = match self.0 {
+            None => return serializer.serialize_seq(Some(0))?.end(),
+            Some(index) => index,
+        };
+        let mut seq = serializer.serialize_seq(Some(index.num_multi_seeds()))?;
+        for run in index.runs().filter(|run| run.len() > 1) {
+            seq.serialize_element(&LegacyPositions(run))?;
+        }
+        seq.end()
+    }
+}
+
+/// One position vector. `SmallVec` serializes as a plain sequence, so this is
+/// byte-compatible with the `SmallVec<[SeedPosition; 3]>` it replaces.
+struct LegacyPositions<'a>(&'a [SeedEntry]);
+
+impl Serialize for LegacyPositions<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+        for entry in self.0.iter() {
+            seq.serialize_element(&entry.position)?;
+        }
+        seq.end()
+    }
+}
+
+/// Writes the pre-flat-index `Sketch` layout: same fields, same order, same
+/// types as `SketchSerde`, so the byte stream is exactly what skani <= 0.3.2
+/// produced and what it can still read back. The seed index is streamed out of
+/// its sorted form rather than being rebuilt as a hash map first, which also
+/// makes the written bytes deterministic (the old `HashMap` iteration order was
+/// not).
+impl Serialize for Sketch {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let index = self.seed_index.as_ref();
+        let mut sketch = serializer.serialize_struct("Sketch", 14)?;
+        sketch.serialize_field("file_name", &self.file_name)?;
+        sketch.serialize_field("kmer_seeds_k", &LegacyKmerSeeds(index))?;
+        sketch.serialize_field("multi_position_storage", &LegacyMultiStorage(index))?;
+        sketch.serialize_field("contigs", &self.contigs)?;
+        sketch.serialize_field("total_sequence_length", &self.total_sequence_length)?;
+        sketch.serialize_field("contig_lengths", &self.contig_lengths)?;
+        sketch.serialize_field("repetitive_kmers", &self.repetitive_kmers)?;
+        sketch.serialize_field("marker_seeds", &self.marker_seeds)?;
+        sketch.serialize_field("marker_c", &self.marker_c)?;
+        sketch.serialize_field("c", &self.c)?;
+        sketch.serialize_field("k", &self.k)?;
+        sketch.serialize_field("contig_order", &self.contig_order)?;
+        sketch.serialize_field("individual_contig", &self.individual_contig)?;
+        sketch.serialize_field("amino_acid", &self.amino_acid)?;
+        sketch.end()
     }
 }
 
