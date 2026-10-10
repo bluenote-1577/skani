@@ -24,6 +24,29 @@ pub struct IndexEntry {
 /// fails to parse it reports "Problem reading markers.bin", which says more
 /// than the "markers.bin not found" it would report if that file were renamed
 /// too.
+/// The 0.4 marker file, and the pre-0.4 name it replaces.
+pub const MARKERS_FILE: &str = "markers.bin2";
+pub const MARKERS_FILE_LEGACY: &str = "markers.bin";
+
+/// Written at `markers.bin` in a 0.4 database so that skani <= 0.3.x fails
+/// immediately instead of grinding through a format it cannot read.
+///
+/// `search` on an older binary reads `markers.bin` first and deserializes it
+/// as `(SketchParams, Vec<Sketch>)`. When that file is a real 0.4 marker file,
+/// the old parser consumes the header as `c`/`k`/`marker_c`, finds plausible
+/// values for the two bools that follow, and keeps going -- so it does a lot of
+/// work before failing. Byte 24 of the stream is `SketchParams::use_syncs`, a
+/// bool, and bincode rejects any byte other than 0 or 1. Every byte of this
+/// message is printable ASCII (>= 0x20), so the old parser is guaranteed to
+/// stop after 25 bytes. It is also readable if someone simply cats the file.
+pub const MARKERS_TOMBSTONE: &str = "\
+SKANI-DB-V2: this database requires skani >= 0.4.0.
+The marker data lives in markers.bin2. This file exists only so that older
+versions of skani fail immediately with a clear error instead of slowly
+parsing a format they cannot read.
+Upgrade skani, or rebuild this database with skani >= 0.4.0.
+";
+
 pub const SKETCHES_DB: &str = "sketches.db2";
 pub const INDEX_DB: &str = "index.db2";
 /// Pre-0.4 names, still read.

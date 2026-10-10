@@ -765,6 +765,18 @@ pub fn marker_sketches_from_marker_file(marker_file: &str) -> (SketchParams, Vec
         }
     };
     let peeked = &header[..header_len];
+    //A 0.4 database keeps a readable stub at the pre-0.4 marker name so that
+    //older binaries fail fast. Reaching it here means the real marker file is
+    //missing, which is worth saying plainly rather than reporting a parse
+    //error on a file that is not marker data at all.
+    if peeked.starts_with(b"SKANI-DB-V2") {
+        error!(
+            "{} is the compatibility stub, not marker data -- the real marker file ({}) is missing from this database.",
+            marker_file,
+            crate::sketch_db::MARKERS_FILE
+        );
+        std::process::exit(1)
+    }
     let res: Result<(SketchParams, Vec<Sketch>), _> = match detect_sketch_format(peeked) {
         SketchFormat::Native => bincode::deserialize_from(reader),
         SketchFormat::Legacy => {

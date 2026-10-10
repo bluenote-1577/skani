@@ -1,6 +1,6 @@
 use crate::file_io;
 use crate::params::*;
-use crate::sketch_db::{SketchDbWriter};
+use crate::sketch_db::{SketchDbWriter, MARKERS_FILE, MARKERS_FILE_LEGACY, MARKERS_TOMBSTONE};
 use crate::types::*;
 use log::*;
 use rayon::prelude::*;
@@ -11,6 +11,15 @@ use std::sync::mpsc;
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::Instant;
+
+/// Drop a readable stub at the pre-0.4 `markers.bin` name. See
+/// `sketch_db::MARKERS_TOMBSTONE` for why this exists.
+fn write_markers_tombstone(output_dir: &str) {
+    let path = format!("{}/{}", output_dir, MARKERS_FILE_LEGACY);
+    if let Err(e) = std::fs::write(&path, MARKERS_TOMBSTONE) {
+        warn!("Could not write {}: {}", path, e);
+    }
+}
 
 pub fn sketch(command_params: CommandParams, sketch_params: SketchParams) {
     let now = Instant::now();
@@ -96,11 +105,12 @@ fn sketch_separate_files(command_params: CommandParams, sketch_params: SketchPar
     });
     
     let mut file_bin_marker = BufWriter::new(
-        File::create(format!("{}/markers.bin", &command_params.out_file_name)).unwrap(),
+        File::create(format!("{}/{}", &command_params.out_file_name, MARKERS_FILE)).unwrap(),
     );
     let markers = marker_sketches.into_inner().unwrap();
     write_sketch_header(&mut file_bin_marker).unwrap();
     bincode::serialize_into(&mut file_bin_marker, &(&sketch_params, markers)).unwrap();
+    write_markers_tombstone(&command_params.out_file_name);
 }
 
 /// Create consolidated database format using multi-producer single-consumer pattern
@@ -148,12 +158,13 @@ fn sketch_consolidated_db(command_params: CommandParams, sketch_params: SketchPa
             std::process::exit(1);
         }
 
-        // Write markers.bin (still separate for compatibility)
+        // Write the marker file, plus a tombstone at the pre-0.4 name.
         let mut file_bin_marker = BufWriter::new(
-            File::create(format!("{}/markers.bin", &output_dir)).unwrap(),
+            File::create(format!("{}/{}", &output_dir, MARKERS_FILE)).unwrap(),
         );
         write_sketch_header(&mut file_bin_marker).unwrap();
         bincode::serialize_into(&mut file_bin_marker, &(&sketch_params_consumer, marker_sketches)).unwrap();
+        write_markers_tombstone(&output_dir);
         
         sketch_count
     });

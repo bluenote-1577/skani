@@ -48,8 +48,9 @@ pub fn triangle(command_params: CommandParams, mut sketch_params: SketchParams) 
         std::process::exit(1)
     }
 
-    if ref_sketches.len() > 500 && !command_params.sparse {
-        warn!("> 500 genomes detected. The output matrix will be large. Consider using -E or --sparse for a tsv output instead.");
+    if ref_sketches.len() > MATRIX_WARN_NUM_GENOMES && !command_params.sparse {
+        warn!("> {} genomes detected. The output matrix will be large ({} x {} entries). Consider -E (--sparse) to write a tsv of only the non-zero comparisons instead.",
+            MATRIX_WARN_NUM_GENOMES, ref_sketches.len(), ref_sketches.len());
     }
 
     let kmer_to_sketch = screen::kmer_to_sketch_from_refs(&ref_sketches);

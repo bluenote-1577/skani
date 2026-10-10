@@ -45,6 +45,9 @@ pub const MIN_LENGTH_CONTIG: usize = 500;
 pub const MIN_LENGTH_COVER_AAI: usize = 500;
 pub const MIN_LENGTH_COVER: usize = 500;
 //Below these sizes a comparison sort beats setting up a radix sort.
+//Above this many genomes, `triangle`'s dense matrix gets unwieldy and the
+//sparse tsv output is usually what the user wants.
+pub const MATRIX_WARN_NUM_GENOMES: usize = 300;
 pub const RADIX_SORT_MIN_ANCHORS: usize = 256;
 pub const RADIX_SORT_MIN_POSITIONS: usize = 256;
 //Seed-search tuning for the merge-join in `chain::get_anchors`.
