@@ -1099,3 +1099,143 @@ pub struct AniEstResult{
     pub avg_chain_int_len: u32,
     pub total_bases_covered: u32, 
 }
+
+#[cfg(test)]
+mod sketch_format_tests {
+    use super::*;
+
+    /// Serialize a sketch the way every writer does: header, then bincode body.
+    fn write_native(sketch: &Sketch, params: &SketchParams) -> Vec<u8> {
+        let mut bytes = sketch_header_bytes().to_vec();
+        bincode::serialize_into(&mut bytes, &(params, sketch)).unwrap();
+        bytes
+    }
+
+    fn read_native(bytes: &[u8]) -> (SketchParams, Sketch) {
+        assert_eq!(detect_sketch_format(bytes), SketchFormat::Native);
+        bincode::deserialize(&bytes[SKETCH_HEADER_LEN..]).unwrap()
+    }
+
+    fn demo_params() -> SketchParams {
+        SketchParams::new(1000, 125, 15, false, false)
+    }
+
+    #[test]
+    fn header_is_written_and_recognised() {
+        let header = sketch_header_bytes();
+        assert_eq!(&header[..8], &SKETCH_MAGIC);
+        assert_eq!(&header[8..], &SKETCH_FORMAT_VERSION.to_le_bytes());
+        assert_eq!(detect_sketch_format(&header), SketchFormat::Native);
+    }
+
+    /// The whole safety argument for the magic: the first eight bytes of a
+    /// pre-0.4 file are `SketchParams.c` as a little-endian u64, so every value
+    /// of `c` that could ever be written must classify as Legacy, never Native.
+    #[test]
+    fn no_plausible_legacy_c_can_look_native() {
+        for c in [
+            0u64, 1, 15, 30, 70, 125, 200, 1000, 100_000, u32::MAX as u64,
+            // far beyond anything skani accepts, and still not the magic
+            1u64 << 40,
+            1u64 << 47,
+        ] {
+            let mut prefix = c.to_le_bytes().to_vec();
+            prefix.extend_from_slice(&[0u8; 8]);
+            assert_eq!(
+                detect_sketch_format(&prefix),
+                SketchFormat::Legacy,
+                "c = {} was misclassified as a native header",
+                c
+            );
+        }
+        // Reading the magic back as a legacy `c` shows how far out of range it is.
+        let as_c = u64::from_le_bytes(SKETCH_MAGIC);
+        assert!(as_c >= 0xFF00_0000_0000_0000);
+    }
+
+    #[test]
+    fn truncated_and_future_headers_are_not_mistaken_for_either_format() {
+        // Magic present, version field cut off.
+        assert_eq!(
+            detect_sketch_format(&SKETCH_MAGIC),
+            SketchFormat::Unsupported(None)
+        );
+        // Magic present, version from the future.
+        let mut future = SKETCH_MAGIC.to_vec();
+        future.extend_from_slice(&(SKETCH_FORMAT_VERSION + 1).to_le_bytes());
+        assert_eq!(
+            detect_sketch_format(&future),
+            SketchFormat::Unsupported(Some(SKETCH_FORMAT_VERSION + 1))
+        );
+    }
+
+    #[test]
+    fn native_round_trip_preserves_the_seed_index() {
+        let mut sketch = Sketch::new(1000, 125, 15, "genome.fa".to_string(), false);
+        sketch.seed_index = Some(SeedIndex::default());
+        sketch.contigs = vec!["ctg1".to_string(), "ctg2".to_string()];
+        sketch.contig_lengths = vec![1234, 5678];
+        sketch.total_sequence_length = 6912;
+        sketch.marker_seeds.insert(42);
+        // Pushed out of order and with a repeated seed, so finalize has work to do.
+        sketch.add_seed_position(7, SeedPosition::new(900, 1, true));
+        sketch.add_seed_position(3, SeedPosition::new(100, 0, false));
+        sketch.add_seed_position(7, SeedPosition::new(50, 0, true));
+        sketch.add_seed_position(3, SeedPosition::new(10, 0, true));
+        sketch.finalize_seed_index();
+
+        let bytes = write_native(&sketch, &demo_params());
+        let (_, back) = read_native(&bytes);
+
+        assert!(back == sketch, "native round trip changed the sketch");
+        let index = back.seed_index.as_ref().unwrap();
+        assert_eq!(index.len(), 4);
+        assert_eq!(index.num_distinct_seeds(), 2);
+        // The on-disk arrays really are the sorted in-memory ones.
+        assert_eq!(index.seeds(), &[3, 3, 7, 7]);
+        assert!(index.seeds().windows(2).all(|w| w[0] <= w[1]));
+    }
+
+    /// The prototype inferred `seed_index: None` from "seeds, positions and the
+    /// distinct count are all empty", which silently turns a genuine zero-seed
+    /// sketch into a marker-only one. The explicit Option must keep them apart.
+    #[test]
+    fn marker_only_and_empty_index_stay_distinct() {
+        let params = demo_params();
+
+        let mut marker_only = Sketch::new(1000, 125, 15, "m.fa".to_string(), false);
+        marker_only.seed_index = None;
+        marker_only.marker_seeds.insert(99);
+
+        let mut empty_index = marker_only.clone();
+        empty_index.seed_index = Some(SeedIndex::default());
+        empty_index.finalize_seed_index();
+
+        let (_, marker_back) = read_native(&write_native(&marker_only, &params));
+        let (_, empty_back) = read_native(&write_native(&empty_index, &params));
+
+        assert!(marker_back.seed_index.is_none(), "marker-only sketch grew an index");
+        assert!(empty_back.seed_index.is_some(), "empty index collapsed to None");
+        assert_eq!(empty_back.seed_index.as_ref().unwrap().len(), 0);
+        assert!(marker_back != empty_back, "the two collapsed into the same sketch");
+        // That distinction costs exactly the Option tag byte.
+        assert!(marker_back == marker_only);
+        assert!(empty_back == empty_index);
+    }
+
+    /// A legacy body behind a native header must fail loudly rather than decode
+    /// into a plausible-looking sketch.
+    #[test]
+    fn legacy_bytes_are_not_silently_decoded_as_native() {
+        // A legacy stream opens with SketchParams followed by the old Sketch
+        // layout, whose second field is `Option<KmerSeeds>` rather than
+        // `Option<SeedIndexNative>`. Stand in for it with the params plus a
+        // short run of bytes that is not a valid native Sketch.
+        let mut body = bincode::serialize(&demo_params()).unwrap();
+        body.extend_from_slice(&bincode::serialize(&"genome.fa".to_string()).unwrap());
+        body.extend_from_slice(&[1u8]); // Some(..)
+        body.extend_from_slice(&u64::MAX.to_le_bytes()); // absurd sequence length
+        let parsed: Result<(SketchParams, Sketch), _> = bincode::deserialize(&body);
+        assert!(parsed.is_err(), "a legacy-shaped body decoded as native");
+    }
+}
