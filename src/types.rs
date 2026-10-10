@@ -852,11 +852,39 @@ impl Anchor {
     }
 }
 
+/// Anchors and query-seed positions split into fragment-sized chunks, held in
+/// compressed-sparse-row form: one flat buffer each, plus offsets.
+///
+/// This used to be `Vec<Vec<Anchor>>` and `Vec<Vec<GnPosition>>`, which cost
+/// two heap allocations per chunk and ~250 chunks per comparison. Those ~500
+/// allocations per comparison were the whole reason the chunking stage carried
+/// an allocator tax under many threads. The anchors were already being copied
+/// into the per-chunk vectors, so the flat form copies exactly as much and
+/// allocates twice instead of 500 times.
 #[derive(Default)]
 pub struct AnchorChunks {
-    pub chunks: Vec<Vec<Anchor>>,
+    pub anchors: Vec<Anchor>,
+    pub chunk_offsets: Vec<u32>,
     pub lengths: Vec<u32>,
-    pub seeds_in_chunk: Vec<Vec<GnPosition>>,
+    pub seeds: Vec<GnPosition>,
+    pub seed_offsets: Vec<u32>,
+}
+
+impl AnchorChunks {
+    #[inline]
+    pub fn num_chunks(&self) -> usize {
+        self.chunk_offsets.len().saturating_sub(1)
+    }
+
+    #[inline]
+    pub fn chunk(&self, i: usize) -> &[Anchor] {
+        &self.anchors[self.chunk_offsets[i] as usize..self.chunk_offsets[i + 1] as usize]
+    }
+
+    #[inline]
+    pub fn seeds_in_chunk(&self, i: usize) -> &[GnPosition] {
+        &self.seeds[self.seed_offsets[i] as usize..self.seed_offsets[i + 1] as usize]
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Hash, Debug)]

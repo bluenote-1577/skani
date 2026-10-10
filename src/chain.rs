@@ -7,7 +7,6 @@ use crate::regression;
 use fxhash::FxHashMap;
 use log::*;
 use partitions::*;
-use std::mem;
 extern crate interval;
 use gcollections::ops::set::*;
 use interval::interval_set::*;
@@ -149,13 +148,13 @@ pub fn chain_seeds(
     let (anchor_chunks, switched) = get_anchors(ref_sketch, query_sketch, &map_params);
     let chain_results = chain_anchors_ani(&anchor_chunks, &map_params);
     let mut good_intervals = vec![];
-    for i in 0..anchor_chunks.chunks.len() {
+    for i in 0..anchor_chunks.num_chunks() {
         let chain_result = &chain_results[i];
-        let anchors = &anchor_chunks.chunks[i];
+        let anchors = anchor_chunks.chunk(i);
         get_chain_intervals(&mut good_intervals, chain_result, anchors, &map_params, i);
     }
     let good_interval_chunks =
-        get_nonoverlapping_chains(&mut good_intervals, anchor_chunks.chunks.len());
+        get_nonoverlapping_chains(&mut good_intervals, anchor_chunks.num_chunks());
     let mut ani = calculate_ani(
         &good_interval_chunks,
         ref_sketch,
@@ -265,7 +264,7 @@ fn calculate_ani(
 
         let mut num_seeds_in_intervals = 0;
         let mut upper_lower_seeds = 0;
-        for pos in anchor_chunks.seeds_in_chunk[i].iter() {
+        for pos in anchor_chunks.seeds_in_chunk(i).iter() {
             if all_intervals.contains(pos) {
                 num_seeds_in_intervals += 1;
             }
@@ -323,7 +322,7 @@ fn calculate_ani(
         //        let spacing_est = (total_range_query.1 - total_range_query.0
         //            + 2 * ref_sketch.c as GnPosition)
         //            / num_seeds_in_intervals as GnPosition;
-        for pos in anchor_chunks.seeds_in_chunk[i].iter() {
+        for pos in anchor_chunks.seeds_in_chunk(i).iter() {
             if *pos + left_spacing_est >= total_range_query.0
                 && *pos <= total_range_query.1 + right_spacing_est
             {
@@ -331,7 +330,7 @@ fn calculate_ani(
             }
         }
 
-        let mut anchors_in_chunk_considered = anchor_chunks.seeds_in_chunk[i].len();
+        let mut anchors_in_chunk_considered = anchor_chunks.seeds_in_chunk(i).len();
         let putative_ani = f64::powf(
 //                        total_anchors as f64 / (upper_lower_seeds) as f64,
             total_anchors as f64 / (num_seeds_in_intervals) as f64,
@@ -356,7 +355,7 @@ fn calculate_ani(
                 anchors_in_chunk_considered = upper_lower_seeds;
             }
             else{
-                anchors_in_chunk_considered = anchor_chunks.seeds_in_chunk[i].len();
+                anchors_in_chunk_considered = anchor_chunks.seeds_in_chunk(i).len();
             }
         }
 
@@ -385,13 +384,13 @@ fn calculate_ani(
         //        total_query_range += total_bases_contained_query;
         //        total_ref_range += total_bases_contained_ref;
 
-        //        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i]));
+        //        ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk(i)));
         if map_params.amino_acid {
-//            ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i].len() / 6));
-            ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i].len() / 6));
+//            ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk(i).len() / 6));
+            ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk(i).len() / 6));
 //            ani_ests.push((ani_est, 1));
         } else {
-            //ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk[i].len()));
+            //ani_ests.push((ani_est, anchor_chunks.seeds_in_chunk(i).len()));
             ani_ests.push((ani_est, anchors_in_chunk_considered));
         }
         //                        ani_ests.push((ani_est, upper_lower_seeds));
@@ -400,7 +399,7 @@ fn calculate_ani(
             ani_est,
             total_range_query,
             total_anchors,
-            anchor_chunks.seeds_in_chunk[i].len(),
+            anchor_chunks.seeds_in_chunk(i).len(),
         );
         trace!(
             "Intervals {:?}, Num Anchors in Interval {}, Total Anchors {}",
@@ -891,10 +890,16 @@ fn get_anchors(
         ref_sketch.file_name,
         query_sketch.file_name,
     );
+    //Chunks are built straight into two flat buffers with offset arrays
+    //rather than a vector of vectors. The anchors were already being copied
+    //into per-chunk vectors, so this copies exactly as much but allocates a
+    //constant number of times instead of twice per chunk.
     let mut lengths = vec![];
-    let mut chunks = vec![];
-    let mut curr_anchor_chunk = vec![];
-    let mut block_seeds = vec![];
+    let mut out_anchors: Vec<Anchor> = Vec::with_capacity(anchors.len());
+    let mut chunk_offsets: Vec<u32> = vec![0];
+    let mut out_seeds: Vec<GnPosition> =
+        Vec::with_capacity(query_positions_all.iter().map(|v| v.len()).sum());
+    let mut seed_offsets: Vec<u32> = vec![0];
     let smallest_anchor_query_pos = anchors[0].query_pos;
     let mut last_query_contig = anchors[0].query_contig;
     let mut curr_end_point = smallest_anchor_query_pos + map_params.fragment_length as u32;
@@ -905,8 +910,6 @@ fn get_anchors(
                 warn!("{}", &query_sketch.contigs[last_query_contig as usize]);
                 continue;
             }
-            let mut _num_seeds_in_block = 0;
-            let mut seed_pos_in_block = vec![];
             let mut first_iter = true;
             loop {
                 if running_counter >= query_positions_all[last_query_contig as usize].len() {
@@ -922,10 +925,9 @@ fn get_anchors(
                             query_positions_all[last_query_contig as usize][running_counter]
                         );
                     }
-                    seed_pos_in_block
+                    out_seeds
                         .push(query_positions_all[last_query_contig as usize][running_counter]);
                     running_counter += 1;
-                    _num_seeds_in_block += 1;
                 } else {
                     trace!(
                         "end {}",
@@ -934,10 +936,9 @@ fn get_anchors(
                     break;
                 }
             }
-            block_seeds.push(seed_pos_in_block);
+            seed_offsets.push(out_seeds.len() as u32);
             curr_end_point += map_params.fragment_length as u32;
-            chunks.push(mem::take(&mut curr_anchor_chunk));
-            curr_anchor_chunk = vec![];
+            chunk_offsets.push(out_anchors.len() as u32);
             lengths.push(map_params.fragment_length as u32);
             if last_query_contig != anchor.query_contig {
                 curr_end_point = anchor.query_pos + map_params.fragment_length as u32;
@@ -945,11 +946,11 @@ fn get_anchors(
             }
         }
         last_query_contig = anchor.query_contig;
-        curr_anchor_chunk.push(anchor);
+        out_anchors.push(anchor);
     }
-    if !curr_anchor_chunk.is_empty() {
-        let mut _num_seeds_in_block = 0;
-        let mut seed_pos_in_block = vec![];
+    //Anything appended since the last recorded boundary is the final chunk.
+    let curr_chunk_start = *chunk_offsets.last().unwrap() as usize;
+    if out_anchors.len() > curr_chunk_start {
         loop {
             if query_positions_all[last_query_contig as usize].is_empty() {
                 warn!("{}", &query_sketch.contigs[last_query_contig as usize]);
@@ -959,33 +960,32 @@ fn get_anchors(
                 break;
             }
             if (query_positions_all[last_query_contig as usize][running_counter]
-                <= curr_anchor_chunk[curr_anchor_chunk.len() - 1].query_pos)
-                || (last_query_contig
-                    != curr_anchor_chunk[curr_anchor_chunk.len() - 1].query_contig)
+                <= out_anchors[out_anchors.len() - 1].query_pos)
+                || (last_query_contig != out_anchors[out_anchors.len() - 1].query_contig)
             {
-                seed_pos_in_block
+                out_seeds
                     .push(query_positions_all[last_query_contig as usize][running_counter]);
                 running_counter += 1;
-                _num_seeds_in_block += 1;
             } else {
                 break;
             }
         }
         lengths.push(
-            curr_anchor_chunk[curr_anchor_chunk.len() - 1].query_pos
-                - curr_anchor_chunk[0].query_pos,
+            out_anchors[out_anchors.len() - 1].query_pos - out_anchors[curr_chunk_start].query_pos,
         );
-        chunks.push(mem::take(&mut curr_anchor_chunk));
-        block_seeds.push(seed_pos_in_block);
+        chunk_offsets.push(out_anchors.len() as u32);
+        seed_offsets.push(out_seeds.len() as u32);
     }
 
-    assert!(block_seeds.len() == chunks.len());
+    assert!(seed_offsets.len() == chunk_offsets.len());
 
     (
         AnchorChunks {
-            chunks,
+            anchors: out_anchors,
+            chunk_offsets,
             lengths,
-            seeds_in_chunk: block_seeds,
+            seeds: out_seeds,
+            seed_offsets,
         },
         switched,
     )
@@ -994,10 +994,11 @@ fn get_anchors(
 fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Vec<ChainingResult> {
     let mut chaining_results = vec![];
 
-    let num_chunks = anchor_chunks.chunks.len();
+    let num_chunks = anchor_chunks.num_chunks();
     let past_chain_length = usize::min(map_params.fragment_length / 2, map_params.bp_chain_band) as u32;
 
-    for anchor_chunk in anchor_chunks.chunks.iter() {
+    for chunk_index in 0..num_chunks {
+        let anchor_chunk = anchor_chunks.chunk(chunk_index);
         let mut pointer_vec = vec![0; anchor_chunk.len()];
         let mut score_vec = vec![0.; anchor_chunk.len()];
         let mut chain_part = partition_vec![];
@@ -1095,7 +1096,7 @@ fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Ve
 fn get_chain_intervals(
     good_intervals: &mut Vec<ChainInterval>,
     cr: &ChainingResult,
-    anchors: &Vec<Anchor>,
+    anchors: &[Anchor],
     map_params: &MapParams,
     chunk_id: usize,
 ) {
