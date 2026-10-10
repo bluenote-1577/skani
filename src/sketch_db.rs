@@ -25,6 +25,7 @@ pub struct IndexEntry {
 /// than the "markers.bin not found" it would report if that file were renamed
 /// too.
 /// The 0.4 marker file, and the pre-0.4 name it replaces.
+pub const DB_README: &str = "README.txt";
 pub const MARKERS_FILE: &str = "markers.bin2";
 pub const MARKERS_FILE_LEGACY: &str = "markers.bin";
 

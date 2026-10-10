@@ -3,7 +3,7 @@ use crate::regression;
 use crate::file_io;
 use crate::params::*;
 use crate::screen;
-use crate::sketch_db::{SketchDbReader, is_consolidated_db, has_separate_sketches, MARKERS_FILE, MARKERS_FILE_LEGACY};
+use crate::sketch_db::{SketchDbReader, is_consolidated_db, has_separate_sketches, DB_README, MARKERS_FILE, MARKERS_FILE_LEGACY};
 use crate::types::*;
 use fxhash::FxHashMap;
 use log::*;
@@ -23,6 +23,7 @@ pub fn search(command_params: CommandParams) {
             && !file.contains("marker")
             && !file.ends_with("db")
             && !file.ends_with("db2")
+            && !file.ends_with(DB_README)
         {
             warn!(
                 "{} does not have .sketch as an extension; skipping file",
