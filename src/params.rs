@@ -40,6 +40,18 @@ pub const CHUNK_SIZE_AA: usize = 20000;
 pub const MIN_LENGTH_CONTIG: usize = 500;
 pub const MIN_LENGTH_COVER_AAI: usize = 500;
 pub const MIN_LENGTH_COVER: usize = 500;
+//Seed-search tuning for the merge-join in `chain::get_anchors`.
+//
+//A skip shorter than the floor is scanned rather than galloped: the probes of
+//a short gallop stay inside a cache line or two anyway, so the exponential
+//search only adds branches and breaks the prefetcher's sequential stream. The
+//AVX2 floor is wider because 32 u32 seeds is two cache lines and four vector
+//compares.
+pub const SEED_GALLOP_FLOOR: usize = 4;
+pub const SEED_GALLOP_FLOOR_SIMD: usize = 32;
+//Binary search stops once the bracket is this small and finishes with a scan,
+//for the same reason.
+pub const SEED_LINEAR_FINISH: usize = 16;
 pub const BP_CHAIN_BAND: usize = 2500;
 pub const BP_CHAIN_BAND_AAI: usize = 500;
 pub const SEARCH_AAI_CUTOFF_DEFAULT: f64 = 0.60;

@@ -610,36 +610,97 @@ pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &Ma
 /// Runs are almost always one or two entries long, so a linear scan beats any
 /// kind of search and stays inside the cache line we already touched.
 #[inline]
-fn seed_run_end(entries: &[SeedEntry], start: usize) -> usize {
-    let seed = entries[start].seed;
+fn seed_run_end(seeds: &[SeedBits], start: usize) -> usize {
+    let seed = seeds[start];
     let mut end = start + 1;
-    while end < entries.len() && entries[end].seed == seed {
+    while end < seeds.len() && seeds[end] == seed {
         end += 1;
     }
     end
 }
 
+/// First index in `seeds[lo..hi]` whose seed is `>= target`, or `hi`.
+#[inline]
+fn scan_forward(seeds: &[SeedBits], lo: usize, hi: usize, target: SeedBits, simd: bool) -> usize {
+    #[cfg(target_arch = "x86_64")]
+    {
+        if simd {
+            return unsafe { crate::avx2_seed_search::scan_forward_avx2(seeds, lo, hi, target) };
+        }
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    let _ = simd;
+    for i in lo..hi {
+        if seeds[i] >= target {
+            return i;
+        }
+    }
+    hi
+}
+
 /// First index at or after `from` whose seed is `>= target`.
 ///
-/// Exponential ("galloping") search followed by a binary search over the bracket.
-/// For two indices of similar size this costs about as much as the linear scan it
-/// replaces; when one genome is far smaller than the other it turns the skip over
-/// the big index from O(n) into O(log n) per matched seed.
-#[inline]
-fn gallop_to_seed(entries: &[SeedEntry], from: usize, target: SeedBits) -> usize {
-    let n = entries.len();
-    let mut lo = from;
-    let mut step = 1;
-    while lo < n && entries[lo].seed < target {
+/// Three regimes, because no single strategy is right across the range of
+/// genome-size ratios skani sees:
+///
+/// 1. **Scan.** Up to `SEED_GALLOP_FLOOR` entries ahead (wider under AVX2) are
+///    scanned linearly. This is the common case when the two genomes are
+///    comparable in size, and a scan beats a gallop there: the entries are
+///    already in the cache line the cursor is sitting on, and the access
+///    pattern stays sequential so the prefetcher keeps running.
+/// 2. **Gallop.** Beyond the floor, probe exponentially to bracket the answer.
+///    Cost is `O(log d)` in the distance actually travelled rather than
+///    `O(log n)` in the array size, so it stays cheap when the target is near
+///    and degrades gracefully when it is far.
+/// 3. **Binary search, then scan.** Halve the bracket until it is small enough
+///    that a streamed scan is cheaper than more scattered probes.
+///
+/// Galloping is what keeps a tiny query against a huge reference from costing
+/// `O(n)`; the floor and the linear finish are what keep it from costing more
+/// than a plain scan when the skip is short.
+fn advance_to_seed(seeds: &[SeedBits], from: usize, target: SeedBits, simd: bool) -> usize {
+    let n = seeds.len();
+    if from >= n || seeds[from] >= target {
+        return from;
+    }
+
+    let floor = if simd { SEED_GALLOP_FLOOR_SIMD } else { SEED_GALLOP_FLOOR };
+    let floor_end = usize::min(from + floor, n);
+    let hit = scan_forward(seeds, from + 1, floor_end, target, simd);
+    if hit < floor_end {
+        return hit;
+    }
+    if floor_end == n {
+        return n;
+    }
+
+    //Everything in [from, floor_end) is known to be < target.
+    let mut lo = floor_end - 1;
+    let mut step = floor;
+    let bracket_lo;
+    let bracket_hi;
+    loop {
         let hi = usize::min(lo + step, n);
-        if hi == n || entries[hi].seed >= target {
-            //The answer lies in (lo, hi].
-            return lo + 1 + entries[lo + 1..hi].partition_point(|e| e.seed < target);
+        if hi == n || seeds[hi] >= target {
+            bracket_lo = lo + 1;
+            bracket_hi = hi;
+            break;
         }
         lo = hi;
         step *= 2;
     }
-    lo
+
+    let mut l = bracket_lo;
+    let mut h = bracket_hi;
+    while h - l > SEED_LINEAR_FINISH {
+        let mid = l + (h - l) / 2;
+        if seeds[mid] < target {
+            l = mid + 1;
+        } else {
+            h = mid;
+        }
+    }
+    scan_forward(seeds, l, h, target, simd)
 }
 
 /// Per-contig buffers for the query seed positions, pre-sized from the contig
@@ -665,8 +726,10 @@ fn get_anchors(
     map_params: &MapParams,
 ) -> (AnchorChunks, bool) {
     let k = map_params.k;
-    let seeds_ref: &[SeedEntry];
-    let seeds_query: &[SeedEntry];
+    let seeds_ref: &[SeedBits];
+    let seeds_query: &[SeedBits];
+    let pos_ref: &[SeedPosition];
+    let pos_query: &[SeedPosition];
     let num_distinct_ref;
     let num_distinct_query;
     let mut query_positions_all;
@@ -709,8 +772,10 @@ fn get_anchors(
             query_sketch.seed_index.as_ref().unwrap(),
             ref_sketch.seed_index.as_ref().unwrap(),
         );
-        seeds_ref = ref_index.entries();
-        seeds_query = query_index.entries();
+        seeds_ref = ref_index.seeds();
+        seeds_query = query_index.seeds();
+        pos_ref = ref_index.positions();
+        pos_query = query_index.positions();
         num_distinct_ref = ref_index.num_distinct_seeds();
         num_distinct_query = query_index.num_distinct_seeds();
         query_positions_all =
@@ -722,8 +787,10 @@ fn get_anchors(
             ref_sketch.seed_index.as_ref().unwrap(),
             query_sketch.seed_index.as_ref().unwrap(),
         );
-        seeds_ref = ref_index.entries();
-        seeds_query = query_index.entries();
+        seeds_ref = ref_index.seeds();
+        seeds_query = query_index.seeds();
+        pos_ref = ref_index.positions();
+        pos_query = query_index.positions();
         num_distinct_ref = ref_index.num_distinct_seeds();
         num_distinct_query = query_index.num_distinct_seeds();
         query_positions_all = new_query_position_buffers(
@@ -747,12 +814,17 @@ fn get_anchors(
     //    are again NOT recorded (whereas a query seed simply absent from the ref
     //    does get its positions recorded).
     let band = map_params.index_chain_band;
+    #[cfg(target_arch = "x86_64")]
+    let simd = is_x86_feature_detected!("avx2");
+    #[cfg(not(target_arch = "x86_64"))]
+    let simd = false;
+
     let mut anchors = Vec::with_capacity(usize::min(seeds_query.len(), seeds_ref.len()));
     let mut query_kmers_with_hits = 0;
     let mut qi = 0;
     let mut ri = 0;
     while qi < seeds_query.len() {
-        let seed = seeds_query[qi].seed;
+        let seed = seeds_query[qi];
         let q_end = seed_run_end(seeds_query, qi);
 
         if q_end - qi > band {
@@ -760,11 +832,11 @@ fn get_anchors(
             continue;
         }
 
-        if ri < seeds_ref.len() && seeds_ref[ri].seed < seed {
-            ri = gallop_to_seed(seeds_ref, ri, seed);
+        if ri < seeds_ref.len() && seeds_ref[ri] < seed {
+            ri = advance_to_seed(seeds_ref, ri, seed, simd);
         }
 
-        if ri < seeds_ref.len() && seeds_ref[ri].seed == seed {
+        if ri < seeds_ref.len() && seeds_ref[ri] == seed {
             let r_end = seed_run_end(seeds_ref, ri);
             if r_end - ri > band {
                 qi = q_end;
@@ -772,16 +844,13 @@ fn get_anchors(
                 continue;
             }
 
-            for qentry in seeds_query[qi..q_end].iter() {
-                let qpos = &qentry.position;
+            for qpos in pos_query[qi..q_end].iter() {
                 query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
 
             query_kmers_with_hits += 1;
-            for qentry in seeds_query[qi..q_end].iter() {
-                let qpos = &qentry.position;
-                for rentry in seeds_ref[ri..r_end].iter() {
-                    let rpos = &rentry.position;
+            for qpos in pos_query[qi..q_end].iter() {
+                for rpos in pos_ref[ri..r_end].iter() {
                     anchors.push(Anchor::new(
                         &(rpos.pos, rpos.contig_index()),
                         &(qpos.pos, qpos.contig_index()),
@@ -791,13 +860,13 @@ fn get_anchors(
             }
             ri = r_end;
         } else {
-            for qentry in seeds_query[qi..q_end].iter() {
-                let qpos = &qentry.position;
+            for qpos in pos_query[qi..q_end].iter() {
                 query_positions_all[qpos.contig_index() as usize].push(qpos.pos);
             }
         }
         qi = q_end;
     }
+
     if anchors.is_empty() {
         debug!(
             "no anchors found for {}, {}",
@@ -1223,3 +1292,95 @@ fn get_nonoverlapping_chains(
 
 
 
+
+#[cfg(test)]
+mod seed_search_tests {
+    use super::*;
+
+    /// Naive definition of what `advance_to_seed` computes.
+    fn reference(seeds: &[SeedBits], from: usize, target: SeedBits) -> usize {
+        for i in from..seeds.len() {
+            if seeds[i] >= target {
+                return i;
+            }
+        }
+        seeds.len()
+    }
+
+    /// Both the scalar and the AVX2 path must agree with the naive definition
+    /// at every starting cursor and every target, including targets that fall
+    /// between seeds, before the first and after the last. Array lengths and
+    /// gap sizes are chosen to straddle the 8-lane block, the gallop floors
+    /// (4 and 32) and the linear-finish bracket (16).
+    #[test]
+    fn seed_search_matches_reference() {
+        fastrand::seed(31337);
+        #[cfg(target_arch = "x86_64")]
+        let simd_available = is_x86_feature_detected!("avx2");
+        #[cfg(not(target_arch = "x86_64"))]
+        let simd_available = false;
+
+        for &n in &[0usize, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 48, 64, 100, 513, 5000]
+        {
+            for &spread in &[1u32, 2, 10, 1000, 1_000_000] {
+                let mut seeds: Vec<SeedBits> = Vec::with_capacity(n);
+                let mut v: u32 = 0;
+                for _ in 0..n {
+                    v = v.saturating_add(fastrand::u32(0..spread));
+                    seeds.push(v);
+                }
+                seeds.sort_unstable();
+
+                //Exhaustive over (from, target) for the small arrays where the
+                //cross product is cheap; sampled for the large ones, which
+                //exist to exercise the gallop and the binary search rather
+                //than more boundary cases.
+                let mut cases: Vec<(usize, SeedBits)> = Vec::new();
+                if n <= 64 {
+                    let mut targets = vec![0u32, u32::MAX];
+                    for s in seeds.iter() {
+                        targets.push(*s);
+                        targets.push(s.saturating_sub(1));
+                        targets.push(s.saturating_add(1));
+                    }
+                    for &target in targets.iter() {
+                        for from in 0..=n {
+                            cases.push((from, target));
+                        }
+                    }
+                } else {
+                    for _ in 0..2000 {
+                        let from = fastrand::usize(0..=n);
+                        let target = match fastrand::u32(0..4) {
+                            0 => 0,
+                            1 => u32::MAX,
+                            2 => seeds[fastrand::usize(0..n)],
+                            _ => seeds[fastrand::usize(0..n)].saturating_add(
+                                fastrand::u32(0..spread.max(2)) - 1,
+                            ),
+                        };
+                        cases.push((from, target));
+                    }
+                }
+
+                for (from, target) in cases {
+                    let want = reference(&seeds, from, target);
+                    let got_scalar = advance_to_seed(&seeds, from, target, false);
+                    assert_eq!(
+                        got_scalar, want,
+                        "scalar: n={} spread={} from={} target={}",
+                        n, spread, from, target
+                    );
+                    if simd_available {
+                        let got_simd = advance_to_seed(&seeds, from, target, true);
+                        assert_eq!(
+                            got_simd, want,
+                            "avx2: n={} spread={} from={} target={}",
+                            n, spread, from, target
+                        );
+                    }
+                }
+            }
+        }
+    }
+}

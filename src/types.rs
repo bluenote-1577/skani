@@ -216,7 +216,21 @@ pub struct SeedEntry {
 /// reads the index requires a finalized one.
 #[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct SeedIndex {
-    entries: Vec<SeedEntry>,
+    //Struct-of-arrays, not an array of `SeedEntry`. The merge-join searches
+    //only the seed keys, so keeping them in their own dense `u32` array puts
+    //16 of them in a cache line instead of the 5.33 a 12-byte interleaved
+    //record manages. That is a 3x reduction in both the footprint being
+    //searched and the lines touched per probe, which is what keeps the search
+    //in cache for large references, and it is also what makes a vectorised
+    //scan possible at all - gathering a strided field would cost more than
+    //the scalar loads it replaces.
+    //
+    //`seeds[i]` and `positions[i]` describe the same record; both are sorted
+    //by `(seed, pos, contig)`.
+    seeds: Vec<SeedBits>,
+    positions: Vec<SeedPosition>,
+    //Scratch used only while sketching, emptied by `finalize`.
+    build: Vec<SeedEntry>,
     num_distinct_seeds: u32,
     finalized: bool,
 }
@@ -226,10 +240,16 @@ impl SeedIndex {
     #[inline]
     pub fn push(&mut self, seed: SeedBits, position: SeedPosition) {
         debug_assert!(!self.finalized, "pushing into an already finalized SeedIndex");
-        self.entries.push(SeedEntry { seed, position });
+        self.build.push(SeedEntry { seed, position });
     }
 
-    /// Sort the records and cache the distinct-seed count. Idempotent.
+    /// Sort the records, split them into the two parallel arrays and cache the
+    /// distinct-seed count. Idempotent.
+    ///
+    /// The sort runs over the interleaved `build` buffer so that the ordering
+    /// is by the whole record, then the buffer is split and released. That
+    /// costs a transient 2x on the index during sketching only; the resident
+    /// form is the same 12 bytes per record as the interleaved one.
     pub fn finalize(&mut self) {
         if self.finalized {
             return;
@@ -237,32 +257,52 @@ impl SeedIndex {
         //Sorting on the whole entry (not just the seed) keeps the index
         //independent of the sort algorithm and of the order in which contigs
         //and SIMD lanes happened to emit their seeds.
-        self.entries.sort_unstable();
-        self.entries.shrink_to_fit();
+        self.build.sort_unstable();
+        self.seeds.clear();
+        self.positions.clear();
+        self.seeds.reserve_exact(self.build.len());
+        self.positions.reserve_exact(self.build.len());
         let mut distinct = 0u32;
         let mut prev: Option<SeedBits> = None;
-        for e in self.entries.iter() {
+        for e in self.build.iter() {
             if prev != Some(e.seed) {
                 distinct += 1;
                 prev = Some(e.seed);
             }
+            self.seeds.push(e.seed);
+            self.positions.push(e.position);
         }
+        self.build = Vec::new();
         self.num_distinct_seeds = distinct;
         self.finalized = true;
     }
 
-    /// Records, sorted by `(seed, pos, contig)`. Only valid after `finalize`.
+    /// The sorted seed keys. Only valid after `finalize`.
     #[inline]
-    pub fn entries(&self) -> &[SeedEntry] {
+    pub fn seeds(&self) -> &[SeedBits] {
         debug_assert!(self.finalized, "SeedIndex read before finalize()");
-        &self.entries
+        &self.seeds
     }
 
-    /// The records grouped into one slice per distinct seed, in seed order.
+    /// The positions, parallel to `seeds`. Only valid after `finalize`.
+    #[inline]
+    pub fn positions(&self) -> &[SeedPosition] {
+        debug_assert!(self.finalized, "SeedIndex read before finalize()");
+        &self.positions
+    }
+
+    /// Number of records.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.seeds.len()
+    }
+
+    /// The records grouped by seed, in seed order.
     pub fn runs(&self) -> SeedRuns<'_> {
         debug_assert!(self.finalized, "SeedIndex read before finalize()");
         SeedRuns {
-            entries: &self.entries,
+            seeds: &self.seeds,
+            positions: &self.positions,
             next: 0,
         }
     }
@@ -276,7 +316,7 @@ impl SeedIndex {
     /// Build from the legacy tagged-hash-map representation found in `.sketch` files.
     fn from_legacy(kmer_seeds: KmerSeeds, multi_position_storage: &MultiPositionStorage) -> Self {
         let mut index = SeedIndex::default();
-        index.entries.reserve(kmer_seeds.len());
+        index.build.reserve(kmer_seeds.len());
         for (seed, tagged_index) in kmer_seeds.into_iter() {
             if TaggedIndex::is_single(tagged_index) {
                 index.push(seed, TaggedIndex::get_single(tagged_index));
@@ -294,31 +334,41 @@ impl SeedIndex {
     /// Number of distinct seeds that occur more than once, i.e. the length of the
     /// legacy `multi_position_storage` vector this index would render into.
     fn num_multi_seeds(&self) -> usize {
-        self.runs().filter(|run| run.len() > 1).count()
+        self.runs().filter(|run| run.positions.len() > 1).count()
     }
+}
+
+/// One distinct seed and all of its positions.
+pub struct SeedRun<'a> {
+    pub seed: SeedBits,
+    pub positions: &'a [SeedPosition],
 }
 
 /// Iterator over a `SeedIndex`'s records, grouped by seed.
 pub struct SeedRuns<'a> {
-    entries: &'a [SeedEntry],
+    seeds: &'a [SeedBits],
+    positions: &'a [SeedPosition],
     next: usize,
 }
 
 impl<'a> Iterator for SeedRuns<'a> {
-    type Item = &'a [SeedEntry];
+    type Item = SeedRun<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next >= self.entries.len() {
+        if self.next >= self.seeds.len() {
             return None;
         }
         let start = self.next;
-        let seed = self.entries[start].seed;
+        let seed = self.seeds[start];
         let mut end = start + 1;
-        while end < self.entries.len() && self.entries[end].seed == seed {
+        while end < self.seeds.len() && self.seeds[end] == seed {
             end += 1;
         }
         self.next = end;
-        Some(&self.entries[start..end])
+        Some(SeedRun {
+            seed,
+            positions: &self.positions[start..end],
+        })
     }
 }
 
@@ -536,14 +586,14 @@ impl Serialize for LegacyKmerSeedsMap<'_> {
         let mut map = serializer.serialize_map(Some(self.0.num_distinct_seeds()))?;
         let mut storage_index = 0usize;
         for run in self.0.runs() {
-            let tagged = if run.len() == 1 {
-                TaggedIndex::single(&run[0].position)
+            let tagged = if run.positions.len() == 1 {
+                TaggedIndex::single(&run.positions[0])
             } else {
                 let tagged = TaggedIndex::multiple(storage_index);
                 storage_index += 1;
                 tagged
             };
-            map.serialize_entry(&run[0].seed, &tagged)?;
+            map.serialize_entry(&run.seed, &tagged)?;
         }
         map.end()
     }
@@ -561,8 +611,8 @@ impl Serialize for LegacyMultiStorage<'_> {
             Some(index) => index,
         };
         let mut seq = serializer.serialize_seq(Some(index.num_multi_seeds()))?;
-        for run in index.runs().filter(|run| run.len() > 1) {
-            seq.serialize_element(&LegacyPositions(run))?;
+        for run in index.runs().filter(|run| run.positions.len() > 1) {
+            seq.serialize_element(&LegacyPositions(run.positions))?;
         }
         seq.end()
     }
@@ -570,14 +620,14 @@ impl Serialize for LegacyMultiStorage<'_> {
 
 /// One position vector. `SmallVec` serializes as a plain sequence, so this is
 /// byte-compatible with the `SmallVec<[SeedPosition; 3]>` it replaces.
-struct LegacyPositions<'a>(&'a [SeedEntry]);
+struct LegacyPositions<'a>(&'a [SeedPosition]);
 
 impl Serialize for LegacyPositions<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeSeq;
         let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
-        for entry in self.0.iter() {
-            seq.serialize_element(&entry.position)?;
+        for position in self.0.iter() {
+            seq.serialize_element(position)?;
         }
         seq.end()
     }
