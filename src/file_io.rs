@@ -738,8 +738,8 @@ pub fn sketches_from_sketch(ref_files: &Vec<String>) -> (SketchParams, Vec<Sketc
                     locked.push(temp_ref_sketch);
                 } else if sketch_file != "markers.bin" {
                     error!(
-                        "{} is not a valid .sketch file or is corrupted. Skani v0.3+ is not compatible with older sketch files. 
-                        Please re-run `skani sketch --separate-files` to generate new sketch files.",
+                        "{} is not a valid .sketch file or is corrupted. \
+                        Please re-run `skani sketch --separate-sketches` to regenerate it.",
                         sketch_file
                     );
                 }
