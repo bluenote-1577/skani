@@ -45,6 +45,10 @@ pub const MIN_LENGTH_CONTIG: usize = 500;
 pub const MIN_LENGTH_COVER_AAI: usize = 500;
 pub const MIN_LENGTH_COVER: usize = 500;
 //Below these sizes a comparison sort beats setting up a radix sort.
+//Cap on the command line recorded in a database's README.txt. A glob over
+//tens of thousands of genomes produces a command line megabytes long, which
+//is neither readable nor worth storing in full.
+pub const README_CMD_MAX_CHARS: usize = 5000;
 //Above this many genomes, `triangle`'s dense matrix gets unwieldy and the
 //sparse tsv output is usually what the user wants.
 pub const MATRIX_WARN_NUM_GENOMES: usize = 300;

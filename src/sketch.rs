@@ -51,6 +51,28 @@ fn utc_timestamp() -> String {
     }
 }
 
+/// The command line as it will appear in the database README, truncated.
+///
+/// Sketching is routinely driven by a glob over tens of thousands of genomes,
+/// so the raw command line can be megabytes. Truncation is on a character
+/// boundary, not a byte offset, since paths can be non-ASCII.
+fn command_line_for_readme() -> String {
+    let args: Vec<String> = std::env::args().collect();
+    let num_args = args.len();
+    let cmd = args.join(" ");
+    match cmd.char_indices().nth(README_CMD_MAX_CHARS) {
+        None => cmd,
+        Some((byte_idx, _)) => format!(
+            "{} ...\n             [truncated at {} characters; the full command had {} arguments \
+and {} characters]",
+            &cmd[..byte_idx],
+            README_CMD_MAX_CHARS,
+            num_args,
+            cmd.chars().count()
+        ),
+    }
+}
+
 /// Write a README.txt next to the sketches recording how the database was
 /// built and what to do when something does not work. Purely informational -
 /// skani never reads it back.
@@ -115,7 +137,7 @@ Notes
 ",
         version = env!("CARGO_PKG_VERSION"),
         when = utc_timestamp(),
-        cmd = std::env::args().collect::<Vec<String>>().join(" "),
+        cmd = command_line_for_readme(),
         c = sketch_params.c,
         k = sketch_params.k,
         marker_c = sketch_params.marker_c,
