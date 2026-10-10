@@ -15,6 +15,21 @@ pub struct IndexEntry {
 }
 
 /// Writer for creating consolidated sketch databases
+/// Filenames for the 0.4 consolidated database. The 0.4 record layout is not
+/// readable by skani <= 0.3.x, so the files are named distinctly: an older
+/// binary pointed at a 0.4 database simply does not find the names it expects,
+/// instead of finding them and failing to parse them.
+///
+/// `markers.bin` deliberately keeps its name. An older skani that finds it and
+/// fails to parse it reports "Problem reading markers.bin", which says more
+/// than the "markers.bin not found" it would report if that file were renamed
+/// too.
+pub const SKETCHES_DB: &str = "sketches.db2";
+pub const INDEX_DB: &str = "index.db2";
+/// Pre-0.4 names, still read.
+pub const SKETCHES_DB_LEGACY: &str = "sketches.db";
+pub const INDEX_DB_LEGACY: &str = "index.db";
+
 pub struct SketchDbWriter {
     concat_file: BufWriter<File>,
     index: Vec<IndexEntry>,
@@ -31,7 +46,7 @@ impl SketchDbWriter {
     /// Create a new consolidated sketch database writer
     pub fn new(output_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
                 
-        let concat_path = format!("{}/sketches.db", output_dir);
+        let concat_path = format!("{}/{}", output_dir, SKETCHES_DB);
         let concat_file = BufWriter::new(File::create(concat_path)?);
         
         Ok(SketchDbWriter {
@@ -74,7 +89,7 @@ impl SketchDbWriter {
         drop(self.concat_file);
 
         // Write index.db
-        let index_path = format!("{}/index.db", output_dir);
+        let index_path = format!("{}/{}", output_dir, INDEX_DB);
         let index_file = File::create(index_path)?;
         let mut index_writer = BufWriter::new(index_file);
         bincode::serialize_into(&mut index_writer, &self.index)?;
@@ -89,7 +104,15 @@ impl SketchDbReader {
     /// Open a consolidated sketch database for reading
     pub fn new(database_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
         // Load index.db
-        let index_path = format!("{}/index.db", database_dir);
+        // Prefer the 0.4 names; fall back to the pre-0.4 ones. A database
+        // with the old names always holds old-format records, and those are
+        // detected and warned about per record on deserialization.
+        let v2_index = format!("{}/{}", database_dir, INDEX_DB);
+        let (index_path, concat_name) = if Path::new(&v2_index).exists() {
+            (v2_index, SKETCHES_DB)
+        } else {
+            (format!("{}/{}", database_dir, INDEX_DB_LEGACY), SKETCHES_DB_LEGACY)
+        };
         let index_file = File::open(index_path)?;
         let index_reader = BufReader::new(index_file);
         let index_vec: Vec<IndexEntry> = bincode::deserialize_from(index_reader)?;
@@ -100,7 +123,7 @@ impl SketchDbReader {
             .collect();
 
         // Memory map the main database file
-        let concat_path = format!("{}/sketches.db", database_dir);
+        let concat_path = format!("{}/{}", database_dir, concat_name);
         let concat_file = File::open(concat_path)?;
         let mmap = unsafe { memmap2::Mmap::map(&concat_file)? };
 
@@ -162,9 +185,11 @@ impl SketchDbReader {
 
 /// Check if a directory contains a consolidated sketch database
 pub fn is_consolidated_db(database_dir: &str) -> bool {
-    let concat_path = format!("{}/sketches.db", database_dir);
-    let index_path = format!("{}/index.db", database_dir);
-    Path::new(&concat_path).exists() && Path::new(&index_path).exists()
+    let pair_exists = |sketches: &str, index: &str| {
+        Path::new(&format!("{}/{}", database_dir, sketches)).exists()
+            && Path::new(&format!("{}/{}", database_dir, index)).exists()
+    };
+    pair_exists(SKETCHES_DB, INDEX_DB) || pair_exists(SKETCHES_DB_LEGACY, INDEX_DB_LEGACY)
 }
 
 /// Check if a directory contains separate sketch files (legacy format)
