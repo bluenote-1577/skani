@@ -488,7 +488,7 @@ impl KmerEnc {
 pub struct ChainingResult {
     pub pointer_vec: Vec<usize>,
     pub chain_part: PartitionVec<usize>,
-    pub score_vec: Vec<f64>,
+    pub score_vec: Vec<i32>,
     pub num_chunks: usize,
 }
 
@@ -505,9 +505,9 @@ pub struct Anchor {
     pub reverse_match: bool,
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Clone, Default)]
+#[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Default)]
 pub struct ChainInterval {
-    pub score: f64,
+    pub score: i32,
     pub num_anchors: usize,
     pub interval_on_query: (GnPosition, GnPosition),
     pub interval_on_ref: (GnPosition, GnPosition),

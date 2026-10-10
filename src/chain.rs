@@ -110,7 +110,9 @@ pub fn map_params_from_sketch <'a>(
     let length_cover_cutoff = 5000000;
     let bp_chain_band = if amino_acid {BP_CHAIN_BAND_AAI} else {BP_CHAIN_BAND};
     let index_chain_band = bp_chain_band/ref_sketch.c;
-    let min_score = min_anchors as f64 * anchor_score * 0.75;
+    //0.75 * min_anchors * anchor_score; kept in integer arithmetic (the
+    //defaults 3*20 and 5*20 are both divisible by 4, so this is exact).
+    let min_score = min_anchors as i32 * anchor_score * 3 / 4;
 //    let min_score = 0.;
     let k = ref_sketch.k;
     let model;
@@ -555,51 +557,59 @@ fn calculate_ani(
 }
 
 #[inline]
-pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &MapParams) -> f64 {
+/// Score a candidate anchor pair. Returns `i32::MIN` when the pair cannot be
+/// chained.
+///
+/// Every quantity here is integer-valued: positions are `u32` genome offsets
+/// and `anchor_score` is a small integer constant, so this is bit-identical to
+/// the f64 formulation it replaces. Intermediates are taken in `i64` because a
+/// difference of two `u32` positions does not fit in `i32` in general; the
+/// returned score always does (it is bounded by `anchor_score`).
+pub fn score_anchors(anchor_curr: &Anchor, anchor_past: &Anchor, map_params: &MapParams) -> i32 {
     // if anchor_curr.query_phase != anchor_past.query_phase
     //     || anchor_curr.ref_phase != anchor_past.ref_phase
     // {
-    //     return f64::MIN;
+    //     return i32::MIN;
     // }
     if anchor_curr.reverse_match != anchor_past.reverse_match {
-        return f64::MIN;
+        return i32::MIN;
     }
     if anchor_curr.ref_pos == anchor_past.ref_pos || anchor_curr.query_pos == anchor_past.query_pos
     {
-        return f64::MIN;
+        return i32::MIN;
     }
 
-    let acqpf64 = anchor_curr.query_pos as f64;
-    let apqpf64 = anchor_past.query_pos as f64;
-    let acrpf64 = anchor_curr.ref_pos as f64;
-    let aprpf64 = anchor_past.ref_pos as f64;
+    let acqp = anchor_curr.query_pos as i64;
+    let apqp = anchor_past.query_pos as i64;
+    let acrp = anchor_curr.ref_pos as i64;
+    let aprp = anchor_past.ref_pos as i64;
 
-    let d_q = (acqpf64 - apqpf64).abs();
+    let d_q = (acqp - apqp).abs();
 
     let d_r;
     if anchor_curr.reverse_match {
-        d_r = aprpf64 - acrpf64;
+        d_r = aprp - acrp;
     } else {
-        d_r = acrpf64 - aprpf64;
+        d_r = acrp - aprp;
     }
 
-    if d_q > D_MAX_LIN_LENGTH || d_r > D_MAX_LIN_LENGTH {
-        return f64::MIN;
+    if d_q > D_MAX_LIN_LENGTH as i64 || d_r > D_MAX_LIN_LENGTH as i64 {
+        return i32::MIN;
     }
 
-    if d_r <= 0. {
-        return f64::MIN;
+    if d_r <= 0 {
+        return i32::MIN;
     }
 
     let gap = (d_r - d_q).abs();
-    if gap > map_params.max_gap_length {
-        return f64::MIN;
+    if gap > map_params.max_gap_length as i64 {
+        return i32::MIN;
     }
     //    let ol_q = f64::max(0., map_params.k as f64 - d_q);
     //    let ol_r = f64::max(0., map_params.k as f64 - d_r);
     //    let ol = f64::max(ol_q, ol_r);
     //    return map_params.anchor_score * (1. - ol / map_params.k as f64) - gap;
-    map_params.anchor_score - gap
+    (map_params.anchor_score as i64 - gap) as i32
 }
 
 
@@ -855,53 +865,184 @@ fn get_anchors(
     )
 }
 
+/// Struct-of-arrays view of one anchor chunk, reused across chunks so the
+/// vectorised DP does not re-allocate per chunk. The scalar path reads the
+/// `Anchor` slice directly and does not need this.
+#[derive(Default)]
+#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
+struct ChainScratch {
+    qpos: Vec<i32>,
+    rpos: Vec<i32>,
+    rctg: Vec<i32>,
+    rev: Vec<i32>,
+}
+
+#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
+impl ChainScratch {
+    /// Returns `false` if any value in the chunk does not fit in `i32`, in
+    /// which case the caller must fall back to the scalar path. Genome
+    /// positions are `u32`, and the vector kernel subtracts them as `i32`;
+    /// a contig longer than 2^31 bp would break that, so it is checked rather
+    /// than assumed.
+    fn fill(&mut self, chunk: &[Anchor]) -> bool {
+        const LIMIT: u32 = i32::MAX as u32;
+        self.qpos.clear();
+        self.rpos.clear();
+        self.rctg.clear();
+        self.rev.clear();
+        self.qpos.reserve(chunk.len());
+        self.rpos.reserve(chunk.len());
+        self.rctg.reserve(chunk.len());
+        self.rev.reserve(chunk.len());
+        for anchor in chunk.iter() {
+            if anchor.query_pos > LIMIT || anchor.ref_pos > LIMIT || anchor.ref_contig > LIMIT {
+                return false;
+            }
+            self.qpos.push(anchor.query_pos as i32);
+            self.rpos.push(anchor.ref_pos as i32);
+            self.rctg.push(anchor.ref_contig as i32);
+            self.rev.push(anchor.reverse_match as i32);
+        }
+        true
+    }
+}
+
+/// Reference implementation of the chunk DP. The vectorised kernel in
+/// `avx2_chaining` must agree with this bit for bit.
+fn chain_chunk_scalar(
+    anchor_chunk: &[Anchor],
+    map_params: &MapParams,
+    past_chain_length: u32,
+    score_vec: &mut [i32],
+    pointer_vec: &mut [usize],
+) {
+    for i in 0..anchor_chunk.len() {
+        let anchor_curr = &anchor_chunk[i];
+        let mut best_score = 0;
+        let mut best_prev_index = i;
+        for j in (0..i).rev() {
+            let anchor_past = &anchor_chunk[j];
+            if anchor_curr.ref_contig != anchor_past.ref_contig {
+                continue;
+            }
+            if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length
+                || i - j > map_params.index_chain_band
+            {
+                break;
+            }
+//                if anchor_curr.query_contig != anchor_past.query_contig {
+//                    continue;
+//                }
+
+            let anchor_score = score_anchors(anchor_curr, anchor_past, map_params);
+            if anchor_score == i32::MIN {
+                continue;
+            }
+            let new_score = anchor_score + score_vec[j];
+            if new_score > best_score {
+                best_score = new_score;
+                best_prev_index = j;
+            }
+        }
+        score_vec[i] = best_score;
+        pointer_vec[i] = best_prev_index;
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+fn chain_chunk(
+    scratch: &mut ChainScratch,
+    use_simd: bool,
+    anchor_chunk: &[Anchor],
+    map_params: &MapParams,
+    past_chain_length: u32,
+    score_vec: &mut [i32],
+    pointer_vec: &mut [usize],
+) {
+    if use_simd
+        && anchor_chunk.len() >= AVX2_CHAIN_MIN_ANCHORS
+        && scratch.fill(anchor_chunk)
+    {
+        unsafe {
+            crate::avx2_chaining::chain_chunk_avx2(
+                &scratch.qpos,
+                &scratch.rpos,
+                &scratch.rctg,
+                &scratch.rev,
+                past_chain_length as i32,
+                map_params.index_chain_band,
+                map_params.anchor_score,
+                map_params.max_gap_length,
+                score_vec,
+                pointer_vec,
+            );
+        }
+    } else {
+        chain_chunk_scalar(
+            anchor_chunk,
+            map_params,
+            past_chain_length,
+            score_vec,
+            pointer_vec,
+        );
+    }
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+fn chain_chunk(
+    _scratch: &mut ChainScratch,
+    _use_simd: bool,
+    anchor_chunk: &[Anchor],
+    map_params: &MapParams,
+    past_chain_length: u32,
+    score_vec: &mut [i32],
+    pointer_vec: &mut [usize],
+) {
+    chain_chunk_scalar(
+        anchor_chunk,
+        map_params,
+        past_chain_length,
+        score_vec,
+        pointer_vec,
+    );
+}
+
 fn chain_anchors_ani(anchor_chunks: &AnchorChunks, map_params: &MapParams) -> Vec<ChainingResult> {
     let mut chaining_results = vec![];
 
     let num_chunks = anchor_chunks.chunks.len();
     let past_chain_length = usize::min(map_params.fragment_length / 2, map_params.bp_chain_band) as u32;
 
+    #[cfg(target_arch = "x86_64")]
+    let use_simd = is_x86_feature_detected!("avx2");
+    #[cfg(not(target_arch = "x86_64"))]
+    let use_simd = false;
+
+    let mut scratch = ChainScratch::default();
+
     for anchor_chunk in anchor_chunks.chunks.iter() {
         let mut pointer_vec = vec![0; anchor_chunk.len()];
-        let mut score_vec = vec![0.; anchor_chunk.len()];
-        let mut chain_part = partition_vec![];
+        let mut score_vec = vec![0; anchor_chunk.len()];
 
+        chain_chunk(
+            &mut scratch,
+            use_simd,
+            anchor_chunk,
+            map_params,
+            past_chain_length,
+            &mut score_vec,
+            &mut pointer_vec,
+        );
+
+        //Union-find over the pointer forest. Built in the same order the DP
+        //visits the anchors (push i, then union i with its earlier
+        //predecessor), so the resulting partition - and therefore the
+        //`all_sets()` enumeration downstream - is unchanged.
+        let mut chain_part = partition_vec![];
         for i in 0..anchor_chunk.len() {
             chain_part.push(i);
-            let anchor_curr = &anchor_chunk[i];
-            let mut best_score = 0.;
-            let mut best_prev_index = i;
-            for j in (0..i).rev() {
-                let anchor_past = &anchor_chunk[j];
-                if anchor_curr.ref_contig != anchor_past.ref_contig {
-                    continue;
-                }
-                if anchor_curr.query_pos - anchor_past.query_pos > past_chain_length
-                    || i - j > map_params.index_chain_band
-                {
-                    break;
-                }
-//                if anchor_curr.query_contig != anchor_past.query_contig {
-//                    continue;
-//                }
-                if anchor_curr.ref_contig != anchor_past.ref_contig {
-                    continue;
-                }
-
-                let anchor_score = score_anchors(anchor_curr, anchor_past, map_params);
-                if anchor_score == f64::MIN {
-                    continue;
-                }
-                let new_score = anchor_score + score_vec[j];
-                if new_score > best_score {
-                    best_score = new_score;
-                    best_prev_index = j;
-                }
-            }
-            score_vec[i] = best_score;
-            pointer_vec[i] = best_prev_index;
-            if best_prev_index != i {
-                chain_part.union(i, best_prev_index);
+            if pointer_vec[i] != i {
+                chain_part.union(i, pointer_vec[i]);
             }
         }
 
@@ -966,7 +1107,7 @@ fn get_chain_intervals(
     for set in cr.chain_part.all_sets() {
         let mut small_chain = false;
         let mut first_iter = true;
-        let mut max_score = f64::MIN;
+        let mut max_score = i32::MIN;
         let mut best_index = usize::MAX;
         let mut num_anchors = 1;
         for (index, _value) in set {
@@ -1156,3 +1297,101 @@ fn get_nonoverlapping_chains(
 
 
 
+
+#[cfg(all(test, target_arch = "x86_64"))]
+mod avx2_chaining_tests {
+    use super::*;
+
+    /// Build a chunk with the invariants `chain_anchors_ani` guarantees:
+    /// a single query contig, anchors in sorted order (so query positions are
+    /// non-decreasing), several reference contigs and both strands.
+    fn random_chunk(n: usize, num_ref_contigs: u32, jitter: u32) -> Vec<Anchor> {
+        let mut anchors = Vec::with_capacity(n);
+        let mut qpos: u32 = 1000;
+        let mut rpos: i64 = 50_000;
+        for _ in 0..n {
+            qpos += fastrand::u32(0..jitter);
+            rpos = (rpos + fastrand::i64(-400..600)).max(0);
+            anchors.push(Anchor {
+                query_contig: 0,
+                query_pos: qpos,
+                ref_contig: fastrand::u32(0..num_ref_contigs),
+                ref_pos: rpos as GnPosition,
+                reverse_match: fastrand::bool(),
+            });
+        }
+        anchors.sort_unstable();
+        anchors
+    }
+
+    /// The vectorised kernel has to agree with the scalar reference exactly -
+    /// not just on the best score but on the predecessor chosen, since
+    /// `pointer_vec` drives chain backtracking downstream.
+    ///
+    /// Sizes straddle the 8-lane block boundary and the band widths cover the
+    /// range `BP_CHAIN_BAND / c` actually takes (c = 200 down to c = 30, plus
+    /// the AAI band).
+    #[test]
+    fn avx2_chaining_matches_scalar() {
+        if !is_x86_feature_detected!("avx2") {
+            return;
+        }
+        fastrand::seed(20240609);
+        let mut scratch = ChainScratch::default();
+        let mut cases = 0;
+
+        for &band in &[12usize, 20, 33, 83] {
+            for &max_gap in &[D_MAX_GAP_LENGTH, D_MAX_GAP_LENGTH_AAI] {
+                for &n in &[1usize, 2, 7, 8, 9, 15, 16, 17, 31, 32, 33, 109, 257, 503] {
+                    for &jitter in &[1u32, 40, 300, 3000] {
+                        for &num_ref_contigs in &[1u32, 3] {
+                            let chunk = random_chunk(n, num_ref_contigs, jitter);
+                            let mut map_params = MapParams::default();
+                            map_params.index_chain_band = band;
+                            map_params.anchor_score = D_ANCHOR_SCORE_ANI;
+                            map_params.max_gap_length = max_gap;
+                            let past_chain_length: u32 = 2500;
+
+                            let mut score_scalar = vec![0i32; n];
+                            let mut ptr_scalar = vec![0usize; n];
+                            chain_chunk_scalar(
+                                &chunk,
+                                &map_params,
+                                past_chain_length,
+                                &mut score_scalar,
+                                &mut ptr_scalar,
+                            );
+
+                            let mut score_simd = vec![0i32; n];
+                            let mut ptr_simd = vec![0usize; n];
+                            assert!(scratch.fill(&chunk));
+                            unsafe {
+                                crate::avx2_chaining::chain_chunk_avx2(
+                                    &scratch.qpos,
+                                    &scratch.rpos,
+                                    &scratch.rctg,
+                                    &scratch.rev,
+                                    past_chain_length as i32,
+                                    band,
+                                    map_params.anchor_score,
+                                    map_params.max_gap_length,
+                                    &mut score_simd,
+                                    &mut ptr_simd,
+                                );
+                            }
+
+                            let ctx = format!(
+                                "n={} band={} max_gap={} jitter={} ref_contigs={}",
+                                n, band, max_gap, jitter, num_ref_contigs
+                            );
+                            assert_eq!(score_scalar, score_simd, "scores differ: {}", ctx);
+                            assert_eq!(ptr_scalar, ptr_simd, "pointers differ: {}", ctx);
+                            cases += 1;
+                        }
+                    }
+                }
+            }
+        }
+        assert!(cases > 0);
+    }
+}
