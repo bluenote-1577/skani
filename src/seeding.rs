@@ -120,10 +120,9 @@ pub fn fmh_seeds_aa_with_orf(
     seed: bool,
 ) {
     let marker_k = K_MARKER_AA;
-    if seed && new_sketch.kmer_seeds_k.is_none() {
-        new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
+    if seed && new_sketch.seed_index.is_none() {
+        new_sketch.seed_index = Some(SeedIndex::default());
     }
-    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     let kmer_to_aa_table = &sketch_params.acgt_to_aa_encoding;
@@ -219,7 +218,6 @@ pub fn fmh_seeds_aa_with_orf(
         }
     }
 
-    //kmer_seeds_k].shrink_to_fit();
 }
 
 pub fn fmh_seeds(
@@ -229,11 +227,10 @@ pub fn fmh_seeds(
     new_sketch: &mut Sketch,
     seed: bool,
 ) {
-    if seed && new_sketch.kmer_seeds_k.is_none() {
-        new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
+    if seed && new_sketch.seed_index.is_none() {
+        new_sketch.seed_index = Some(SeedIndex::default());
     }
     let marker_k = K_MARKER_DNA;
-    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     if k > 16 {
@@ -325,17 +322,12 @@ pub fn fmh_seeds(
 //This function is unused right now. Originally used for
 //getting a repetitive k-mer masking threshold. We may
 //modify the masking procedure in the future, so leaving for now.
-pub fn get_repetitive_kmers(kmer_seeds: &Option<KmerSeeds>, sketch: &Sketch, c: usize) -> usize {
-    if kmer_seeds.is_none() {
+pub fn get_repetitive_kmers(sketch: &Sketch, c: usize) -> usize {
+    if sketch.seed_index.is_none() {
         usize::MAX
     } else {
-        let kmer_seeds = kmer_seeds.as_ref().unwrap();
-        let mut count_vec = vec![];
-        for (seed, _tagged_index) in kmer_seeds {
-            // Use the sketch's get_seed_positions to get the actual count
-            let positions_iter = sketch.get_seed_positions(*seed);
-            count_vec.push(positions_iter.len());
-        }
+        let index = sketch.seed_index.as_ref().unwrap();
+        let mut count_vec = index.runs().map(|run| run.positions.len()).collect::<Vec<usize>>();
         count_vec.sort();
         let mut max_repet_cutoff = count_vec[count_vec.len() - count_vec.len() / 5000 - 1];
         let default_repet_cutoff = BP_CHAIN_BAND / c;

@@ -1,3 +1,16 @@
+### v0.4.0 - 2026-10-10 (Breaking changes; new database / sketches and 2x faster)
+
+#### Major
+
+* **Roughly 2x faster.** For all commands,`triangle / dist / search`. Results are unchanged (see the one exception under Minor).
+* **~30% less memory.**  A resident sketch index is about half its former size.
+* **BREAKING: the sketch format changed.** Sketches written by 0.4 **cannot be read by skani 0.3.x or earlier.** The consolidated database files are named `sketches.db2` and `index.db2` so that an older binary fails to find them rather than misreading them; if you point skani 0.3.x at a 0.4 database it will exit with `Problem reading .../markers.bin` and produce no output.
+* **Old sketches still work, but with performance penalty.** skani v0.4 reads pre-0.4 `.sketch` files, databases and `markers.bin`, and prints one warning per run. Old sketchesare converted on every load, so re-running `skani sketch` is worth it: loading is substantially faster afterwards.
+
+#### Minor
+
+* Dropped the `partitions` dependency.
+
 ### v0.3.2 - 2026-05-12
 
 ### Major

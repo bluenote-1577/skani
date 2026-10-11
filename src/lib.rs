@@ -1,6 +1,7 @@
 pub mod types;
 pub mod params;
 pub mod chain;
+pub mod radix_sort;
 pub mod file_io;
 pub mod seeding;
 pub mod screen;
@@ -14,6 +15,10 @@ pub mod regression;
 
 #[cfg(target_arch = "x86_64")]
 pub mod avx2_seeding;
+#[cfg(target_arch = "x86_64")]
+pub mod avx2_seed_search;
+#[cfg(target_arch = "x86_64")]
+pub mod avx2_chaining;
 #[cfg(feature = "cli")]
 pub mod parse;
 #[cfg(feature = "cli")]

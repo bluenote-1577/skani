@@ -37,11 +37,10 @@ pub unsafe fn avx2_fmh_seeds(
     new_sketch: &mut Sketch,
     seed: bool,
 ) {
-    if seed && new_sketch.kmer_seeds_k.is_none() {
-        new_sketch.kmer_seeds_k = Some(KmerSeeds::default());
+    if seed && new_sketch.seed_index.is_none() {
+        new_sketch.seed_index = Some(SeedIndex::default());
     }
     let marker_k = K_MARKER_DNA;
-    let _kmer_seeds_k = &mut new_sketch.kmer_seeds_k;
     let k = sketch_params.k;
     let c = sketch_params.c;
     let marker_c = sketch_params.marker_c;

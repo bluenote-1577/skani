@@ -16,7 +16,13 @@ skani uses an approximate mapping method without base-level alignment to get ANI
 
 ##  Updates
 
-See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for the skani's full versioning history. 
+> [!IMPORTANT]
+> **October 2026: v0.4.0 is out.** skani is now ~2x faster and uses ~30% less memory, with results unchanged.
+> However, **the sketch format changed, and this is a breaking change.** 
+> - Sketches written by v0.4 cannot be read by v0.3.x or earlier. 
+> - **v0.4 still works with existing sketches and databases** — it warns once and converts them on load, but **performance is worse if running v0.4 on v0.3 databases**. 
+
+See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.md) for details and for skani's full versioning history. 
 
 ##  Install
 

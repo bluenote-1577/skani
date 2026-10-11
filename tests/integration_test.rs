@@ -619,8 +619,8 @@ fn test_consolidated_database_functionality() {
     assert.success().code(0);
 
     // Verify consolidated database files exist
-    assert!(std::path::Path::new("./tests/results/test_consolidated_db/sketches.db").exists());
-    assert!(std::path::Path::new("./tests/results/test_consolidated_db/index.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/sketches.db2").exists());
+    assert!(std::path::Path::new("./tests/results/test_consolidated_db/index.db2").exists());
     assert!(std::path::Path::new("./tests/results/test_consolidated_db/markers.bin").exists());
 
     // Test 2: Create separate sketches database using --separate-sketches flag
@@ -726,8 +726,8 @@ fn test_consolidated_database_multiple_files() {
     assert.success().code(0);
 
     // Verify database files exist
-    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/sketches.db").exists());
-    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/index.db").exists());
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/sketches.db2").exists());
+    assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/index.db2").exists());
     assert!(std::path::Path::new("./tests/results/test_multi_consolidated_db/markers.bin").exists());
 
     // Test search functionality
