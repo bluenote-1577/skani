@@ -1568,6 +1568,170 @@ mod avx2_chaining_tests {
         anchors
     }
 
+    /// Anchors on a near-perfect diagonal, i.e. what a high-identity
+    /// comparison actually produces: consecutive anchors advance by the same
+    /// amount on both genomes, so the gap is zero and the chain score is
+    /// maximal. `break_every` injects a perturbation so the diagonal is not
+    /// uniformly perfect.
+    ///
+    /// Purely random anchors essentially never produce a zero gap, so without
+    /// this the band shortcut is never exercised and a broken shortcut passes
+    /// unnoticed.
+    fn diagonal_chunk(n: usize, num_ref_contigs: u32, break_every: usize) -> Vec<Anchor> {
+        let mut anchors = Vec::with_capacity(n);
+        let mut qpos: u32 = 1000;
+        let mut rpos: u32 = 50_000;
+        let reverse = fastrand::bool();
+        for idx in 0..n {
+            let step = fastrand::u32(1..40);
+            qpos += step;
+            rpos += step;
+            if break_every != 0 && idx % break_every == 0 {
+                //Perturb one side so this candidate is no longer gap-zero.
+                rpos = rpos.saturating_add(fastrand::u32(1..50));
+            }
+            anchors.push(Anchor {
+                query_contig: 0,
+                query_pos: qpos,
+                ref_contig: fastrand::u32(0..num_ref_contigs),
+                ref_pos: rpos,
+                reverse_match: reverse,
+            });
+        }
+        anchors.sort_unstable();
+        anchors
+    }
+
+    /// Two interleaved diagonals of different ages, which is what a repeat or
+    /// a duplicated region produces: one alignment path has been running for a
+    /// while and carries a high chain score, the other has just started.
+    ///
+    /// This is the case that distinguishes a correct band shortcut from one
+    /// that merely checks the gap. An anchor can sit at zero gap from its
+    /// immediate predecessor on the young diagonal while an older anchor in
+    /// the band scores higher, so chaining to the immediate predecessor is
+    /// wrong even though it is gap-zero. A single diagonal cannot express
+    /// that, because there the score grows monotonically and the immediate
+    /// predecessor is always the band maximum.
+    fn two_diagonal_chunk(n: usize, offset: u32) -> Vec<Anchor> {
+        let mut anchors = Vec::with_capacity(n);
+        let mut qpos: u32 = 1000;
+        let mut r_old: u32 = 90_000;
+        let mut r_new: u32 = 90_000 + offset;
+        for idx in 0..n {
+            let step = fastrand::u32(1..30);
+            qpos += step;
+            r_old += step;
+            r_new += step;
+            //Alternate which diagonal the anchor lands on.
+            let on_old = idx % 2 == 0;
+            anchors.push(Anchor {
+                query_contig: 0,
+                query_pos: qpos,
+                ref_contig: 0,
+                ref_pos: if on_old { r_old } else { r_new },
+                reverse_match: false,
+            });
+        }
+        anchors.sort_unstable();
+        anchors
+    }
+
+    /// A long-running diagonal plus a second one that starts late, offset
+    /// within `max_gap_length` so its anchors are still valid candidates.
+    ///
+    /// This is the configuration that actually falsifies a wrong band
+    /// shortcut. The late diagonal's first anchors score 0, so an anchor on
+    /// it can be gap-zero from its immediate predecessor while an older
+    /// anchor on the established diagonal, a few tens of positions off the
+    /// diagonal but carrying a large accumulated score, is the better
+    /// predecessor. A shortcut that checks only the gap, and not that the
+    /// immediate predecessor attains the band maximum, picks the wrong one.
+    fn late_diagonal_chunk(n: usize, offset: u32) -> Vec<Anchor> {
+        let mut anchors = Vec::with_capacity(n);
+        let mut q: u32 = 1000;
+        let mut r_main: u32 = 500_000;
+        let start_late = n / 2;
+        for idx in 0..n {
+            let step = fastrand::u32(1..12);
+            q += step;
+            r_main += step;
+            if idx < start_late || idx % 3 != 0 {
+                anchors.push(Anchor {
+                    query_contig: 0,
+                    query_pos: q,
+                    ref_contig: 0,
+                    ref_pos: r_main,
+                    reverse_match: false,
+                });
+            } else {
+                //Two adjacent anchors on the late diagonal, gap-zero to each
+                //other, so the second one's immediate predecessor is the
+                //first -- which is young and low-scoring.
+                q += 1;
+                anchors.push(Anchor {
+                    query_contig: 0,
+                    query_pos: q,
+                    ref_contig: 0,
+                    ref_pos: r_main + offset,
+                    reverse_match: false,
+                });
+                q += 1;
+                anchors.push(Anchor {
+                    query_contig: 0,
+                    query_pos: q,
+                    ref_contig: 0,
+                    ref_pos: r_main + offset + 1,
+                    reverse_match: false,
+                });
+            }
+        }
+        anchors.truncate(n);
+        anchors.sort_unstable();
+        anchors
+    }
+
+    /// A diagonal in which some query positions carry two anchors, i.e. one
+    /// query seed matching two places in the reference -- a repeat.
+    ///
+    /// This is the only way the immediate predecessor can be gap-zero and yet
+    /// not be the band maximum. A candidate `j` sharing a query position with
+    /// `i-1` is invalid *for* `i-1` (zero query offset) but valid for `i`, so
+    /// `i-1` never had to beat it and can carry a lower score than it does.
+    /// Without duplicate query positions the immediate predecessor is always
+    /// the maximum whenever it is gap-zero, and a shortcut that skips the
+    /// maximum check is indistinguishable from a correct one.
+    fn repeat_chunk(n: usize, dup_every: usize, offset: u32) -> Vec<Anchor> {
+        let mut anchors = Vec::with_capacity(n);
+        let mut q: u32 = 1000;
+        let mut r: u32 = 300_000;
+        for idx in 0..n {
+            let step = fastrand::u32(1..9);
+            q += step;
+            r += step;
+            anchors.push(Anchor {
+                query_contig: 0,
+                query_pos: q,
+                ref_contig: 0,
+                ref_pos: r,
+                reverse_match: false,
+            });
+            if dup_every != 0 && idx % dup_every == 0 {
+                //Same query position, different reference position.
+                anchors.push(Anchor {
+                    query_contig: 0,
+                    query_pos: q,
+                    ref_contig: 0,
+                    ref_pos: r + offset,
+                    reverse_match: false,
+                });
+            }
+        }
+        anchors.truncate(n);
+        anchors.sort_unstable();
+        anchors
+    }
+
     /// The vectorised kernel has to agree with the scalar reference exactly -
     /// not just on the best score but on the predecessor chosen, since
     /// `pointer_vec` drives chain backtracking downstream.
@@ -1589,7 +1753,14 @@ mod avx2_chaining_tests {
                 for &n in &[1usize, 2, 7, 8, 9, 15, 16, 17, 31, 32, 33, 109, 257, 503] {
                     for &jitter in &[1u32, 40, 300, 3000] {
                         for &num_ref_contigs in &[1u32, 3] {
-                            let chunk = random_chunk(n, num_ref_contigs, jitter);
+                            for chunk in [
+                                random_chunk(n, num_ref_contigs, jitter),
+                                diagonal_chunk(n, num_ref_contigs, 0),
+                                diagonal_chunk(n, num_ref_contigs, 3),
+                                two_diagonal_chunk(n, 60),
+                                late_diagonal_chunk(n, 120),
+                                repeat_chunk(n, 3, 110),
+                            ] {
                             let mut map_params = MapParams::default();
                             map_params.index_chain_band = band;
                             map_params.anchor_score = D_ANCHOR_SCORE_ANI;
@@ -1631,6 +1802,7 @@ mod avx2_chaining_tests {
                             assert_eq!(score_scalar, score_simd, "scores differ: {}", ctx);
                             assert_eq!(ptr_scalar, ptr_simd, "pointers differ: {}", ctx);
                             cases += 1;
+                            }
                         }
                     }
                 }
