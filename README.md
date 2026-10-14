@@ -8,7 +8,7 @@ skani supports pairwise ANI calculation, all-vs-all genome comparisons, and effi
 
 skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST-based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for genomes and MAGs**. skani is accurate for standard genomes and incomplete metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
+1. **Accurate ANI calculations for genomes and MAGs**. skani is accurate for isolates genomes and incomplete metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
 
 2. **Fast computations**. skani is about 40-50x faster than FastANI. 
 
