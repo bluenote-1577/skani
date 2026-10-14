@@ -8,11 +8,11 @@ skani supports pairwise ANI calculation, all-vs-all genome comparisons, and effi
 
 skani uses an approximate mapping method without base-level alignment to get ANI. It is magnitudes faster than BLAST-based methods and almost as accurate. skani offers:
 
-1. **Accurate ANI calculations for MAGs**. skani is accurate for incomplete and medium-quality metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
+1. **Accurate ANI calculations for genomes and MAGs**. skani is accurate for standard genomes and incomplete metagenome-assembled genomes (MAGs). Pure sketching methods (e.g. Mash) may underestimate ANI for incomplete MAGs.
 
-2. **Aligned fraction results**. skani outputs the fraction of genome aligned. 
+2. **Fast computations**. skani is about 40-50x faster than FastANI. 
 
-3. **Fast computations**. Indexing/sketching is ~ 3x faster than Mash, and querying is about 25x faster than FastANI (but slower than Mash). 
+3. **Aligned fraction results**. skani outputs the fraction of genome aligned, not just ANI. 
 
 4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes minutes to an hour.
 
@@ -28,7 +28,14 @@ See the [CHANGELOG](https://github.com/bluenote-1577/skani/blob/main/CHANGELOG.m
 
 ##  Install
 
-#### Option 1: Build from source
+#### Option 1: Conda 
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
+```sh
+conda install -c bioconda skani
+```
+
+#### Option 2: Build from source
 
 Requirements:
 1. [rust](https://www.rust-lang.org/tools/install) programming language and associated tools such as cargo are required and assumed to be in PATH.
@@ -42,21 +49,8 @@ git clone https://github.com/bluenote-1577/skani
 cd skani
 
 # If default rust install directory is ~/.cargo
-cargo install --path . --root ~/.cargo
+cargo install --path . 
 skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
-
-# If ~/.cargo doesn't exist use below commands instead
-#cargo build --release
-#./target/release/skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
-```
-
-See the [Releases](https://github.com/bluenote-1577/skani/releases) page for obtaining specific versions of skani.
-
-#### Option 2: Conda (source version: 0.3)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/version.svg)](https://anaconda.org/bioconda/skani)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/skani/badges/latest_release_date.svg)](https://anaconda.org/bioconda/skani)
-```sh
-conda install -c bioconda skani
 ```
 
 #### Option 3: Pre-built x86-64 linux statically compiled executable
