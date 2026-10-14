@@ -14,8 +14,8 @@ skani uses (1) an approximate mapping method without base-level alignment to get
 
 3. **Aligned fraction results**. skani outputs the fraction of genome aligned, not just ANI. 
 
-4. **Efficient database search**. Querying a genome against a preprocessed database of >65000 prokaryotic genomes takes seconds with a single processor and ~6 GB of RAM. Constructing a database from genome sequences takes minutes to an hour.
-
+4. **Efficient database search**. skani can search a genome against a preprocessed database of >65000 prokaryotic genomes in seconds with a single processor and ~6 GB of RAM by using a fast k-mer filter. 
+5. 
 ##  Updates
 
 > [!IMPORTANT]
