@@ -55,9 +55,7 @@ skani dist refs/e.coli-EC590.fasta refs/e.coli-K12.fasta
 
 #### Option 3: Pre-built x86-64 linux statically compiled executable
 
-We offer a pre-built statically compiled executable for x86-64 Linux systems. That is, if you're on an x86-64 Linux system, you can just download the binary and run it without installing anything. 
-
-For using the latest version of skani: 
+We offer a pre-built statically compiled executable for x86-64 Linux systems. 
 
 ```sh
 wget https://github.com/bluenote-1577/skani/releases/download/latest/skani
